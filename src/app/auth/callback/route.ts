@@ -10,7 +10,9 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      // Sign out after confirmation so user logs in explicitly
+      await supabase.auth.signOut();
+      return NextResponse.redirect(`${origin}/login?confirmed=true`);
     }
   }
 
