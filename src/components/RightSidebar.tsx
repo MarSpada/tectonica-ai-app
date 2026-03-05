@@ -5,7 +5,9 @@ import Link from "next/link";
 import gsap from "gsap";
 import { createClient } from "@/lib/supabase/client";
 import { getAvatarColor, getInitials, getRoleLabel } from "@/lib/avatar";
-import type { Member, GroupMessage, NbSignup } from "@/lib/types";
+import { formatSignupTime } from "@/lib/signup-utils";
+import NbSignupModal from "./signups/NbSignupModal";
+import type { Member, GroupMessage, NbSignup, SignupAssignment } from "@/lib/types";
 
 interface RightSidebarProps {
   groupMessages?: GroupMessage[];
@@ -16,6 +18,8 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
   const widgetGridRef = useRef<HTMLDivElement>(null);
   const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [signups, setSignups] = useState<NbSignup[]>([]);
+  const [assignments, setAssignments] = useState<SignupAssignment[]>([]);
+  const [selectedSignup, setSelectedSignup] = useState<NbSignup | null>(null);
   const directoryMembers = allMembers.slice(0, 6);
 
   const memberCount = allMembers.filter((m) =>
@@ -34,6 +38,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         const res = await fetch("/api/nationbuilder/signups");
         const json = await res.json();
         if (json.signups) setSignups(json.signups);
+        if (json.assignments) setAssignments(json.assignments);
       } catch {
         // NB unavailable — widget stays empty
       }
@@ -47,13 +52,23 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
     if (!el) return;
 
     const children = Array.from(el.children);
-    const t = gsap.fromTo(children,
+    gsap.fromTo(children,
       { x: 20, opacity: 0 },
       { x: 0, opacity: 1, duration: 0.5, stagger: 0.08, delay: 0.3, ease: "power2.out" }
     );
-
-    // No cleanup — entrance animations complete once and elements stay visible.
   }, []);
+
+  function getAssignment(signupId: string): SignupAssignment | null {
+    return assignments.find((a) => a.nb_signup_id === signupId) || null;
+  }
+
+  function handleAssigned(newAssignment: SignupAssignment) {
+    setAssignments((prev) => {
+      const filtered = prev.filter((a) => a.nb_signup_id !== newAssignment.nb_signup_id);
+      return [...filtered, newAssignment];
+    });
+    setSelectedSignup(null);
+  }
 
   return (
     <aside className="right-sidebar-responsive w-[var(--right-sidebar)] bg-bg border-l border-black/5 overflow-y-auto p-4">
@@ -81,24 +96,42 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
             {signups.length > 0 ? (
               signups.map((s) => {
                 const time = formatSignupTime(s.created_at);
+                const assignment = getAssignment(s.id);
                 return (
-                  <div key={s.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                  <button
+                    key={s.id}
+                    onClick={() => setSelectedSignup(s)}
+                    className="w-full flex items-center justify-between hover:bg-amber-100/50 rounded-lg px-1 -mx-1 py-0.5 transition-colors cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
                       <div
-                        className={`w-7 h-7 rounded-full ${getAvatarColor(s.id)} flex items-center justify-center text-[11px] font-bold text-white`}
+                        className={`w-7 h-7 rounded-full shrink-0 ${getAvatarColor(s.id)} flex items-center justify-center text-[11px] font-bold text-white`}
                       >
                         {getInitials(s.name)}
                       </div>
-                      <span className="text-xs font-medium text-text-primary">{s.name}</span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium text-text-primary truncate">{s.name}</span>
+                          <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 shrink-0">
+                            <img src="/nb-icon.png" alt="" className="w-4 h-4" />
+                            via NB
+                          </span>
+                        </div>
+                        {assignment && (
+                          <span className="text-[9px] text-text-muted block truncate">
+                            Assigned to {assignment.assignee_name}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <span
-                      className={`text-[10px] ${
+                      className={`text-[10px] shrink-0 ml-2 ${
                         time.urgent ? "font-semibold text-red-500" : "text-text-muted"
                       }`}
                     >
                       {time.text}
                     </span>
-                  </div>
+                  </button>
                 );
               })
             ) : (
@@ -107,8 +140,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
           </div>
           {signups.length > 0 && (
             <p className="text-[10px] text-text-muted mt-2">
-              Contact them within 48 hrs for best results or{" "}
-              <span className="text-accent-purple underline cursor-pointer">assign to another person</span>.
+              Click a sign-up to view details and assign to a team member.
             </p>
           )}
         </div>
@@ -330,17 +362,17 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
           </div>
         </div>
       </div>
+
+      {/* Signup Detail Modal */}
+      <NbSignupModal
+        signup={selectedSignup}
+        assignment={selectedSignup ? getAssignment(selectedSignup.id) : null}
+        members={allMembers}
+        onClose={() => setSelectedSignup(null)}
+        onAssigned={handleAssigned}
+      />
     </aside>
   );
-}
-
-function formatSignupTime(dateStr: string): { text: string; urgent: boolean } {
-  if (!dateStr) return { text: "Recently", urgent: false };
-  const hours = Math.floor((Date.now() - new Date(dateStr).getTime()) / 3600000);
-  if (hours < 1) return { text: "Signed up just now", urgent: false };
-  if (hours < 48) return { text: `Signed up ${hours} hrs. ago`, urgent: hours > 24 };
-  const days = Math.floor(hours / 24);
-  return { text: `Signed up ${days} days ago`, urgent: true };
 }
 
 function SystemBadge({

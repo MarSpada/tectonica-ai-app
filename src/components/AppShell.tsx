@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import TopBar from "./TopBar";
 import LeftSidebar from "./LeftSidebar";
+import NotificationBar from "./NotificationBar";
 
 interface AppShellProps {
   userName: string;
@@ -21,6 +22,7 @@ export default function AppShell({ userName, children }: AppShellProps) {
           isDrawerMode ? () => setSidebarOpen((prev) => !prev) : undefined
         }
       />
+      <NotificationBar />
       <div className="flex flex-1 overflow-hidden">
         <LeftSidebar
           userName={userName}
