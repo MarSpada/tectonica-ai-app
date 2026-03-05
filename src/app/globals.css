@@ -1,26 +1,248 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Google Sans";
+  src: url("./fonts/GoogleSans-VariableFont_GRAD,opsz,wght.ttf")
+    format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Google Sans";
+  src: url("./fonts/GoogleSans-Italic-VariableFont_GRAD,opsz,wght.ttf")
+    format("truetype");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Page & layout */
+  --bg: #E3D1FF;
+  --card-bg: #ffffff;
+  --card-stroke: rgba(0, 0, 0, 0.08);
+  --sidebar-bg: #E3D1FF;
+  --sidebar-active: #6B3FA0;
+  --topbar-bg: #EEE7F6;
+
+  /* Text */
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a4a6a;
+  --text-muted: #6b6b8a;
+
+  /* Accents */
+  --accent-purple: #7C3AED;
+
+  /* Category pastel colors */
+  --cat-advisors: #FFB5A7;
+  --cat-advisors-accent: #E89485;
+  --cat-create: #A8D8EA;
+  --cat-create-accent: #7FC4DB;
+  --cat-tools: #B5EAD7;
+  --cat-tools-accent: #8DD4BC;
+  --cat-analyze: #FFDAC1;
+  --cat-analyze-accent: #F0B88A;
+
+  /* Layout */
+  --sidebar-width: 180px;
+  --right-sidebar: clamp(340px, 42vw, 780px);
+
+  /* Radii */
+  --radius: 8px;
+  --radius-sm: 6px;
+  --radius-lg: 12px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-bg: var(--bg);
+  --color-card-bg: var(--card-bg);
+  --color-card-stroke: var(--card-stroke);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-topbar-bg: var(--topbar-bg);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-accent-purple: var(--accent-purple);
+  --color-cat-advisors: var(--cat-advisors);
+  --color-cat-advisors-accent: var(--cat-advisors-accent);
+  --color-cat-create: var(--cat-create);
+  --color-cat-create-accent: var(--cat-create-accent);
+  --color-cat-tools: var(--cat-tools);
+  --color-cat-tools-accent: var(--cat-tools-accent);
+  --color-cat-analyze: var(--cat-analyze);
+  --color-cat-analyze-accent: var(--cat-analyze-accent);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: "Google Sans", "Inter", system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+/* Hide scrollbar for carousel */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Material Icons */
+.material-icons-two-tone {
+  font-family: "Material Icons Two Tone";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Sidebar backdrop — hidden by default, shown at <=699px */
+.sidebar-backdrop {
+  display: none;
+}
+
+/* ===== Responsive Breakpoints (desktop-first) ===== */
+
+/* <= 1399px: Compact widget fonts/padding */
+@media (max-width: 1399px) {
+  .widget-grid-responsive > div {
+    padding: 0.625rem;
+  }
+  .widget-grid-responsive h3 {
+    font-size: 9px;
+  }
+}
+
+/* <= 1199px: Widget grid restacks to 2-col, featured grid 4-col */
+@media (max-width: 1199px) {
+  .widget-grid-responsive {
+    grid-template-columns: repeat(2, 1fr) !important;
+    grid-auto-rows: auto !important;
+  }
+  .widget-grid-responsive > div {
+    grid-column: auto !important;
+    grid-row: auto !important;
+  }
+  .featured-grid-responsive {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+}
+
+/* <= 999px: Hide right sidebar */
+@media (max-width: 999px) {
+  .right-sidebar-responsive {
+    display: none;
+  }
+}
+
+/* <= 899px: Left sidebar collapses to 64px icon-only */
+@media (max-width: 899px) {
+  :root {
+    --sidebar-width: 64px;
+  }
+  .left-sidebar-responsive {
+    width: 64px !important;
+    align-items: center;
+  }
+  .left-sidebar-responsive .sidebar-label {
+    display: none;
+  }
+  .left-sidebar-responsive .sidebar-search {
+    display: none;
+  }
+  .left-sidebar-responsive .sidebar-user-details {
+    display: none;
+  }
+  .left-sidebar-responsive .sidebar-bot-chats {
+    display: none;
+  }
+  .left-sidebar-responsive nav a,
+  .left-sidebar-responsive nav button {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+    gap: 0;
+  }
+  .left-sidebar-responsive nav {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  .left-sidebar-responsive .sidebar-user-row {
+    justify-content: center;
+  }
+  .left-sidebar-responsive .sidebar-signout {
+    display: none;
+  }
+}
+
+/* <= 699px: Sidebar becomes overlay drawer */
+@media (max-width: 699px) {
+  :root {
+    --sidebar-width: 0px;
+  }
+  .left-sidebar-responsive {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    bottom: 0;
+    width: 260px !important;
+    z-index: 50;
+    background: var(--sidebar-bg);
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    align-items: stretch;
+  }
+  .left-sidebar-responsive.drawer-open {
+    transform: translateX(0);
+  }
+  /* Restore labels in drawer mode */
+  .left-sidebar-responsive .sidebar-label {
+    display: inline;
+  }
+  .left-sidebar-responsive .sidebar-search {
+    display: block;
+  }
+  .left-sidebar-responsive .sidebar-user-details {
+    display: block;
+  }
+  .left-sidebar-responsive .sidebar-bot-chats {
+    display: block;
+  }
+  .left-sidebar-responsive nav a,
+  .left-sidebar-responsive nav button {
+    justify-content: flex-start;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    gap: 0.625rem;
+  }
+  .left-sidebar-responsive nav {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  .left-sidebar-responsive .sidebar-user-row {
+    justify-content: flex-start;
+  }
+  .left-sidebar-responsive .sidebar-signout {
+    display: inline-flex;
+  }
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    top: 56px;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 40;
+  }
 }
