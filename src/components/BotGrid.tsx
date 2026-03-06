@@ -48,24 +48,19 @@ export default function BotGrid({
     });
   }
 
-  // GSAP entrance animations (headers + featured cards only; category cards are collapsed)
+  // GSAP entrance animations (headers slide-in only; category cards are collapsed)
+  // NOTE: Do NOT animate opacity on headers — React 19 strict mode double-mount
+  // causes GSAP fromTo opacity to get stuck at 0. Only animate transform (x).
   useEffect(() => {
     const el = gridRef.current;
     if (!el) return;
 
     const headers = el.querySelectorAll(".cat-header");
-    const featuredCards = el.querySelectorAll(".featured-grid-responsive .bot-card-anim");
 
-    // Category headers: slide in from left
+    // Category headers: slide in from left (no opacity — avoids React 19 strict mode bug)
     gsap.fromTo(headers,
-      { x: -20, opacity: 0 },
-      { x: 0, opacity: 1, duration: 0.4, stagger: 0.1, ease: "power2.out" }
-    );
-
-    // Featured bot cards only: stagger up
-    gsap.fromTo(featuredCards,
-      { y: 30, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.5, stagger: 0.03, ease: "power2.out", delay: 0.1 }
+      { x: -20 },
+      { x: 0, duration: 0.4, stagger: 0.1, ease: "power2.out" }
     );
 
     // No cleanup — entrance animations complete once and elements stay visible.
