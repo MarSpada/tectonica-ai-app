@@ -10,7 +10,12 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      // Sign out after confirmation so user logs in explicitly
+      // Password recovery: keep session alive so user can update password
+      if (next === "/reset-password") {
+        return NextResponse.redirect(`${origin}/reset-password`);
+      }
+
+      // Email confirmation: sign out so user logs in explicitly
       await supabase.auth.signOut();
       return NextResponse.redirect(`${origin}/login?confirmed=true`);
     }

@@ -237,29 +237,127 @@ Desktop-first design. Mobile is out of scope for now.
 
 ---
 
-## What Needs to Be Built (Functional App)
+## Tech Stack (Implemented)
 
-### Priority 1: Core
-- Frontend framework (React/Next.js or similar)
-- Auth + user/org/group management
-- Database (users, orgs, groups, bots, conversations, media)
-- Make ONE bot functional end-to-end with real LLM (Claude API)
+- **Framework**: Next.js 16 (App Router) + React 19 + TypeScript
+- **Styling**: Tailwind CSS 4 with design token CSS variables
+- **Database**: Supabase PostgreSQL with RLS, Realtime subscriptions
+- **Auth**: Supabase Auth (email/password, email confirmation)
+- **AI**: OpenAI GPT-4o (streaming SSE via API routes)
+- **Email**: Resend (transactional emails for signup assignment notifications)
+- **Animations**: GSAP entrance transitions + stagger animations
+- **Integrations**: NationBuilder v2 API (read-only signup ingestion)
+- **Deployment**: Railway (auto-deploy from `main` branch)
 
-### Priority 2: Features
-- Real chat with conversation persistence
-- Group Coach Bot with real campaign data
-- Media gallery with actual file upload/management
-- Dashboard widgets with real data
-- Real-time group messaging (WebSocket)
+---
 
-### Priority 3: Integrations
-- Action Network, NationBuilder, Mobilize API connections
-- Email/SMS sending
+## Environment Variables
+
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public anon key |
+| `OPENAI_API_KEY` | OpenAI API key for GPT-4o bot chat |
+| `NATIONBUILDER_API_TOKEN` | NationBuilder v2 API Bearer token |
+| `NATIONBUILDER_SLUG` | NationBuilder subdomain slug |
+| `RESEND_API_KEY` | Resend email API key |
+
+---
+
+## Database Migrations (Supabase)
+
+| Migration | What It Does |
+|---|---|
+| `001_initial_schema.sql` | Organizations, groups, profiles (extends auth.users), bots, conversations, messages, media tables. Auto-profile trigger on signup. |
+| `002_fix_conversations_bot_id.sql` | Changes conversations.bot_id from UUID FK to text slug |
+| `003_user_favorites.sql` | user_favorite_bots table with position ordering |
+| `004_member_directory.sql` | Expands roles (admin/organizer/leader/member/supporter), get_my_group_id() helper, get_group_members() RPC |
+| `005_profile_settings.sql` | Bio column, public avatars storage bucket (2MB, JPEG/PNG/WebP) |
+| `006_group_messages.sql` | group_messages table with Realtime, get_group_messages() RPC with pagination |
+| `007_signup_assignments.sql` | signup_assignments + notifications tables, RLS, create_signup_assignment() atomic RPC |
+
+---
+
+## API Routes
+
+| Route | Method | Description |
+|---|---|---|
+| `/api/chat` | POST | Streams GPT-4o responses, persists conversations + messages to Supabase |
+| `/api/favorites` | GET/POST | Fetch, add, remove user's favorite/starred bots |
+| `/api/nationbuilder/signups` | GET | Fetches last 3 NB signups, auto-assigns unassigned to admin, returns with assignments |
+| `/api/signups/assign` | POST | Assigns NB signup to team member (RPC + Resend email notification) |
+| `/api/notifications` | GET | Unread notifications for current user (max 10) |
+| `/api/notifications/read` | POST | Mark notifications as read (by IDs or "all") |
+| `/auth/callback` | GET | OAuth/email confirmation callback — signs out after confirmation, redirects to login |
+
+---
+
+## Key Components
+
+| Component | Description |
+|---|---|
+| `AppShell.tsx` | Main layout: TopBar + NotificationBar + LeftSidebar + content |
+| `TopBar.tsx` | Header with org info + Tectonica.AI logo |
+| `LeftSidebar.tsx` | Navigation, bot chats list, user info footer |
+| `RightSidebar.tsx` | 12-column widget grid dashboard with live NB signups |
+| `NotificationBar.tsx` | Amber bar for unread signup assignment notifications |
+| `BotGrid.tsx` | Featured carousel + categorized bot card grid with GSAP |
+| `BotCard.tsx` | Individual bot card with star/favorite, hover description |
+| `chat/ChatView.tsx` | Bot chat with streaming, conversation persistence |
+| `coach/CoachChatView.tsx` | Group Coach Bot with campaign stats sidebar |
+| `media/MediaGallery.tsx` | Media gallery with filters, grid/list view |
+| `signups/NbSignupModal.tsx` | NB signup detail modal with contact/call/assign actions |
+| `members/MemberDirectory.tsx` | Group member list with roles and avatars |
+| `GroupConversationOverlay.tsx` | Real-time group messaging overlay |
+| `LeadersChat.tsx` | Slide-in leaders & organizers chat panel |
+
+---
+
+## What's Working (Functional)
+
+- Auth (email/password signup, login, email confirmation, session management)
+- Role-based profiles (admin, organizer, leader, member, supporter) with group assignment
+- Dashboard with 20 bot cards in 4 categories, star/favorite system
+- Bot chat with GPT-4o streaming responses + conversation persistence
+- Group Coach Bot page with campaign stats sidebar
+- Media gallery (mock data, UI functional)
+- Member directory with RPC-based group member fetching
+- Profile settings (name, bio, avatar upload)
+- Real-time group messaging (Supabase Realtime)
+- NationBuilder integration (read-only signup ingestion with NB icon badges)
+- Interactive NB signup assignments (click → modal → contact/call/assign)
+- Email notifications to assignees via Resend
+- In-app notification bar for assigned signups
+- Connected Systems widget (NB: Functional, Action Network/Mobilize: Issues Found)
+- GSAP entrance animations throughout
+- Deployed on Railway with auto-deploy from main
+
+## What Still Needs Work (Prioritized)
+
+### Immediate — Auth & Onboarding Fixes
+1. **Forgot password flow** — "Forgot password?" link on login → reset email → /reset-password page → `supabase.auth.updateUser({ password })`. Critical for real users.
+2. **Login page `?confirmed=true` message** — Show "Email confirmed! Please log in." when redirected from auth callback
+3. **Custom SMTP for Supabase Auth** — Replace Supabase's built-in SMTP (rate-limited ~3-4 emails/hr) with Resend SMTP or similar. Configure in Supabase Dashboard → Authentication → SMTP Settings.
+4. **New user onboarding** — Currently new signups get a profile but no group/org assignment. Need a flow to assign them (admin invite, or auto-join default group).
+
+### Next Session — Super Admin Panel (spec written)
+- **Phase A**: Role hierarchy migration (`admin` → `super_admin` + `group_admin`), admin route guard, tab shell at /admin
+- **Phase B**: Organization tab (edit org name, manage groups) + People tab (role changes, remove members, group reassignment)
+- **Phase C**: Bots tab (bot_configs table, DB-driven bots replacing hardcoded bots.ts, API key management with server-side encryption)
+- **Phase D**: Group Admin features (invitations, recruiter IDs, /join flow, member role management from directory)
+
+### Priority — Next Features
+- Media gallery with real file upload (currently mock data)
+- Group Coach Bot with real campaign data (currently mock stats)
+- Graphics Creation bot with visual editor iframe integration
+- Leaders & Organizers real-time chat (UI exists, needs real-time backend)
+
+### Priority — Integrations
+- Action Network API connection
+- Mobilize API connection
 - Image generation for Graphics Creation bot
-- Visual editor integration
 
-### Priority 4: Platform
-- Multi-tenancy (multiple orgs/groups)
-- Role-based access control
+### Priority — Platform
+- Multi-tenancy (multiple orgs/groups — schema supports it, UI is single-group)
 - Configurable bot system prompts per org
-- CI/CD, monitoring, error tracking
+- Mobile responsive layout (desktop-first, mobile out of scope for now)
