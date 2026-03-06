@@ -28,22 +28,20 @@ export default function DashboardShell({
         initialFavorites={initialFavorites}
         onWelcomeExpandChange={setWelcomeExpanded}
       />
-      {!welcomeExpanded && (
-        conversationOpen ? (
-          <GroupConversationOverlay
-            messages={messages}
-            currentUserId={currentUserId}
-            hasMore={hasMore}
-            onSend={sendMessage}
-            onLoadMore={loadMore}
-            onClose={() => setConversationOpen(false)}
-          />
-        ) : (
-          <RightSidebar
-            groupMessages={messages}
-            onOpenConversation={() => setConversationOpen(true)}
-          />
-        )
+      {conversationOpen ? (
+        <GroupConversationOverlay
+          messages={messages}
+          currentUserId={currentUserId}
+          hasMore={hasMore}
+          onSend={sendMessage}
+          onLoadMore={loadMore}
+          onClose={() => setConversationOpen(false)}
+        />
+      ) : (
+        <RightSidebar
+          groupMessages={messages}
+          onOpenConversation={() => setConversationOpen(true)}
+        />
       )}
     </AppShell>
   );

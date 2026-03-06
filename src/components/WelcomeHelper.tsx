@@ -20,6 +20,7 @@ export default function WelcomeHelper({
   const [isExpanded, setIsExpanded] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const expandedInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -30,11 +31,15 @@ export default function WelcomeHelper({
     }
   }, [messages, isExpanded]);
 
-  // Auto-focus the expanded input when expanding
+  // When expanding: scroll parent container to top so chat header is visible, then focus input
   useEffect(() => {
     if (isExpanded) {
-      // Small delay to let the DOM render
       requestAnimationFrame(() => {
+        // Scroll the parent overflow container to the top
+        const scrollParent = containerRef.current?.closest(".overflow-y-auto");
+        if (scrollParent) {
+          scrollParent.scrollTop = 0;
+        }
         expandedInputRef.current?.focus();
       });
     }
@@ -246,7 +251,9 @@ export default function WelcomeHelper({
 
   // --- EXPANDED STATE ---
   return (
-    <div className="bg-white/70 rounded-2xl backdrop-blur-sm border border-black/5 mb-6 flex flex-col transition-all duration-300"
+    <div
+      ref={containerRef}
+      className="bg-white/70 rounded-2xl backdrop-blur-sm border border-black/5 mb-6 flex flex-col transition-all duration-300"
       style={{ height: "70vh" }}
     >
       {/* Compact header */}
