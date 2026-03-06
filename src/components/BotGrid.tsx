@@ -36,23 +36,34 @@ export default function BotGrid({
   const [favoriteBotIds, setFavoriteBotIds] = useState<string[]>(
     initialFavorites ?? defaultFeaturedBotIds
   );
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set()
+  );
 
-  // GSAP entrance animations
+  function toggleCategory(key: string) {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  }
+
+  // GSAP entrance animations (headers + featured cards only; category cards are collapsed)
   useEffect(() => {
     const el = gridRef.current;
     if (!el) return;
 
     const headers = el.querySelectorAll(".cat-header");
-    const cards = el.querySelectorAll(".bot-card-anim");
+    const featuredCards = el.querySelectorAll(".featured-grid-responsive .bot-card-anim");
 
     // Category headers: slide in from left
-    const t1 = gsap.fromTo(headers,
+    gsap.fromTo(headers,
       { x: -20, opacity: 0 },
       { x: 0, opacity: 1, duration: 0.4, stagger: 0.1, ease: "power2.out" }
     );
 
-    // Bot cards: stagger up
-    const t2 = gsap.fromTo(cards,
+    // Featured bot cards only: stagger up
+    gsap.fromTo(featuredCards,
       { y: 30, opacity: 0 },
       { y: 0, opacity: 1, duration: 0.5, stagger: 0.03, ease: "power2.out", delay: 0.1 }
     );
@@ -146,29 +157,40 @@ export default function BotGrid({
         </section>
       )}
 
-      {/* Bot categories */}
-      {botsByCategory.map(({ key, label, bots: catBots }) => (
-        <section key={key} className="mb-6">
-          <h2 className="cat-header flex items-center gap-2 text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">
-            <span className="material-icons-two-tone text-[18px] text-text-muted">
-              {categoryIcons[key]}
-            </span>
-            {label}
-          </h2>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3.5">
-            {catBots.map((bot) => (
-              <div key={bot.id} className="bot-card-anim">
-                <BotCard
-                  bot={bot}
-                  onSelect={handleBotSelect}
-                  onToggleFavorite={handleToggleFavorite}
-                  isFavorite={favoriteBotIds.includes(bot.id)}
-                />
+      {/* Bot categories (collapsible) */}
+      {botsByCategory.map(({ key, label, bots: catBots }) => {
+        const isOpen = expandedCategories.has(key);
+        return (
+          <section key={key} className="mb-3">
+            <button
+              onClick={() => toggleCategory(key)}
+              className="cat-header w-full flex items-center gap-2 text-sm font-semibold text-text-secondary uppercase tracking-wider py-2.5 px-1 rounded-lg hover:bg-white/40 transition-colors cursor-pointer"
+            >
+              <span className="material-icons-two-tone text-[18px] text-text-muted">
+                {categoryIcons[key]}
+              </span>
+              <span className="flex-1 text-left">{label}</span>
+              <span className={`material-icons-two-tone text-[20px] text-text-muted transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}>
+                expand_more
+              </span>
+            </button>
+            {isOpen && (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3.5 mt-2 mb-3">
+                {catBots.map((bot) => (
+                  <div key={bot.id} className="bot-card-anim">
+                    <BotCard
+                      bot={bot}
+                      onSelect={handleBotSelect}
+                      onToggleFavorite={handleToggleFavorite}
+                      isFavorite={favoriteBotIds.includes(bot.id)}
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
-      ))}
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }
