@@ -7,6 +7,7 @@ interface UserProfile {
   userId: string;
   fullName: string;
   avatarUrl: string | null;
+  role?: string;
 }
 
 interface UserProfileContextValue {

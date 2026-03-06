@@ -12,7 +12,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Tectonica.AI — Movement Intelligence",
   description:
-    "AI-powered suite of bots for political and social movement organizing",
+    "AI-powered suite of helpers for political and social movement organizing",
 };
 
 export default async function RootLayout({
@@ -24,6 +24,7 @@ export default async function RootLayout({
     userId: string;
     fullName: string;
     avatarUrl: string | null;
+    role?: string;
   } | null = null;
 
   try {
@@ -35,7 +36,7 @@ export default async function RootLayout({
     if (user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, avatar_url")
+        .select("full_name, avatar_url, role")
         .eq("id", user.id)
         .single();
 
@@ -47,6 +48,7 @@ export default async function RootLayout({
           user.email ||
           "User",
         avatarUrl: profile?.avatar_url || null,
+        role: profile?.role || "member",
       };
     }
   } catch {

@@ -56,7 +56,7 @@ export default function LeftSidebar({
             }`}
           >
             <span className="material-icons-two-tone text-[18px]">groups</span>
-            <span className="sidebar-label">Group Coach Bot</span>
+            <span className="sidebar-label">Group Coach</span>
           </Link>
 
           {/* Group Media */}
@@ -103,7 +103,7 @@ export default function LeftSidebar({
           {/* Bot Chats section */}
           <div className="sidebar-bot-chats pt-4">
             <h3 className="sidebar-label px-3 text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
-              Bot Chats
+              Helper Chats
             </h3>
 
             {/* Search */}

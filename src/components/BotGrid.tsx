@@ -11,10 +11,12 @@ import {
   type BotCategory,
 } from "@/lib/bots";
 import BotCard from "./BotCard";
+import WelcomeHelper from "./WelcomeHelper";
 
 interface BotGridProps {
   userName?: string;
   initialFavorites?: string[];
+  onWelcomeExpandChange?: (expanded: boolean) => void;
 }
 
 const categoryIcons: Record<BotCategory, string> = {
@@ -27,6 +29,7 @@ const categoryIcons: Record<BotCategory, string> = {
 export default function BotGrid({
   userName = "Ned",
   initialFavorites,
+  onWelcomeExpandChange,
 }: BotGridProps) {
   const router = useRouter();
   const gridRef = useRef<HTMLDivElement>(null);
@@ -99,7 +102,7 @@ export default function BotGrid({
 
   const featuredBots = favoriteBotIds
     .map((id) => bots.find((b) => b.id === id))
-    .filter((b): b is Bot => b !== undefined);
+    .filter((b): b is Bot => b !== undefined && b.id !== "welcome");
 
   const categories = Object.entries(categoryMeta) as [
     BotCategory,
@@ -109,22 +112,23 @@ export default function BotGrid({
   const botsByCategory = categories.map(([key, meta]) => ({
     key,
     label: meta.label,
-    bots: bots.filter((b) => b.category === key),
+    bots: bots.filter((b) => b.category === key && b.id !== "welcome"),
   }));
 
   return (
     <div ref={gridRef} className="flex-1 overflow-y-auto px-6 py-6">
-      {/* Header */}
-      <h1 className="cat-header text-xl font-bold text-text-primary mb-6">
-        Welcome back, {userName}. Choose a bot to get started.
-      </h1>
+      {/* Welcome Helper */}
+      <WelcomeHelper
+        userName={userName}
+        onExpandChange={onWelcomeExpandChange}
+      />
 
       {/* Featured / Your Bots */}
       {featuredBots.length > 0 && (
         <section className="mb-8">
           <h2 className="cat-header flex items-center gap-2 text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">
             <span className="text-amber-400 text-base">★</span>
-            Your Bots
+            Your Favorite Helpers
           </h2>
           <div className="featured-grid-responsive grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3.5">
             {featuredBots.map((bot) => (

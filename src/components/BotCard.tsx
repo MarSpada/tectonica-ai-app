@@ -49,7 +49,7 @@ export default function BotCard({
             onToggleFavorite(bot.id);
           }}
           className="absolute top-2 right-2 z-10 w-6 h-6 flex items-center justify-center rounded-full bg-white/50 hover:bg-white/80 transition-colors text-[14px]"
-          title={isFavorite ? "Remove from Your Bots" : "Add to Your Bots"}
+          title={isFavorite ? "Remove from Your Helpers" : "Add to Your Helpers"}
         >
           {isFavorite ? (
             <span className="text-amber-400">★</span>
@@ -76,7 +76,7 @@ export default function BotCard({
 
       {/* BOT pill */}
       <span className="mt-auto pt-2 px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-white/40 rounded-full text-text-secondary">
-        Bot
+        Helper
       </span>
 
       {/* Hover overlay — pastel bg at full opacity with black text */}

@@ -35,6 +35,15 @@ export const categoryMeta: Record<
 };
 
 export const bots: Bot[] = [
+  // Welcome Helper (not shown in grid — used by WelcomeHelper component)
+  {
+    id: "welcome",
+    name: "Welcome Helper",
+    icon: "waving_hand",
+    category: "advisors",
+    description: "Your personal guide to Movement Intelligence. Ask me anything about what you can do here.",
+  },
+
   // Advisors
   {
     id: "getting-started",

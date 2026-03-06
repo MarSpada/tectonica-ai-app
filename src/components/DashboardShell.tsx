@@ -17,6 +17,7 @@ export default function DashboardShell({
   initialFavorites,
 }: DashboardShellProps) {
   const [conversationOpen, setConversationOpen] = useState(false);
+  const [welcomeExpanded, setWelcomeExpanded] = useState(false);
   const { messages, sendMessage, loadMore, hasMore, currentUserId } =
     useGroupMessages();
 
@@ -25,21 +26,24 @@ export default function DashboardShell({
       <BotGrid
         userName={userName.split(" ")[0]}
         initialFavorites={initialFavorites}
+        onWelcomeExpandChange={setWelcomeExpanded}
       />
-      {conversationOpen ? (
-        <GroupConversationOverlay
-          messages={messages}
-          currentUserId={currentUserId}
-          hasMore={hasMore}
-          onSend={sendMessage}
-          onLoadMore={loadMore}
-          onClose={() => setConversationOpen(false)}
-        />
-      ) : (
-        <RightSidebar
-          groupMessages={messages}
-          onOpenConversation={() => setConversationOpen(true)}
-        />
+      {!welcomeExpanded && (
+        conversationOpen ? (
+          <GroupConversationOverlay
+            messages={messages}
+            currentUserId={currentUserId}
+            hasMore={hasMore}
+            onSend={sendMessage}
+            onLoadMore={loadMore}
+            onClose={() => setConversationOpen(false)}
+          />
+        ) : (
+          <RightSidebar
+            groupMessages={messages}
+            onOpenConversation={() => setConversationOpen(true)}
+          />
+        )
       )}
     </AppShell>
   );
