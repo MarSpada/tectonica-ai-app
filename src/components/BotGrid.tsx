@@ -134,31 +134,40 @@ export default function BotGrid({
         onExpandChange={onWelcomeExpandChange}
       />
 
-      {/* Featured / Your Bots */}
-      {featuredBots.length > 0 && (
-        <section className="mb-8">
-          <h2
-            className="cat-header flex items-center gap-2 text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3 py-2.5 px-3 rounded-lg border-b border-black/5"
-            style={{ backgroundColor: "rgba(124, 58, 237, 0.1)" }}
-          >
-            <span className="text-amber-400 text-base">★</span>
-            Your Favorite Helpers
-          </h2>
-          <div className="featured-grid-responsive grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3.5">
-            {featuredBots.map((bot) => (
-              <div key={bot.id} className="bot-card-anim">
-                <BotCard
-                  bot={bot}
-                  featured
-                  onSelect={handleBotSelect}
-                  onToggleFavorite={handleToggleFavorite}
-                  isFavorite={true}
-                />
+      {/* Featured / Your Favorite Helpers (collapsible) */}
+      {featuredBots.length > 0 && (() => {
+        const isFavOpen = expandedCategories.has("favorites");
+        return (
+          <section className="mb-3">
+            <button
+              onClick={() => toggleCategory("favorites")}
+              className="cat-header w-full flex items-center gap-2 text-sm font-semibold text-text-secondary uppercase tracking-wider py-2.5 px-3 rounded-lg border-b border-black/5 hover:brightness-95 transition-all cursor-pointer"
+              style={{ backgroundColor: "color-mix(in srgb, var(--bg) 50%, transparent)" }}
+            >
+              <span className="text-amber-400 text-base">★</span>
+              <span className="flex-1 text-left">Your Favorite Helpers</span>
+              <span className={`material-icons-two-tone text-[20px] text-text-muted transition-transform duration-200 ${isFavOpen ? "rotate-180" : ""}`}>
+                expand_more
+              </span>
+            </button>
+            {isFavOpen && (
+              <div className="featured-grid-responsive grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3.5 mt-2 mb-3">
+                {featuredBots.map((bot) => (
+                  <div key={bot.id} className="bot-card-anim">
+                    <BotCard
+                      bot={bot}
+                      featured
+                      onSelect={handleBotSelect}
+                      onToggleFavorite={handleToggleFavorite}
+                      isFavorite={true}
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
-      )}
+            )}
+          </section>
+        );
+      })()}
 
       {/* Bot categories (collapsible) */}
       {botsByCategory.map(({ key, label, bots: catBots }) => {
