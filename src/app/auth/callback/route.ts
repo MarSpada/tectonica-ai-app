@@ -2,9 +2,17 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const url = new URL(request.url);
+  const searchParams = url.searchParams;
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/";
+
+  // Use forwarded headers for correct origin behind reverse proxies (Railway)
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto") ?? "https";
+  const origin = forwardedHost
+    ? `${forwardedProto}://${forwardedHost}`
+    : url.origin;
 
   if (code) {
     const supabase = await createClient();
