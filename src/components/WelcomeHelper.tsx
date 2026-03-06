@@ -165,13 +165,11 @@ export default function WelcomeHelper({
   // Role-based subtitle
   const role = profile?.role || "member";
   const subtitle =
-    role === "super_admin" || role === "admin"
-      ? "Thank you for being an Admin."
-      : role === "leader"
-        ? "Thank you for being a Leader."
-        : role === "organizer"
-          ? "Thank you for being an Organizer."
-          : "Thank you for being a Member.";
+    role === "super_admin" || role === "admin" || role === "leader"
+      ? "Thank you for being a Leader."
+      : role === "organizer"
+        ? "Thank you for being an Organizer."
+        : "Thank you for being a Member.";
 
   // --- COLLAPSED STATE ---
   if (!isExpanded) {
