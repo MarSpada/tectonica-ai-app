@@ -21,6 +21,7 @@ export default function WelcomeHelper({
   const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const expandedInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -28,6 +29,16 @@ export default function WelcomeHelper({
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isExpanded]);
+
+  // Auto-focus the expanded input when expanding
+  useEffect(() => {
+    if (isExpanded) {
+      // Small delay to let the DOM render
+      requestAnimationFrame(() => {
+        expandedInputRef.current?.focus();
+      });
+    }
+  }, [isExpanded]);
 
   // Notify parent of expand/collapse
   function setExpanded(val: boolean) {
@@ -162,6 +173,12 @@ export default function WelcomeHelper({
     setExpanded(false);
   }
 
+  function handleInputFocus() {
+    if (!isExpanded) {
+      setExpanded(true);
+    }
+  }
+
   // Role-based subtitle
   const role = profile?.role || "member";
   const subtitle =
@@ -199,13 +216,14 @@ export default function WelcomeHelper({
           </p>
         </button>
 
-        {/* Input */}
+        {/* Input — expands chat on focus */}
         <div className="flex items-center gap-2 mt-3">
           <textarea
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={handleInputFocus}
             placeholder="Start typing..."
             rows={1}
             className="flex-1 px-4 py-2.5 text-sm bg-white rounded-xl border border-black/10 placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent-purple/30 resize-none"
@@ -229,7 +247,7 @@ export default function WelcomeHelper({
   // --- EXPANDED STATE ---
   return (
     <div className="bg-white/70 rounded-2xl backdrop-blur-sm border border-black/5 mb-6 flex flex-col transition-all duration-300"
-      style={{ maxHeight: "70vh" }}
+      style={{ height: "70vh" }}
     >
       {/* Compact header */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-black/5 flex-shrink-0">
@@ -259,6 +277,20 @@ export default function WelcomeHelper({
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 min-h-0">
+        {/* Show welcome text when no messages yet */}
+        {messages.length === 0 && (
+          <div className="text-sm text-text-secondary leading-relaxed space-y-2 pb-2">
+            <p className="font-semibold text-base text-text-primary">
+              Welcome back, {userName}.
+            </p>
+            <p className="text-accent-purple font-medium">{subtitle}</p>
+            <p>
+              I&apos;m here to help you with anything that you need for managing a
+              group. We have a variety of helpers that will help you out, so you can
+              start by simply telling me what we&apos;re trying to do.
+            </p>
+          </div>
+        )}
         {messages.map((msg, i) => (
           <div
             key={i}
@@ -298,6 +330,7 @@ export default function WelcomeHelper({
       {/* Input bar */}
       <div className="flex items-center gap-2 px-5 py-3 border-t border-black/5 flex-shrink-0">
         <textarea
+          ref={expandedInputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
