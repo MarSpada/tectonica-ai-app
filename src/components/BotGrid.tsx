@@ -137,7 +137,10 @@ export default function BotGrid({
       {/* Featured / Your Bots */}
       {featuredBots.length > 0 && (
         <section className="mb-8">
-          <h2 className="cat-header flex items-center gap-2 text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">
+          <h2
+            className="cat-header flex items-center gap-2 text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3 py-2.5 px-3 rounded-lg border-b border-black/5"
+            style={{ backgroundColor: "rgba(124, 58, 237, 0.1)" }}
+          >
             <span className="text-amber-400 text-base">★</span>
             Your Favorite Helpers
           </h2>
@@ -160,11 +163,13 @@ export default function BotGrid({
       {/* Bot categories (collapsible) */}
       {botsByCategory.map(({ key, label, bots: catBots }) => {
         const isOpen = expandedCategories.has(key);
+        const catBg = categoryMeta[key].bg;
         return (
           <section key={key} className="mb-3">
             <button
               onClick={() => toggleCategory(key)}
-              className="cat-header w-full flex items-center gap-2 text-sm font-semibold text-text-secondary uppercase tracking-wider py-2.5 px-1 rounded-lg hover:bg-white/40 transition-colors cursor-pointer"
+              className="cat-header w-full flex items-center gap-2 text-sm font-semibold text-text-secondary uppercase tracking-wider py-2.5 px-3 rounded-lg border-b border-black/5 hover:brightness-95 transition-all cursor-pointer"
+              style={{ backgroundColor: `color-mix(in srgb, ${catBg} 25%, transparent)` }}
             >
               <span className="material-icons-two-tone text-[18px] text-text-muted">
                 {categoryIcons[key]}
