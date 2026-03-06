@@ -19,27 +19,31 @@ export default function WelcomeHelper({
   const [isStreaming, setIsStreaming] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesAreaRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const expandedInputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Scroll to bottom when messages change
+  // Scroll messages area to bottom when messages change (without affecting parent scroll)
+  // Also keep parent container pinned to top so the chat header never scrolls away
   useEffect(() => {
     if (isExpanded) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      // Scroll only the inner messages area to the bottom
+      if (messagesAreaRef.current) {
+        messagesAreaRef.current.scrollTop = messagesAreaRef.current.scrollHeight;
+      }
+      // Keep the parent BotGrid scroll pinned to top
+      const scrollParent = containerRef.current?.closest(".overflow-y-auto");
+      if (scrollParent) {
+        scrollParent.scrollTop = 0;
+      }
     }
   }, [messages, isExpanded]);
 
-  // When expanding: scroll parent container to top so chat header is visible, then focus input
+  // When expanding: focus the input
   useEffect(() => {
     if (isExpanded) {
       requestAnimationFrame(() => {
-        // Scroll the parent overflow container to the top
-        const scrollParent = containerRef.current?.closest(".overflow-y-auto");
-        if (scrollParent) {
-          scrollParent.scrollTop = 0;
-        }
         expandedInputRef.current?.focus();
       });
     }
@@ -283,7 +287,7 @@ export default function WelcomeHelper({
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 min-h-0">
+      <div ref={messagesAreaRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-3 min-h-0">
         {/* Show welcome text when no messages yet */}
         {messages.length === 0 && (
           <div className="text-sm text-text-secondary leading-relaxed space-y-2 pb-2">
@@ -331,7 +335,6 @@ export default function WelcomeHelper({
             </div>
           </div>
         ))}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input bar */}
