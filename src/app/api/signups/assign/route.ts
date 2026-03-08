@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     if (assignee?.email && process.env.RESEND_API_KEY) {
       try {
         await resend.emails.send({
-          from: "Tectonica.AI <onboarding@resend.dev>",
+          from: `Tectonica.AI <${process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev"}>`,
           to: assignee.email,
           subject: `New signup assigned to you: ${nbSignupName}`,
           html: `
