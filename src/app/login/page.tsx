@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -17,6 +17,33 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  // Handle Supabase implicit flow: PASSWORD_RECOVERY event from hash tokens
+  // Also parse hash errors (e.g. expired reset links)
+  useEffect(() => {
+    const supabase = createClient();
+
+    // Check for error in hash fragment (e.g. expired reset link)
+    if (typeof window !== "undefined" && window.location.hash) {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const errorDesc = params.get("error_description");
+      if (errorDesc) {
+        setError(errorDesc.replace(/\+/g, " "));
+      }
+    }
+
+    // Listen for auth state changes — catch PASSWORD_RECOVERY from hash tokens
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        window.location.href = "/reset-password";
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
