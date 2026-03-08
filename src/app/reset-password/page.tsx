@@ -10,30 +10,13 @@ export default function ResetPasswordPage() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Handle auth token from Supabase redirect (PKCE code or implicit hash tokens)
+  // Wait for a valid session before showing the password form.
+  // The session comes from the auth callback (server-side PKCE exchange)
+  // or from the Supabase client auto-processing hash tokens (implicit flow).
   useEffect(() => {
     const supabase = createClient();
 
-    // PKCE flow: exchange code from query params
-    const url = new URL(window.location.href);
-    const code = url.searchParams.get("code");
-
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        if (error) {
-          window.location.href = "/login#error=access_denied&error_description=" +
-            encodeURIComponent(error.message);
-        } else {
-          setReady(true);
-          // Clean URL
-          window.history.replaceState({}, "", "/reset-password");
-        }
-      });
-      return;
-    }
-
-    // Implicit flow: Supabase client auto-detects hash tokens
-    // Check for hash errors (expired link)
+    // Check for hash errors (expired/invalid link)
     if (window.location.hash) {
       const params = new URLSearchParams(window.location.hash.substring(1));
       const errorDesc = params.get("error_description");
@@ -43,14 +26,15 @@ export default function ResetPasswordPage() {
       }
     }
 
-    // Listen for session — Supabase client picks up hash tokens automatically
+    // Listen for auth events from Supabase client's auto token processing
+    // PASSWORD_RECOVERY fires for implicit flow, SIGNED_IN for PKCE flow
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
         setReady(true);
       }
     });
 
-    // Check if already has a session (direct navigation)
+    // Check if session already exists (from server-side callback exchange)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) setReady(true);
     });
