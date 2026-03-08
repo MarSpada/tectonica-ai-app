@@ -2,6 +2,25 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function proxy(request: NextRequest) {
+  // Safety net: if a PKCE code lands on a non-auth page (e.g. Supabase
+  // fell back to the Site URL), route it to the correct callback.
+  const code = request.nextUrl.searchParams.get("code");
+  if (code && !request.nextUrl.pathname.startsWith("/auth/")) {
+    const hasResetIntent = request.cookies.get("password_reset_intent");
+    const callbackPath = hasResetIntent
+      ? "/auth/reset-callback"
+      : "/auth/callback";
+
+    const callbackUrl = new URL(callbackPath, request.url);
+    callbackUrl.searchParams.set("code", code);
+
+    const response = NextResponse.redirect(callbackUrl);
+    if (hasResetIntent) {
+      response.cookies.delete("password_reset_intent");
+    }
+    return response;
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -43,8 +62,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from login
-  if (user && isAuthRoute) {
+  // Redirect authenticated users away from login/signup pages
+  // BUT NOT from /reset-password — user needs a session to update their password
+  const isLoginRoute =
+    request.nextUrl.pathname.startsWith("/login") ||
+    request.nextUrl.pathname.startsWith("/forgot-password");
+
+  if (user && isLoginRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);

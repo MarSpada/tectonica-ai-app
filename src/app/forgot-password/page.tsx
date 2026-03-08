@@ -18,8 +18,12 @@ export default function ForgotPasswordPage() {
     const supabase = createClient();
 
     try {
+      // Mark intent so middleware can route stray codes correctly
+      document.cookie =
+        "password_reset_intent=true; path=/; max-age=3600; SameSite=Lax";
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+        redirectTo: `${window.location.origin}/auth/reset-callback`,
       });
       if (error) throw error;
       setSent(true);
