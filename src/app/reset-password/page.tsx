@@ -1,13 +1,62 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Handle auth token from Supabase redirect (PKCE code or implicit hash tokens)
+  useEffect(() => {
+    const supabase = createClient();
+
+    // PKCE flow: exchange code from query params
+    const url = new URL(window.location.href);
+    const code = url.searchParams.get("code");
+
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (error) {
+          window.location.href = "/login#error=access_denied&error_description=" +
+            encodeURIComponent(error.message);
+        } else {
+          setReady(true);
+          // Clean URL
+          window.history.replaceState({}, "", "/reset-password");
+        }
+      });
+      return;
+    }
+
+    // Implicit flow: Supabase client auto-detects hash tokens
+    // Check for hash errors (expired link)
+    if (window.location.hash) {
+      const params = new URLSearchParams(window.location.hash.substring(1));
+      const errorDesc = params.get("error_description");
+      if (errorDesc) {
+        window.location.href = "/login#" + window.location.hash.substring(1);
+        return;
+      }
+    }
+
+    // Listen for session — Supabase client picks up hash tokens automatically
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
+        setReady(true);
+      }
+    });
+
+    // Check if already has a session (direct navigation)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setReady(true);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -56,6 +105,11 @@ export default function ResetPasswordPage() {
           </p>
         </div>
 
+        {!ready ? (
+          <div className="bg-card-bg rounded-2xl shadow-sm border border-card-stroke p-6 text-center">
+            <p className="text-sm text-text-secondary">Verifying your reset link...</p>
+          </div>
+        ) : (
         <form
           onSubmit={handleSubmit}
           className="bg-card-bg rounded-2xl shadow-sm border border-card-stroke p-6 space-y-4"
@@ -104,6 +158,7 @@ export default function ResetPasswordPage() {
             {loading ? "Updating..." : "Update Password"}
           </button>
         </form>
+        )}
       </div>
     </div>
   );
