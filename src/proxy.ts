@@ -5,7 +5,7 @@ export async function proxy(request: NextRequest) {
   // Safety net: if a PKCE code lands on a non-auth page (e.g. Supabase
   // fell back to the Site URL), route it to the correct callback.
   const code = request.nextUrl.searchParams.get("code");
-  if (code && !request.nextUrl.pathname.startsWith("/auth/")) {
+  if (code && !request.nextUrl.pathname.startsWith("/auth/") && !request.nextUrl.pathname.startsWith("/reset-password")) {
     const hasResetIntent = request.cookies.get("password_reset_intent");
     const callbackPath = hasResetIntent
       ? "/auth/reset-callback"

@@ -23,7 +23,7 @@ export default function ForgotPasswordPage() {
         "password_reset_intent=true; path=/; max-age=3600; SameSite=Lax";
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-callback`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
       setSent(true);
