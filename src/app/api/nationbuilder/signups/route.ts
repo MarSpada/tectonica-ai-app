@@ -102,7 +102,7 @@ export async function GET() {
           .from("profiles")
           .select("id, full_name")
           .eq("group_id", profile.group_id)
-          .eq("role", "admin")
+          .eq("role", "super_admin")
           .limit(1);
 
         if (admins?.[0]) {

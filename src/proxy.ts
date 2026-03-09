@@ -62,6 +62,21 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Admin route guard — only super_admin and group_admin can access /admin
+  if (user && request.nextUrl.pathname.startsWith("/admin")) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role !== "super_admin" && profile?.role !== "group_admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
+  }
+
   // Redirect authenticated users away from login/signup pages
   // BUT NOT from /reset-password — user needs a session to update their password
   const isLoginRoute =

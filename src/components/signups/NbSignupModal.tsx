@@ -28,7 +28,7 @@ export default function NbSignupModal({
   const time = formatSignupTime(signup.created_at);
   const urgent = isUrgent(signup.created_at);
   const assignableMembers = members.filter(
-    (m) => ["admin", "organizer", "leader", "member"].includes(m.role)
+    (m) => ["super_admin", "group_admin", "member"].includes(m.role)
   );
 
   async function handleAssign(memberId: string) {

@@ -2,12 +2,13 @@
 
 import { createContext, useContext, useState, useCallback } from "react";
 import type { ReactNode } from "react";
+import type { UserRole } from "@/lib/types";
 
 interface UserProfile {
   userId: string;
   fullName: string;
   avatarUrl: string | null;
-  role?: string;
+  role?: UserRole;
 }
 
 interface UserProfileContextValue {

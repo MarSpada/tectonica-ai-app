@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { createClient } from "@/lib/supabase/server";
 import { UserProfileProvider } from "@/lib/UserProfileContext";
+import type { UserRole } from "@/lib/types";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -24,7 +25,7 @@ export default async function RootLayout({
     userId: string;
     fullName: string;
     avatarUrl: string | null;
-    role?: string;
+    role?: UserRole;
   } | null = null;
 
   try {
@@ -48,7 +49,7 @@ export default async function RootLayout({
           user.email ||
           "User",
         avatarUrl: profile?.avatar_url || null,
-        role: profile?.role || "member",
+        role: (profile?.role as UserRole) || "member",
       };
     }
   } catch {

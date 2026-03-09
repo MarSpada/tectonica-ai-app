@@ -30,9 +30,8 @@ export function getInitials(name: string | null): string {
 }
 
 const ROLE_BADGE_STYLES: Record<string, { bg: string; text: string }> = {
-  admin: { bg: "bg-red-100", text: "text-red-700" },
-  organizer: { bg: "bg-purple-100", text: "text-purple-700" },
-  leader: { bg: "bg-blue-100", text: "text-blue-700" },
+  super_admin: { bg: "bg-red-100", text: "text-red-700" },
+  group_admin: { bg: "bg-purple-100", text: "text-purple-700" },
   member: { bg: "bg-green-100", text: "text-green-700" },
   supporter: { bg: "bg-amber-100", text: "text-amber-700" },
 };
@@ -41,6 +40,13 @@ export function getRoleBadgeStyle(role: string) {
   return ROLE_BADGE_STYLES[role] ?? { bg: "bg-gray-100", text: "text-gray-700" };
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  super_admin: "Super Admin",
+  group_admin: "Group Admin",
+  member: "Member",
+  supporter: "Supporter",
+};
+
 export function getRoleLabel(role: string): string {
-  return role.charAt(0).toUpperCase() + role.slice(1);
+  return ROLE_LABELS[role] || role.charAt(0).toUpperCase() + role.slice(1);
 }

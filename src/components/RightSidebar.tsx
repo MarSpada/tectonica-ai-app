@@ -23,7 +23,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
   const directoryMembers = allMembers.slice(0, 6);
 
   const memberCount = allMembers.filter((m) =>
-    ["admin", "organizer", "leader", "member"].includes(m.role)
+    ["super_admin", "group_admin", "member"].includes(m.role)
   ).length;
   const supporterCount = allMembers.filter((m) => m.role === "supporter").length;
 

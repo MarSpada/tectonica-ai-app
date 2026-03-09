@@ -1,13 +1,13 @@
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
-import { getSystemPrompt } from "@/lib/bots-prompts";
-import { bots } from "@/lib/bots";
+import { getBots, getSystemPrompt } from "@/lib/bot-resolver";
 
 export async function POST(req: Request) {
   const { botId, messages, conversationId } = await req.json();
 
-  // Validate bot
-  const bot = bots.find((b) => b.id === botId);
+  // Validate bot (DB-first, falls back to hardcoded)
+  const allBots = await getBots();
+  const bot = allBots.find((b) => b.id === botId);
   if (!bot) {
     return new Response("Bot not found", { status: 404 });
   }
@@ -25,13 +25,16 @@ export async function POST(req: Request) {
     // Auth not available — chat still works, just no persistence
   }
 
+  // Get system prompt (DB-first, falls back to hardcoded)
+  const systemPrompt = await getSystemPrompt(botId);
+
   // Stream from OpenAI
   const openai = new OpenAI();
   const stream = await openai.chat.completions.create({
     model: "gpt-4o",
     stream: true,
     messages: [
-      { role: "system" as const, content: getSystemPrompt(botId) },
+      { role: "system" as const, content: systemPrompt },
       ...messages.map((m: { role: string; content: string }) => ({
         role: m.role as "user" | "assistant",
         content: m.content,

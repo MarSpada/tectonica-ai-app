@@ -17,8 +17,8 @@ interface MemberDirectoryProps {
 type RoleFilter = "all" | "leaders" | "members" | "supporters";
 
 const roleFilterMap: Record<RoleFilter, string[]> = {
-  all: ["admin", "organizer", "leader", "member", "supporter"],
-  leaders: ["admin", "organizer", "leader"],
+  all: ["super_admin", "group_admin", "member", "supporter"],
+  leaders: ["super_admin", "group_admin"],
   members: ["member"],
   supporters: ["supporter"],
 };

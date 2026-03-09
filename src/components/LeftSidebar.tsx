@@ -87,6 +87,23 @@ export default function LeftSidebar({
             <span className="sidebar-label">Members</span>
           </Link>
 
+          {/* Admin (only for super_admin / group_admin) */}
+          {(profile?.role === "super_admin" || profile?.role === "group_admin") && (
+            <Link
+              href="/admin"
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                pathname?.startsWith("/admin")
+                  ? "bg-sidebar-active text-white"
+                  : "text-text-primary hover:bg-black/5"
+              }`}
+            >
+              <span className="material-icons-two-tone text-[18px]">
+                admin_panel_settings
+              </span>
+              <span className="sidebar-label">Admin</span>
+            </Link>
+          )}
+
           {/* Leaders & Organizers Chat */}
           <button
             onClick={() => setLeadersChatOpen(true)}

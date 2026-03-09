@@ -1,3 +1,5 @@
+export type UserRole = "super_admin" | "group_admin" | "member" | "supporter";
+
 export interface Message {
   role: "user" | "assistant";
   content: string;
@@ -16,9 +18,11 @@ export interface Member {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
-  role: string;
+  role: UserRole;
   email: string;
   created_at: string;
+  group_id?: string;
+  group_name?: string;
 }
 
 export interface GroupMessage {
