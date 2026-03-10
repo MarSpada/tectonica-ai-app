@@ -19,12 +19,13 @@ export async function GET() {
     return NextResponse.json({ error: "No org found" }, { status: 400 });
   }
 
-  // Fetch admins in the same org
+  // Fetch admins in the same org, excluding the current user
   const { data: reviewers, error } = await supabase
     .from("profiles")
-    .select("id, full_name, avatar_url, role")
+    .select("id, full_name, avatar_url, role, email")
     .eq("org_id", profile.org_id)
     .in("role", ["super_admin", "group_admin"])
+    .neq("id", user.id)
     .order("full_name");
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

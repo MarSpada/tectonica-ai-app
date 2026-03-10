@@ -10,6 +10,7 @@ interface Reviewer {
   full_name: string | null;
   avatar_url: string | null;
   role: string;
+  email: string | null;
 }
 
 interface PendingFile {
@@ -255,10 +256,10 @@ export default function CreateApprovalModal({ onClose, onCreated }: CreateApprov
                       {getInitials(r.full_name || "?")}
                     </div>
                   )}
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-medium text-text-primary">{r.full_name || "Unknown"}</p>
-                    <p className="text-[10px] text-text-muted capitalize">
-                      {r.role.replace("_", " ")}
+                    <p className="text-[10px] text-text-muted truncate">
+                      {r.email ? `${r.email} · ` : ""}<span className="capitalize">{r.role.replace("_", " ")}</span>
                     </p>
                   </div>
                   {reviewerId === r.id && (
