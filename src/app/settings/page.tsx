@@ -39,6 +39,7 @@ export default async function SettingsPage() {
         userId={user.id}
         email={user.email || ""}
         profile={profileData}
+        userRole={profile?.role || "member"}
       />
     </AppShell>
   );

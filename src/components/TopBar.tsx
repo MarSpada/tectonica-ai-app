@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 interface TopBarProps {
@@ -9,6 +10,26 @@ interface TopBarProps {
 }
 
 export default function TopBar({ onToggleSidebar }: TopBarProps) {
+  const [approvalCount, setApprovalCount] = useState(0);
+
+  useEffect(() => {
+    async function fetchApprovalNotifications() {
+      try {
+        const res = await fetch("/api/notifications");
+        const json = await res.json();
+        if (json.notifications) {
+          const count = json.notifications.filter(
+            (n: { type: string }) => n.type === "approval_request"
+          ).length;
+          setApprovalCount(count);
+        }
+      } catch {
+        // Notifications unavailable
+      }
+    }
+    fetchApprovalNotifications();
+  }, []);
+
   return (
     <header className="flex items-center justify-between h-14 px-4 bg-topbar-bg">
       {/* Left section */}
@@ -43,8 +64,24 @@ export default function TopBar({ onToggleSidebar }: TopBarProps) {
         </span>
       </div>
 
-      {/* Right section — logo */}
-      <div className="flex items-center">
+      {/* Right section — bell + logo */}
+      <div className="flex items-center gap-3">
+        {/* Approvals notification bell */}
+        <Link
+          href="/settings?tab=approvals"
+          className="relative p-1.5 rounded-md hover:bg-black/5 transition-colors"
+          title="Approval Requests"
+        >
+          <span className="material-icons-two-tone text-[22px] text-text-secondary">
+            notifications
+          </span>
+          {approvalCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center text-[9px] font-bold text-white bg-pink-500 rounded-full">
+              {approvalCount}
+            </span>
+          )}
+        </Link>
+
         <img
           src="/logo-color.png"
           alt="Tectonica.AI"

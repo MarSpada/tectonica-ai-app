@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import type { AppNotification } from "@/lib/types";
 
 export default function NotificationBar() {
@@ -25,6 +26,9 @@ export default function NotificationBar() {
   const assignmentCount = notifications.filter(
     (n) => n.type === "signup_assignment"
   ).length;
+  const approvalCount = notifications.filter(
+    (n) => n.type === "approval_request"
+  ).length;
 
   async function handleDismiss() {
     setDismissed(true);
@@ -46,11 +50,30 @@ export default function NotificationBar() {
           notifications_active
         </span>
         <p className="text-xs text-amber-800 truncate">
-          {assignmentCount > 0 ? (
+          {assignmentCount > 0 && approvalCount > 0 ? (
+            <>
+              You have <strong>{assignmentCount}</strong> new signup
+              {assignmentCount !== 1 ? "s" : ""} and{" "}
+              <Link href="/approvals" className="underline hover:no-underline">
+                <strong>{approvalCount}</strong> approval update
+                {approvalCount !== 1 ? "s" : ""}
+              </Link>
+              .
+            </>
+          ) : assignmentCount > 0 ? (
             <>
               You have <strong>{assignmentCount}</strong> new signup
               {assignmentCount !== 1 ? "s" : ""} assigned to you.
               Contact them within 24 hours for best results.
+            </>
+          ) : approvalCount > 0 ? (
+            <>
+              You have{" "}
+              <Link href="/approvals" className="underline hover:no-underline">
+                <strong>{approvalCount}</strong> approval update
+                {approvalCount !== 1 ? "s" : ""}
+              </Link>
+              . Check your approval requests.
             </>
           ) : (
             <>You have new notifications.</>

@@ -56,7 +56,7 @@ export interface SignupAssignment {
 export interface AppNotification {
   id: string;
   user_id: string;
-  type: "signup_assignment" | "general";
+  type: "signup_assignment" | "general" | "approval_request";
   title: string;
   body: string | null;
   metadata: Record<string, unknown>;
@@ -71,4 +71,47 @@ export interface ProfileData {
   role: string;
   orgName: string;
   groupName: string;
+}
+
+/* ── Approval Workflow ── */
+
+export type ApprovalStatus = "pending" | "approved" | "changes_requested";
+
+export interface ApprovalAttachment {
+  url: string;
+  name: string;
+  size: number;
+  type: string;
+}
+
+export interface ApprovalRequest {
+  id: string;
+  group_id: string;
+  submitter_id: string;
+  reviewer_id: string;
+  title: string;
+  description: string | null;
+  status: ApprovalStatus;
+  attachments: ApprovalAttachment[];
+  conversation_id: string | null;
+  bot_id: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined fields from API
+  submitter_name?: string;
+  submitter_avatar?: string | null;
+  reviewer_name?: string;
+  reviewer_avatar?: string | null;
+}
+
+export interface ApprovalComment {
+  id: string;
+  request_id: string;
+  author_id: string;
+  content: string;
+  attachments: ApprovalAttachment[];
+  created_at: string;
+  // Joined fields from API
+  author_name?: string;
+  author_avatar?: string | null;
 }

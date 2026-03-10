@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getAvatarColor, getInitials, getRoleLabel } from "@/lib/avatar";
 import { formatSignupTime } from "@/lib/signup-utils";
 import NbSignupModal from "./signups/NbSignupModal";
+import CreateApprovalModal from "./approvals/CreateApprovalModal";
 import type { Member, GroupMessage, NbSignup, SignupAssignment } from "@/lib/types";
 
 interface RightSidebarProps {
@@ -20,6 +21,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
   const [signups, setSignups] = useState<NbSignup[]>([]);
   const [assignments, setAssignments] = useState<SignupAssignment[]>([]);
   const [selectedSignup, setSelectedSignup] = useState<NbSignup | null>(null);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
   const directoryMembers = allMembers.slice(0, 6);
 
   const memberCount = allMembers.filter((m) =>
@@ -283,7 +285,10 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
           <p className="text-[10px] text-text-muted">
             Send an idea or asset for approval
           </p>
-          <button className="mt-auto self-stretch px-3 py-2 text-xs font-semibold text-white bg-pink-500 rounded-lg hover:bg-pink-600 transition-colors">
+          <button
+            onClick={() => setShowApprovalModal(true)}
+            className="mt-auto self-stretch px-3 py-2 text-xs font-semibold text-white bg-pink-500 rounded-lg hover:bg-pink-600 transition-colors"
+          >
             Start
           </button>
         </div>
@@ -371,6 +376,14 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         onClose={() => setSelectedSignup(null)}
         onAssigned={handleAssigned}
       />
+
+      {/* Create Approval Modal */}
+      {showApprovalModal && (
+        <CreateApprovalModal
+          onClose={() => setShowApprovalModal(false)}
+          onCreated={() => setShowApprovalModal(false)}
+        />
+      )}
     </aside>
   );
 }

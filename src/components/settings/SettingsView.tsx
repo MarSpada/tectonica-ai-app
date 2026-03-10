@@ -1,25 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import type { ProfileData } from "@/lib/types";
 import ProfileTab from "./ProfileTab";
 import AccountTab from "./AccountTab";
+import ApprovalsView from "../approvals/ApprovalsView";
 
 interface SettingsViewProps {
   userId: string;
   email: string;
   profile: ProfileData;
+  userRole?: string;
 }
 
-const tabs = ["Profile", "Account"] as const;
+const tabs = ["Profile", "Account", "Approvals"] as const;
 type Tab = (typeof tabs)[number];
 
 export default function SettingsView({
   userId,
   email,
   profile,
+  userRole,
 }: SettingsViewProps) {
-  const [activeTab, setActiveTab] = useState<Tab>("Profile");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") === "approvals" ? "Approvals" : "Profile";
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+
+  // Respond to URL param changes (e.g., clicking bell icon)
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "approvals") setActiveTab("Approvals");
+  }, [searchParams]);
+
+  // Filter tabs: hide Approvals for supporters
+  const visibleTabs = tabs.filter((t) => {
+    if (t === "Approvals" && userRole === "supporter") return false;
+    return true;
+  });
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -31,7 +49,7 @@ export default function SettingsView({
 
         {/* Tabs */}
         <div className="flex gap-6 border-b border-black/5">
-          {tabs.map((tab) => (
+          {visibleTabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -49,13 +67,17 @@ export default function SettingsView({
 
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto px-6 py-6">
-        <div className="max-w-xl mx-auto">
-          {activeTab === "Profile" ? (
-            <ProfileTab userId={userId} profile={profile} />
-          ) : (
-            <AccountTab email={email} />
-          )}
-        </div>
+        {activeTab === "Approvals" ? (
+          <ApprovalsView currentUserId={userId} currentUserRole={userRole || "member"} />
+        ) : (
+          <div className="max-w-xl mx-auto">
+            {activeTab === "Profile" ? (
+              <ProfileTab userId={userId} profile={profile} />
+            ) : (
+              <AccountTab email={email} />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
