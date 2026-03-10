@@ -21,27 +21,15 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Verify target is in the same org
-  const { data: target } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", memberId)
-    .single();
-
-  if (!target || target.org_id !== profile.org_id) {
-    return NextResponse.json({ error: "Member not found in your org" }, { status: 404 });
-  }
-
   // Cannot remove yourself
   if (memberId === user.id) {
     return NextResponse.json({ error: "Cannot remove yourself" }, { status: 400 });
   }
 
-  // Remove: set org_id and group_id to null (soft removal)
-  const { error } = await supabase
-    .from("profiles")
-    .update({ org_id: null, group_id: null, role: "supporter" })
-    .eq("id", memberId);
+  // Use RPC to bypass RLS (setting org_id=null breaks the USING clause)
+  const { error } = await supabase.rpc("remove_org_member", {
+    p_member_id: memberId,
+  });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
