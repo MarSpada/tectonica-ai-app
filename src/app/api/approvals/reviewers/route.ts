@@ -8,26 +8,25 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Get caller's org
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile?.org_id) {
-    return NextResponse.json({ error: "No org found" }, { status: 400 });
-  }
-
-  // Fetch admins in the same org, excluding the current user
-  const { data: reviewers, error } = await supabase
-    .from("profiles")
-    .select("id, full_name, avatar_url, role, email")
-    .eq("org_id", profile.org_id)
-    .in("role", ["super_admin", "group_admin"])
-    .neq("id", user.id)
-    .order("full_name");
+  // Use get_group_members RPC (joins auth.users for email)
+  const { data: members, error } = await supabase.rpc("get_group_members");
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ reviewers: reviewers || [] });
+
+  // Filter to admins only, exclude current user
+  const reviewers = (members || [])
+    .filter(
+      (m: { id: string; role: string }) =>
+        m.id !== user.id &&
+        (m.role === "super_admin" || m.role === "group_admin")
+    )
+    .map((m: { id: string; full_name: string; avatar_url: string | null; role: string; email: string }) => ({
+      id: m.id,
+      full_name: m.full_name,
+      avatar_url: m.avatar_url,
+      role: m.role,
+      email: m.email,
+    }));
+
+  return NextResponse.json({ reviewers });
 }
