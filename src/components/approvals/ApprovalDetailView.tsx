@@ -91,6 +91,8 @@ export default function ApprovalDetailView({
         setActionComment("");
         await fetchDetail();
         onUpdated();
+        // Refresh the bell icon count in TopBar
+        window.dispatchEvent(new Event("refresh-approval-count"));
       }
     } finally {
       setSubmitting(false);

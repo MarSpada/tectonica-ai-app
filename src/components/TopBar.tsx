@@ -28,6 +28,13 @@ export default function TopBar({ onToggleSidebar }: TopBarProps) {
       }
     }
     fetchApprovalNotifications();
+
+    // Listen for refresh events (e.g. after approving a request)
+    function handleRefresh() {
+      fetchApprovalNotifications();
+    }
+    window.addEventListener("refresh-approval-count", handleRefresh);
+    return () => window.removeEventListener("refresh-approval-count", handleRefresh);
   }, []);
 
   return (

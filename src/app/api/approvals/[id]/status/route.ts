@@ -34,6 +34,22 @@ export async function POST(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Mark all approval_request notifications for this request as read for the reviewer
+    const { data: relatedNotifications } = await supabase
+      .from("notifications")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("type", "approval_request")
+      .eq("read", false)
+      .contains("metadata", { approval_request_id: id });
+
+    if (relatedNotifications && relatedNotifications.length > 0) {
+      await supabase
+        .from("notifications")
+        .update({ read: true })
+        .in("id", relatedNotifications.map((n: { id: string }) => n.id));
+    }
+
     // Send email to submitter (fire-and-forget)
     if (process.env.RESEND_API_KEY) {
       try {
