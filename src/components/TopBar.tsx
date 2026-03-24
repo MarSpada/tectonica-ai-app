@@ -11,8 +11,46 @@ interface TopBarProps {
 
 export default function TopBar({ onToggleSidebar }: TopBarProps) {
   const [approvalCount, setApprovalCount] = useState(0);
+  const [orgName, setOrgName] = useState("People's Movement");
+  const [groupName, setGroupName] = useState("Group Name");
 
   useEffect(() => {
+    async function fetchOrgAndGroup() {
+      try {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("org_id, group_id")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.org_id) {
+          const { data: org } = await supabase
+            .from("organizations")
+            .select("name")
+            .eq("id", profile.org_id)
+            .single();
+          if (org?.name) setOrgName(org.name);
+        }
+
+        if (profile?.group_id) {
+          const { data: group } = await supabase
+            .from("groups")
+            .select("name")
+            .eq("id", profile.group_id)
+            .single();
+          if (group?.name) setGroupName(group.name);
+        }
+      } catch {
+        // Fallback to defaults
+      }
+    }
+    fetchOrgAndGroup();
+
     async function fetchApprovalNotifications() {
       try {
         const res = await fetch("/api/notifications");
@@ -57,17 +95,17 @@ export default function TopBar({ onToggleSidebar }: TopBarProps) {
 
         {/* Org icon */}
         <div className="w-8 h-8 rounded-lg bg-orange-400 flex items-center justify-center text-white font-bold text-sm">
-          P
+          {orgName.charAt(0).toUpperCase()}
         </div>
 
         {/* Org name */}
         <Link href="/" className="font-semibold text-text-primary hover:underline">
-          People&apos;s Movement
+          {orgName}
         </Link>
 
         {/* Group pill */}
         <span className="px-3 py-1 text-xs font-medium bg-white/50 rounded-full text-text-secondary">
-          Group Name
+          {groupName}
         </span>
       </div>
 
