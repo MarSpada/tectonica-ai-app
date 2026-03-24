@@ -33,6 +33,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
   const [selectedSignup, setSelectedSignup] = useState<NbSignup | null>(null);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
   const [calendarSourceCount, setCalendarSourceCount] = useState(0);
   const directoryMembers = allMembers.slice(0, 6);
 
@@ -64,6 +65,8 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         if (json.events) setEvents(json.events);
       } catch {
         // Events unavailable
+      } finally {
+        setEventsLoading(false);
       }
     }
     async function fetchCalendarSources() {
@@ -339,8 +342,8 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
             <SystemBadge name="Mobilize" status="not_connected" />
             <SystemBadge
               name="Calendar"
-              status={calendarSourceCount > 0 ? "functional" : "not_connected"}
-              detail={calendarSourceCount > 0 ? `${calendarSourceCount} feed${calendarSourceCount > 1 ? "s" : ""}` : undefined}
+              status={calendarSourceCount > 0 || events.length > 0 ? "functional" : "not_connected"}
+              detail={calendarSourceCount > 0 ? `${calendarSourceCount} feed${calendarSourceCount > 1 ? "s" : ""}` : events.length > 0 ? "Connected" : undefined}
             />
           </div>
         </div>
@@ -369,7 +372,14 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
           <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-2">
             Upcoming Events
           </h3>
-          {events.length > 0 ? (
+          {eventsLoading ? (
+            <div className="text-center py-3">
+              <span className="material-icons-two-tone text-[24px] text-text-muted animate-spin">
+                autorenew
+              </span>
+              <p className="text-[10px] text-text-muted mt-1">Loading events...</p>
+            </div>
+          ) : events.length > 0 ? (
             <div className="space-y-2">
               {events.slice(0, 4).map((event) => {
                 const date = new Date(event.start);
@@ -406,7 +416,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
                 event
               </span>
               <p className="text-[10px] text-text-muted mt-1">
-                {calendarSourceCount > 0 ? "No upcoming events" : "No calendar connected"}
+No upcoming events
               </p>
             </div>
           )}

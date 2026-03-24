@@ -44,14 +44,18 @@ export async function GET() {
     const now = new Date();
     const thirtyDaysOut = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     const allEvents: CalendarEvent[] = [];
+    const errors: string[] = [];
 
     // Fetch and parse each ICS feed
     for (const source of sources) {
       try {
         const res = await fetch(source.feed_url, {
-          signal: AbortSignal.timeout(10000),
+          signal: AbortSignal.timeout(30000),
         });
-        if (!res.ok) continue;
+        if (!res.ok) {
+          errors.push(`${source.name}: HTTP ${res.status}`);
+          continue;
+        }
 
         const icsText = await res.text();
         const parsed = parseIcs(icsText);
@@ -71,6 +75,8 @@ export async function GET() {
           });
         }
       } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        errors.push(`${source.name}: ${msg}`);
         console.error(`Failed to fetch calendar source "${source.name}":`, err);
       }
     }
@@ -78,7 +84,10 @@ export async function GET() {
     // Sort by start date ascending
     allEvents.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
-    return NextResponse.json({ events: allEvents.slice(0, 20) });
+    return NextResponse.json({
+      events: allEvents.slice(0, 20),
+      ...(errors.length > 0 && { errors }),
+    });
   } catch (err) {
     console.error("Events fetch failed:", err);
     return NextResponse.json({ events: [] });
