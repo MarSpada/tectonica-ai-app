@@ -39,6 +39,8 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
   const [groupFilter, setGroupFilter] = useState<string>("all");
   const [roleChangeTarget, setRoleChangeTarget] = useState<AdminMember | null>(null);
   const [groupReassignTarget, setGroupReassignTarget] = useState<AdminMember | null>(null);
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState("");
 
   const fetchMembers = useCallback(async () => {
     setLoading(true);
@@ -100,6 +102,22 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
     } else {
       const data = await res.json();
       alert(data.error || "Failed to reassign group");
+    }
+  }
+
+  async function handleSaveName(memberId: string) {
+    if (!editingNameValue.trim()) return;
+    const res = await fetch(`/api/admin/members/${memberId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fullName: editingNameValue.trim() }),
+    });
+    if (res.ok) {
+      setEditingNameId(null);
+      fetchMembers();
+    } else {
+      const data = await res.json();
+      alert(data.error || "Failed to update name");
     }
   }
 
@@ -246,9 +264,51 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
                           </div>
                         )}
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-text-primary truncate">
-                            {member.full_name || "Unknown"}
-                          </p>
+                          {editingNameId === member.id ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="text"
+                                value={editingNameValue}
+                                onChange={(e) => setEditingNameValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") handleSaveName(member.id);
+                                  if (e.key === "Escape") setEditingNameId(null);
+                                }}
+                                autoFocus
+                                className="text-sm font-medium text-text-primary px-1.5 py-0.5 border border-accent-purple rounded focus:outline-none w-40"
+                              />
+                              <button
+                                onClick={() => handleSaveName(member.id)}
+                                className="p-0.5 rounded hover:bg-green-50 transition-colors"
+                                title="Save"
+                              >
+                                <span className="material-icons-two-tone text-[16px] text-green-500">check</span>
+                              </button>
+                              <button
+                                onClick={() => setEditingNameId(null)}
+                                className="p-0.5 rounded hover:bg-black/5 transition-colors"
+                                title="Cancel"
+                              >
+                                <span className="material-icons-two-tone text-[16px] text-text-muted">close</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 group/name">
+                              <p className="text-sm font-medium text-text-primary truncate">
+                                {member.full_name || "Unknown"}
+                              </p>
+                              <button
+                                onClick={() => {
+                                  setEditingNameId(member.id);
+                                  setEditingNameValue(member.full_name || "");
+                                }}
+                                className="p-0.5 rounded hover:bg-black/5 transition-colors opacity-0 group-hover/name:opacity-100"
+                                title="Edit name"
+                              >
+                                <span className="material-icons-two-tone text-[14px] text-text-muted">edit</span>
+                              </button>
+                            </div>
+                          )}
                           <p className="text-xs text-text-muted truncate">
                             {member.email}
                           </p>
