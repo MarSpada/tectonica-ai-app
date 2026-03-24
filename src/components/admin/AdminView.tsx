@@ -5,8 +5,9 @@ import type { UserRole } from "@/lib/types";
 import OrgTab from "./OrgTab";
 import PeopleTab from "./PeopleTab";
 import BotsTab from "./BotsTab";
+import IntegrationsTab from "./IntegrationsTab";
 
-type AdminTab = "Organization" | "People" | "Bots";
+type AdminTab = "Organization" | "People" | "Bots" | "Integrations";
 
 interface AdminViewProps {
   role: UserRole;
@@ -18,7 +19,7 @@ export default function AdminView({ role, orgId, groupId }: AdminViewProps) {
   const isSuperAdmin = role === "super_admin";
 
   const availableTabs: AdminTab[] = isSuperAdmin
-    ? ["Organization", "People", "Bots"]
+    ? ["Organization", "People", "Bots", "Integrations"]
     : ["People"];
 
   const [activeTab, setActiveTab] = useState<AdminTab>(availableTabs[0]);
@@ -66,6 +67,7 @@ export default function AdminView({ role, orgId, groupId }: AdminViewProps) {
           <PeopleTab role={role} orgId={orgId} groupId={groupId} />
         )}
         {activeTab === "Bots" && isSuperAdmin && <BotsTab orgId={orgId} />}
+        {activeTab === "Integrations" && isSuperAdmin && <IntegrationsTab />}
       </div>
     </div>
   );

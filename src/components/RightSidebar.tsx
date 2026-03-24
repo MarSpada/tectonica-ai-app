@@ -10,6 +10,16 @@ import NbSignupModal from "./signups/NbSignupModal";
 import CreateApprovalModal from "./approvals/CreateApprovalModal";
 import type { Member, GroupMessage, NbSignup, SignupAssignment } from "@/lib/types";
 
+interface CalendarEvent {
+  id: string;
+  title: string;
+  start: string;
+  end: string | null;
+  location: string | null;
+  sourceName: string;
+  sourceColor: string;
+}
+
 interface RightSidebarProps {
   groupMessages?: GroupMessage[];
   onOpenConversation?: () => void;
@@ -22,6 +32,8 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
   const [assignments, setAssignments] = useState<SignupAssignment[]>([]);
   const [selectedSignup, setSelectedSignup] = useState<NbSignup | null>(null);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [calendarSourceCount, setCalendarSourceCount] = useState(0);
   const directoryMembers = allMembers.slice(0, 6);
 
   const memberCount = allMembers.filter((m) =>
@@ -45,8 +57,28 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         // NB unavailable — widget stays empty
       }
     }
+    async function fetchEvents() {
+      try {
+        const res = await fetch("/api/events");
+        const json = await res.json();
+        if (json.events) setEvents(json.events);
+      } catch {
+        // Events unavailable
+      }
+    }
+    async function fetchCalendarSources() {
+      try {
+        const res = await fetch("/api/admin/calendars");
+        const json = await res.json();
+        if (json.sources) setCalendarSourceCount(json.sources.filter((s: { enabled: boolean }) => s.enabled).length);
+      } catch {
+        // Not admin or unavailable
+      }
+    }
     fetchMembers();
     fetchSignups();
+    fetchEvents();
+    fetchCalendarSources();
   }, []);
 
   useEffect(() => {
@@ -302,9 +334,14 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
             Connected Systems
           </h3>
           <div className="space-y-2">
-            <SystemBadge name="Action Network" status="issues" />
+            <SystemBadge name="Action Network" status="not_connected" />
             <SystemBadge name="NationBuilder" status="functional" />
-            <SystemBadge name="Mobilize" status="issues" />
+            <SystemBadge name="Mobilize" status="not_connected" />
+            <SystemBadge
+              name="Calendar"
+              status={calendarSourceCount > 0 ? "functional" : "not_connected"}
+              detail={calendarSourceCount > 0 ? `${calendarSourceCount} feed${calendarSourceCount > 1 ? "s" : ""}` : undefined}
+            />
           </div>
         </div>
 
@@ -322,6 +359,57 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
               +9
             </span>
           </div>
+        </div>
+
+        {/* Upcoming Events — cols 9-12, rows 15-20 */}
+        <div
+          className="rounded-xl p-4"
+          style={{ gridColumn: "9 / 13", gridRow: "15 / 21", backgroundColor: "#ede9fe" }}
+        >
+          <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-2">
+            Upcoming Events
+          </h3>
+          {events.length > 0 ? (
+            <div className="space-y-2">
+              {events.slice(0, 4).map((event) => {
+                const date = new Date(event.start);
+                const dayStr = date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+                const timeStr = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+                return (
+                  <div key={event.id} className="bg-white/70 rounded-lg px-2.5 py-2">
+                    <div className="flex items-start gap-2">
+                      <div
+                        className="w-1 h-full min-h-[28px] rounded-full shrink-0 mt-0.5"
+                        style={{ backgroundColor: event.sourceColor }}
+                      />
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-text-primary leading-tight truncate">
+                          {event.title}
+                        </p>
+                        <p className="text-[10px] text-text-muted mt-0.5">
+                          {dayStr} · {timeStr}
+                        </p>
+                        {event.location && (
+                          <p className="text-[10px] text-text-muted truncate">
+                            {event.location}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-3">
+              <span className="material-icons-two-tone text-[24px] text-text-muted">
+                event
+              </span>
+              <p className="text-[10px] text-text-muted mt-1">
+                {calendarSourceCount > 0 ? "No upcoming events" : "No calendar connected"}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Group Directory — cols 1-8, rows 15-20 */}
@@ -391,28 +479,32 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
 function SystemBadge({
   name,
   status = "functional",
+  detail,
 }: {
   name: string;
-  status?: "functional" | "issues";
+  status?: "functional" | "issues" | "not_connected";
+  detail?: string;
 }) {
-  const isFunctional = status === "functional";
+  const dotColor =
+    status === "functional" ? "bg-green-400" :
+    status === "issues" ? "bg-orange-400" : "bg-gray-300";
+  const badgeClass =
+    status === "functional" ? "text-green-700 bg-green-100" :
+    status === "issues" ? "text-orange-700 bg-orange-100" :
+    "text-gray-500 bg-gray-100";
+  const badgeLabel =
+    status === "functional" ? (detail || "Functional") :
+    status === "issues" ? "Issues Found" : "Not Connected";
+
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <div
-          className={`w-2 h-2 rounded-full ${isFunctional ? "bg-green-400" : "bg-orange-400"}`}
-        />
+        <div className={`w-2 h-2 rounded-full ${dotColor}`} />
         <span className="text-xs text-text-primary">{name}</span>
       </div>
-      <button
-        className={`text-[10px] font-semibold px-2 py-0.5 rounded transition-colors ${
-          isFunctional
-            ? "text-green-700 bg-green-100 hover:bg-green-200"
-            : "text-orange-700 bg-orange-100 hover:bg-orange-200"
-        }`}
-      >
-        {isFunctional ? "Functional" : "Issues Found"}
-      </button>
+      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${badgeClass}`}>
+        {badgeLabel}
+      </span>
     </div>
   );
 }
