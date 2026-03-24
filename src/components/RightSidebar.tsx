@@ -8,7 +8,19 @@ import { getAvatarColor, getInitials, getRoleLabel } from "@/lib/avatar";
 import { formatSignupTime } from "@/lib/signup-utils";
 import NbSignupModal from "./signups/NbSignupModal";
 import CreateApprovalModal from "./approvals/CreateApprovalModal";
+import LogHoursModal from "./hours/LogHoursModal";
+import HoursDetailOverlay from "./hours/HoursDetailOverlay";
 import type { Member, GroupMessage, NbSignup, SignupAssignment } from "@/lib/types";
+
+interface HourEntry {
+  id: string;
+  user_id: string;
+  hours: number;
+  description: string | null;
+  activity_date: string;
+  user_name?: string;
+  user_avatar?: string | null;
+}
 
 interface CalendarEvent {
   id: string;
@@ -35,6 +47,11 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [calendarSourceCount, setCalendarSourceCount] = useState(0);
+  const [hourEntries, setHourEntries] = useState<HourEntry[]>([]);
+  const [totalHours, setTotalHours] = useState(0);
+  const [weekHours, setWeekHours] = useState(0);
+  const [showLogHoursModal, setShowLogHoursModal] = useState(false);
+  const [showHoursDetail, setShowHoursDetail] = useState(false);
   const directoryMembers = allMembers.slice(0, 6);
 
   const memberCount = allMembers.filter((m) =>
@@ -78,10 +95,22 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         // Not admin or unavailable
       }
     }
+    async function fetchHours() {
+      try {
+        const res = await fetch("/api/hours");
+        const json = await res.json();
+        if (json.entries) setHourEntries(json.entries);
+        setTotalHours(json.total || 0);
+        setWeekHours(json.thisWeek || 0);
+      } catch {
+        // Hours unavailable
+      }
+    }
     fetchMembers();
     fetchSignups();
     fetchEvents();
     fetchCalendarSources();
+    fetchHours();
   }, []);
 
   useEffect(() => {
@@ -97,6 +126,18 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
 
   function getAssignment(signupId: string): SignupAssignment | null {
     return assignments.find((a) => a.nb_signup_id === signupId) || null;
+  }
+
+  async function refreshHours() {
+    try {
+      const res = await fetch("/api/hours");
+      const json = await res.json();
+      if (json.entries) setHourEntries(json.entries);
+      setTotalHours(json.total || 0);
+      setWeekHours(json.thisWeek || 0);
+    } catch {
+      // ignore
+    }
   }
 
   function handleAssigned(newAssignment: SignupAssignment) {
@@ -350,18 +391,28 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
 
         {/* Hours Volunteered — cols 5-9, rows 12-14 */}
         <div
-          className="rounded-xl p-4"
+          className="rounded-xl p-4 cursor-pointer hover:ring-2 hover:ring-green-300 transition-all"
           style={{ gridColumn: "5 / 9", gridRow: "12 / 15", backgroundColor: "#ecfdf5" }}
+          onClick={() => setShowHoursDetail(true)}
+          title="Click to see details"
         >
           <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-2">
             Hours Volunteered
           </h3>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-text-primary">23</span>
-            <span className="text-xs font-bold text-white bg-green-500 px-1.5 py-0.5 rounded-full">
-              +9
-            </span>
+            <span className="text-3xl font-bold text-text-primary">{totalHours}</span>
+            {weekHours > 0 && (
+              <span className="text-xs font-bold text-white bg-green-500 px-1.5 py-0.5 rounded-full">
+                +{weekHours}
+              </span>
+            )}
           </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowLogHoursModal(true); }}
+            className="mt-1.5 text-[10px] font-semibold text-green-600 hover:text-green-700 transition-colors"
+          >
+            + Log hours
+          </button>
         </div>
 
         {/* Upcoming Events — cols 9-12, rows 15-20 */}
@@ -480,6 +531,25 @@ No upcoming events
         <CreateApprovalModal
           onClose={() => setShowApprovalModal(false)}
           onCreated={() => setShowApprovalModal(false)}
+        />
+      )}
+
+      {/* Log Hours Modal */}
+      {showLogHoursModal && (
+        <LogHoursModal
+          onClose={() => setShowLogHoursModal(false)}
+          onLogged={refreshHours}
+        />
+      )}
+
+      {/* Hours Detail Overlay */}
+      {showHoursDetail && (
+        <HoursDetailOverlay
+          entries={hourEntries}
+          total={totalHours}
+          thisWeek={weekHours}
+          onClose={() => setShowHoursDetail(false)}
+          onLogHours={() => setShowLogHoursModal(true)}
         />
       )}
     </aside>
