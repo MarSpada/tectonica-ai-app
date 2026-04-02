@@ -8,7 +8,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return Response.json({ favorites: [] });
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { data } = await supabase
@@ -20,8 +20,9 @@ export async function GET() {
     return Response.json({
       favorites: data?.map((f) => f.bot_slug) ?? [],
     });
-  } catch {
-    return Response.json({ favorites: [] });
+  } catch (err) {
+    console.error("Favorites fetch failed:", err);
+    return Response.json({ error: "Failed to fetch favorites" }, { status: 500 });
   }
 }
 

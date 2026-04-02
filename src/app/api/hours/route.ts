@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ entries: [], total: 0, thisWeek: 0 });
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -77,7 +77,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ entries: enriched, total, thisWeek });
   } catch (err) {
     console.error("Fetch volunteer hours failed:", err);
-    return NextResponse.json({ entries: [], total: 0, thisWeek: 0 });
+    return NextResponse.json({ error: "Failed to fetch volunteer hours" }, { status: 500 });
   }
 }
 

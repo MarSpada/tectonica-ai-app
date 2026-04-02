@@ -8,7 +8,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return Response.json({ notifications: [] });
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { data } = await supabase
@@ -22,6 +22,6 @@ export async function GET() {
     return Response.json({ notifications: data ?? [] });
   } catch (err) {
     console.error("Notifications fetch failed:", err);
-    return Response.json({ notifications: [] });
+    return Response.json({ error: "Failed to fetch notifications" }, { status: 500 });
   }
 }

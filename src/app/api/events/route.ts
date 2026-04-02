@@ -19,7 +19,7 @@ export async function GET() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ events: [] });
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     // Get user's org
     const { data: profile } = await supabase
@@ -90,6 +90,6 @@ export async function GET() {
     });
   } catch (err) {
     console.error("Events fetch failed:", err);
-    return NextResponse.json({ events: [] });
+    return NextResponse.json({ error: "Failed to fetch events" }, { status: 500 });
   }
 }

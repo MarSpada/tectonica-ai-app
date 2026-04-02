@@ -12,7 +12,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return Response.json({ signups: [], assignments: [] });
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     if (!NB_TOKEN || !NB_SLUG) {
@@ -134,6 +134,6 @@ export async function GET() {
     return Response.json({ signups, assignments });
   } catch (err) {
     console.error("NationBuilder fetch failed:", err);
-    return Response.json({ signups: [], assignments: [] });
+    return Response.json({ error: "Failed to fetch signups" }, { status: 500 });
   }
 }
