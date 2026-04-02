@@ -27,7 +27,7 @@ const categoryIcons: Record<BotCategory, string> = {
 };
 
 export default function BotGrid({
-  userName = "Ned",
+  userName = "",
   initialFavorites,
   onWelcomeExpandChange,
 }: BotGridProps) {

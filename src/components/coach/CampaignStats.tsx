@@ -1,22 +1,10 @@
 "use client";
 
-const goals = [
-  { label: "Voter contacts", current: 7300, target: 10000, pct: 73, color: "#7C3AED" },
-  { label: "Volunteer recruitment", current: 280, target: 500, pct: 56, color: "#0EA5E9" },
-  { label: "Fundraising target", current: 128000, target: 200000, pct: 64, color: "#EF4444", isCurrency: true },
-];
+const goals: { label: string; current: number; target: number; pct: number; color: string; isCurrency?: boolean }[] = [];
 
-const strategyNotes = [
-  { date: "FEB 25", color: "bg-green-500", text: "Focus canvassing on Precinct 4 — highest undecided voter density." },
-  { date: "FEB 22", color: "bg-blue-500", text: "A/B test rally invite: urgency framing vs. community framing." },
-  { date: "FEB 19", color: "bg-orange-500", text: "Shift phone banking hours to 5-8 PM — contact rate up 22%." },
-];
+const strategyNotes: { date: string; color: string; text: string }[] = [];
 
-const upcomingEvents = [
-  { name: "Climate Rally", date: "Sat, Mar 1 · 2:00 PM", color: "bg-green-400" },
-  { name: "Phone bank training", date: "Mon, Mar 3 · 6:00 PM", color: "bg-blue-400" },
-  { name: "Strategy review", date: "Wed, Mar 5 · 10:00 AM", color: "bg-purple-400" },
-];
+const upcomingEvents: { name: string; date: string; color: string }[] = [];
 
 export default function CampaignStats() {
   return (

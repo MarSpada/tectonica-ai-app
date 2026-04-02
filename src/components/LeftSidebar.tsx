@@ -20,7 +20,7 @@ interface LeftSidebarProps {
 }
 
 export default function LeftSidebar({
-  userName = "Ned Howey",
+  userName = "",
   isDrawerOpen,
   onDrawerClose,
 }: LeftSidebarProps) {

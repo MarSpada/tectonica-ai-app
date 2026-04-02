@@ -19,13 +19,7 @@ interface Message {
   time: string;
 }
 
-const contacts: Contact[] = [
-  { name: "Sara Chen", initials: "SC", color: "#7C3AED", status: "online", role: "Organizer" },
-  { name: "Marcus Rivera", initials: "MR", color: "#0EA5E9", status: "online", role: "Leader" },
-  { name: "Jasmine Okafor", initials: "JO", color: "#F59E0B", status: "away", role: "Leader" },
-  { name: "David Park", initials: "DP", color: "#10B981", status: "offline", role: "Organizer" },
-  { name: "Lucia Torres", initials: "LT", color: "#EC4899", status: "offline", role: "Leader" },
-];
+const contacts: Contact[] = [];
 
 const statusColors: Record<string, string> = {
   online: "#22C55E",
@@ -39,40 +33,7 @@ const statusLabels: Record<string, string> = {
   offline: "Offline",
 };
 
-const initialMessages: Message[] = [
-  {
-    id: "1",
-    sender: "Sara Chen",
-    initials: "SC",
-    color: "#7C3AED",
-    text: "Hey everyone! Just finished the outreach plan for next week. I'll share it in the doc later today.",
-    time: "10:32 AM",
-  },
-  {
-    id: "2",
-    sender: "Marcus Rivera",
-    initials: "MR",
-    color: "#0EA5E9",
-    text: "Great work Sara. Can we also discuss the volunteer schedule for the weekend event?",
-    time: "10:45 AM",
-  },
-  {
-    id: "3",
-    sender: "Jasmine Okafor",
-    initials: "JO",
-    color: "#F59E0B",
-    text: "I have 12 confirmed volunteers so far. Will check in with a few more today.",
-    time: "11:02 AM",
-  },
-  {
-    id: "4",
-    sender: "Sara Chen",
-    initials: "SC",
-    color: "#7C3AED",
-    text: "Perfect. Let's sync tomorrow morning to finalize everything.",
-    time: "11:15 AM",
-  },
-];
+const initialMessages: Message[] = [];
 
 interface LeadersChatProps {
   open: boolean;
@@ -80,7 +41,7 @@ interface LeadersChatProps {
   userName?: string;
 }
 
-export default function LeadersChat({ open, onClose, userName = "Ned" }: LeadersChatProps) {
+export default function LeadersChat({ open, onClose, userName = "" }: LeadersChatProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [activeTab, setActiveTab] = useState<"chat" | "contacts">("chat");
