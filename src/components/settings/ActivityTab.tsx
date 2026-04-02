@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { HourEntry, ApprovalRequest, SignupAssignment, ReimbursementRequest } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
 
 interface ActivityTabProps {
   userId: string;
@@ -166,11 +167,9 @@ export default function ActivityTab({ userId }: ActivityTabProps) {
             className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-black/5 hover:border-black/10 transition-colors"
           >
             {/* Type tag */}
-            <span
-              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${typeStyle.bg} ${typeStyle.text}`}
-            >
+            <Badge variant="outline" className={`text-[10px] shrink-0 ${typeStyle.bg} ${typeStyle.text}`}>
               {typeStyle.label}
-            </span>
+            </Badge>
 
             {/* Content */}
             <div className="flex-1 min-w-0">
@@ -183,11 +182,9 @@ export default function ActivityTab({ userId }: ActivityTabProps) {
             {/* Status + time */}
             <div className="flex items-center gap-2 shrink-0">
               {statusStyle && statusLabel && (
-                <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${statusStyle.bg} ${statusStyle.text}`}
-                >
+                <Badge variant="outline" className={`text-[10px] capitalize ${statusStyle.bg} ${statusStyle.text}`}>
                   {statusLabel}
-                </span>
+                </Badge>
               )}
               <span className="text-[11px] text-text-muted whitespace-nowrap">
                 {formatRelativeTime(item.date)}

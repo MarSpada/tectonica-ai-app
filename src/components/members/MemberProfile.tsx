@@ -8,6 +8,8 @@ import {
   getRoleBadgeStyle,
   getRoleLabel,
 } from "@/lib/avatar";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface MemberProfileProps {
   member: Member;
@@ -61,11 +63,9 @@ export default function MemberProfile({ member, bio }: MemberProfileProps) {
                 {member.full_name || "Unknown"}
               </h1>
 
-              <span
-                className={`mt-2 text-xs font-semibold px-3 py-1 rounded-full ${badge.bg} ${badge.text}`}
-              >
+              <Badge variant="outline" className={`mt-2 text-xs ${badge.bg} ${badge.text}`}>
                 {getRoleLabel(member.role)}
-              </span>
+              </Badge>
             </div>
 
             {/* Bio */}
@@ -100,18 +100,20 @@ export default function MemberProfile({ member, bio }: MemberProfileProps) {
 
             {/* Action buttons */}
             <div className="flex gap-3 mt-8">
-              <button
+              <Button
+                variant="outline"
                 disabled
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-accent-purple border border-accent-purple/30 rounded-xl hover:bg-accent-purple/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 border-accent-purple/30 text-accent-purple"
               >
                 Send Message
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
                 disabled
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-text-secondary border border-black/10 rounded-xl hover:bg-black/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1"
               >
                 View Activity
-              </button>
+              </Button>
             </div>
           </div>
         </div>

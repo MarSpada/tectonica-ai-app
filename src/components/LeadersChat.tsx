@@ -1,6 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 interface Contact {
   name: string;
@@ -67,37 +73,29 @@ export default function LeadersChat({ open, onClose, userName = "" }: LeadersCha
     setInput("");
   }
 
-  if (!open) return null;
-
   const onlineContacts = contacts.filter((c) => c.status === "online");
   const awayContacts = contacts.filter((c) => c.status === "away");
   const offlineContacts = contacts.filter((c) => c.status === "offline");
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/20 z-40"
-        onClick={onClose}
-      />
-
-      {/* Panel */}
-      <div
-        className="fixed left-[var(--sidebar-width)] top-[52px] bottom-0 w-[360px] bg-white z-50 flex flex-col shadow-2xl"
-        style={{ borderRight: "1px solid var(--card-stroke)" }}
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent
+        side="left"
+        className="w-[360px] sm:max-w-[360px] p-0 flex flex-col"
+        showCloseButton={false}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-black/5">
-          <h2 className="text-sm font-bold text-text-primary">
+        <SheetHeader className="flex-row items-center justify-between px-4 py-3 border-b border-black/5 space-y-0">
+          <SheetTitle className="text-sm font-bold text-text-primary">
             Leaders and Supporters Chat
-          </h2>
+          </SheetTitle>
           <button
             onClick={onClose}
             className="w-7 h-7 rounded-full hover:bg-black/5 flex items-center justify-center transition-colors"
           >
             <span className="material-icons-two-tone text-[18px] text-text-muted">close</span>
           </button>
-        </div>
+        </SheetHeader>
 
         {/* Tabs */}
         <div className="flex border-b border-black/5">
@@ -224,8 +222,8 @@ export default function LeadersChat({ open, onClose, userName = "" }: LeadersCha
             </div>
           </>
         )}
-      </div>
-    </>
+      </SheetContent>
+    </Sheet>
   );
 }
 

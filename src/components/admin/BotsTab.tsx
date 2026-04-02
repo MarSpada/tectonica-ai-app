@@ -5,6 +5,9 @@ import type { BotCategory } from "@/lib/bots";
 import { categoryMeta } from "@/lib/bots";
 import type { AdminBot } from "@/lib/types";
 import BotEditor from "./BotEditor";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BotsTabProps {
   orgId: string | null;
@@ -67,8 +70,21 @@ export default function BotsTab({ orgId }: BotsTabProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="w-6 h-6 border-2 border-accent-purple border-t-transparent rounded-full animate-spin" />
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-8 w-28 ml-auto" />
+        </div>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-card-bg rounded-xl border border-card-stroke p-4 space-y-3">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -116,13 +132,10 @@ export default function BotsTab({ orgId }: BotsTabProps) {
           ))}
         </div>
 
-        <button
-          onClick={() => setCreatingBot(true)}
-          className="ml-auto px-4 py-2 text-sm font-semibold text-white bg-accent-purple rounded-lg hover:bg-accent-purple/90 flex items-center gap-1.5"
-        >
+        <Button onClick={() => setCreatingBot(true)} className="ml-auto">
           <span className="text-lg leading-none">+</span>
           Create Bot
-        </button>
+        </Button>
       </div>
 
       <p className="text-xs text-text-muted">
@@ -148,24 +161,27 @@ export default function BotsTab({ orgId }: BotsTabProps) {
                   </span>
                 </div>
                 <div className="flex gap-1">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() => setEditingBot(bot)}
-                    className="p-1 rounded hover:bg-black/5 transition-colors"
                     title="Edit bot"
                   >
                     <span className="material-icons-two-tone text-[16px] text-text-muted">
                       edit
                     </span>
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() => handleDeleteBot(bot.id)}
-                    className="p-1 rounded hover:bg-red-50 transition-colors"
+                    className="hover:bg-red-50"
                     title="Delete bot"
                   >
                     <span className="material-icons-two-tone text-[16px] text-red-400">
                       delete
                     </span>
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -177,13 +193,13 @@ export default function BotsTab({ orgId }: BotsTabProps) {
               </p>
 
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-black/5 text-text-secondary">
+                <Badge variant="secondary" className="text-[10px]">
                   {catMeta?.label || bot.category}
-                </span>
+                </Badge>
                 {bot.system_prompt && (
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700">
+                  <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">
                     Custom Prompt
-                  </span>
+                  </Badge>
                 )}
               </div>
             </div>

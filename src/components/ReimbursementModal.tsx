@@ -2,6 +2,15 @@
 
 import { useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface ReimbursementModalProps {
   onClose: () => void;
@@ -146,40 +155,26 @@ export default function ReimbursementModal({ onClose, onCreated }: Reimbursement
   const canSubmit = amount && parseFloat(amount) > 0 && description.trim() && !submitting;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
-          <h2 className="text-sm font-bold text-text-primary">Request Reimbursement</h2>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-black/5 transition-colors"
-          >
-            <span className="material-icons-two-tone text-[18px] text-text-muted">close</span>
-          </button>
-        </div>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Request Reimbursement</DialogTitle>
+        </DialogHeader>
 
         {/* Form */}
-        <div className="px-5 py-4 space-y-4">
+        <div className="space-y-4">
           {/* Amount */}
           <div>
             <label className="block text-xs font-medium text-text-primary mb-1">
               Amount ($) <span className="text-red-500">*</span>
             </label>
-            <input
+            <Input
               type="number"
               min="0.01"
               step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
-              className="w-full px-3 py-2 rounded-lg border border-black/10 text-sm focus:outline-none focus:ring-2 focus:ring-accent-purple/50"
             />
           </div>
 
@@ -246,23 +241,19 @@ export default function ReimbursementModal({ onClose, onCreated }: Reimbursement
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-5 py-3 border-t border-black/5 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-text-muted rounded-lg hover:bg-black/5 transition-colors"
-          >
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="px-4 py-2 text-xs font-semibold text-white bg-orange-400 rounded-lg hover:bg-orange-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-orange-400 hover:bg-orange-500 text-white"
           >
             {submitting ? "Submitting..." : "Submit Request"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

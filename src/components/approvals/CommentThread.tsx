@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { ApprovalComment } from "@/lib/types";
 import { getAvatarColor, getInitials } from "@/lib/avatar";
+import { Button } from "@/components/ui/button";
 
 function Avatar({ name, url }: { name: string; url?: string | null }) {
   if (url) {
@@ -116,13 +117,13 @@ export default function CommentThread({
             }
           }}
         />
-        <button
+        <Button
           onClick={handleSend}
           disabled={!newComment.trim() || sending}
-          className="self-end px-3 py-2 text-xs font-semibold text-white bg-accent-purple rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="self-end"
         >
           {sending ? "..." : "Send"}
-        </button>
+        </Button>
       </div>
     </div>
   );

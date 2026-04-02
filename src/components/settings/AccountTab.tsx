@@ -2,6 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface AccountTabProps {
   email: string;
@@ -81,11 +91,10 @@ export default function AccountTab({ email }: AccountTabProps) {
         <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider mb-3">
           Email Address
         </h2>
-        <input
+        <Input
           type="text"
           value={email}
           disabled
-          className="w-full px-3.5 py-2.5 rounded-lg border border-black/10 text-sm bg-black/[0.03] text-text-muted cursor-not-allowed"
         />
         <p className="text-[11px] text-text-muted mt-1">
           Email cannot be changed
@@ -102,22 +111,20 @@ export default function AccountTab({ email }: AccountTabProps) {
             <label className="block text-sm font-medium text-text-primary mb-1">
               Current Password
             </label>
-            <input
+            <Input
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-black/10 text-sm focus:outline-none focus:ring-2 focus:ring-accent-purple/50 focus:border-accent-purple/50"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-text-primary mb-1">
               New Password
             </label>
-            <input
+            <Input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-black/10 text-sm focus:outline-none focus:ring-2 focus:ring-accent-purple/50 focus:border-accent-purple/50"
             />
             {newPassword.length > 0 && newPassword.length < 8 && (
               <p className="text-[11px] text-red-500 mt-0.5">
@@ -129,11 +136,10 @@ export default function AccountTab({ email }: AccountTabProps) {
             <label className="block text-sm font-medium text-text-primary mb-1">
               Confirm New Password
             </label>
-            <input
+            <Input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-black/10 text-sm focus:outline-none focus:ring-2 focus:ring-accent-purple/50 focus:border-accent-purple/50"
             />
             {confirmPassword.length > 0 && newPassword !== confirmPassword && (
               <p className="text-[11px] text-red-500 mt-0.5">
@@ -144,13 +150,12 @@ export default function AccountTab({ email }: AccountTabProps) {
         </div>
 
         <div className="flex items-center gap-3 mt-4">
-          <button
+          <Button
             onClick={handlePasswordChange}
             disabled={!canSubmitPassword || changingPassword}
-            className="px-5 py-2.5 text-sm font-semibold text-white bg-accent-purple rounded-xl hover:bg-accent-purple/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {changingPassword ? "Updating..." : "Update Password"}
-          </button>
+          </Button>
           {passwordToast && (
             <span
               className={`text-sm font-medium ${
@@ -180,47 +185,42 @@ export default function AccountTab({ email }: AccountTabProps) {
                 Permanently remove your account and all data
               </p>
             </div>
-            <button
+            <Button
+              variant="destructive"
               onClick={() => setShowDeleteDialog(true)}
-              className="px-4 py-2 text-sm font-semibold text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors"
             >
               Delete Account
-            </button>
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Delete Account Dialog */}
-      {showDeleteDialog && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
-          onClick={() => setShowDeleteDialog(false)}
-        >
-          <div
-            className="bg-white rounded-2xl p-6 max-w-sm mx-4 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 mb-3">
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
               <span className="material-icons-two-tone text-red-500 text-2xl">
                 warning
               </span>
-              <h3 className="text-lg font-bold text-text-primary">
-                Delete Account
-              </h3>
-            </div>
-            <p className="text-sm text-text-secondary mb-5">
+              Delete Account
+            </DialogTitle>
+            <DialogDescription>
               Account deletion requires administrator approval. Please contact
               your organization administrator to request account deletion.
-            </p>
-            <button
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="secondary"
               onClick={() => setShowDeleteDialog(false)}
-              className="w-full px-4 py-2.5 text-sm font-semibold text-text-primary bg-black/5 rounded-xl hover:bg-black/10 transition-colors"
+              className="w-full sm:w-auto"
             >
               Got it
-            </button>
-          </div>
-        </div>
-      )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { CALENDAR_COLORS } from "@/lib/design-tokens";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface CalendarSource {
   id: string;
@@ -107,13 +111,10 @@ export default function IntegrationsTab() {
               Supports any iCal/ICS feed (Google Calendar, Outlook, Apple Calendar, Mobilize, etc.)
             </p>
           </div>
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-accent-purple rounded-lg hover:bg-purple-700 transition-colors"
-          >
+          <Button onClick={() => setShowForm(true)} size="sm">
             <span className="material-icons-two-tone text-[16px]">add</span>
             Add Calendar
-          </button>
+          </Button>
         </div>
 
         {/* Add form */}
@@ -125,23 +126,22 @@ export default function IntegrationsTab() {
 
             <div>
               <label className="block text-xs font-semibold text-text-primary mb-1">Name</label>
-              <input
+              <Input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Team Google Calendar"
-                className="w-full px-3 py-2 text-sm border border-black/10 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent-purple"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-text-primary mb-1">Feed URL</label>
-              <input
+              <Input
                 type="url"
                 value={feedUrl}
                 onChange={(e) => setFeedUrl(e.target.value)}
                 placeholder="https://calendar.google.com/calendar/ical/...basic.ics"
-                className="w-full px-3 py-2 text-sm border border-black/10 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent-purple font-mono text-xs"
+                className="font-mono text-xs"
               />
               <p className="text-[10px] text-text-muted mt-1">
                 Paste the public iCal/ICS feed URL from your calendar provider.
@@ -179,26 +179,23 @@ export default function IntegrationsTab() {
             </div>
 
             <div className="flex gap-2 pt-1">
-              <button
-                onClick={handleAdd}
-                disabled={saving}
-                className="px-4 py-2 text-xs font-semibold text-white bg-accent-purple rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
-              >
+              <Button onClick={handleAdd} disabled={saving}>
                 {saving ? "Adding..." : "Add Calendar"}
-              </button>
-              <button
-                onClick={() => { setShowForm(false); setError(""); }}
-                className="px-4 py-2 text-xs font-medium text-text-secondary hover:bg-black/5 rounded-lg transition-colors"
-              >
+              </Button>
+              <Button variant="ghost" onClick={() => { setShowForm(false); setError(""); }}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         {/* Sources list */}
         {loading ? (
-          <p className="text-xs text-text-muted">Loading...</p>
+          <div className="space-y-2">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 w-full rounded-xl" />
+            ))}
+          </div>
         ) : sources.length === 0 ? (
           <div className="text-center py-8 bg-gray-50 rounded-xl">
             <span className="material-icons-two-tone text-[40px] text-text-muted">
@@ -226,9 +223,9 @@ export default function IntegrationsTab() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-text-primary">{source.name}</span>
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 bg-gray-100 rounded text-text-muted uppercase">
+                    <Badge variant="secondary" className="text-[10px] uppercase">
                       {source.provider}
-                    </span>
+                    </Badge>
                   </div>
                   <p className="text-[10px] text-text-muted truncate mt-0.5">{source.feed_url}</p>
                 </div>
@@ -248,13 +245,15 @@ export default function IntegrationsTab() {
                 </button>
 
                 {/* Delete */}
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={() => handleDelete(source.id)}
-                  className="p-1 rounded-lg hover:bg-red-50 text-text-muted hover:text-red-500 transition-colors"
+                  className="hover:bg-red-50 text-text-muted hover:text-red-500"
                   title="Remove"
                 >
                   <span className="material-icons-two-tone text-[18px]">delete_outline</span>
-                </button>
+                </Button>
               </div>
             ))}
           </div>
@@ -273,9 +272,9 @@ export default function IntegrationsTab() {
                 <p className="text-[10px] text-text-muted">Signup ingestion</p>
               </div>
             </div>
-            <span className="text-[10px] font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded">
+            <Badge variant="outline" className="text-[10px] bg-green-100 text-green-700 border-green-200">
               Connected
-            </span>
+            </Badge>
           </div>
           <div className="flex items-center justify-between bg-white border border-black/5 rounded-xl px-4 py-3">
             <div className="flex items-center gap-2.5">
@@ -285,9 +284,9 @@ export default function IntegrationsTab() {
                 <p className="text-[10px] text-text-muted">Coming soon</p>
               </div>
             </div>
-            <span className="text-[10px] font-medium text-text-muted bg-gray-100 px-2 py-0.5 rounded">
+            <Badge variant="secondary" className="text-[10px]">
               Not Connected
-            </span>
+            </Badge>
           </div>
           <div className="flex items-center justify-between bg-white border border-black/5 rounded-xl px-4 py-3">
             <div className="flex items-center gap-2.5">
@@ -297,9 +296,9 @@ export default function IntegrationsTab() {
                 <p className="text-[10px] text-text-muted">Coming soon</p>
               </div>
             </div>
-            <span className="text-[10px] font-medium text-text-muted bg-gray-100 px-2 py-0.5 rounded">
+            <Badge variant="secondary" className="text-[10px]">
               Not Connected
-            </span>
+            </Badge>
           </div>
         </div>
       </div>

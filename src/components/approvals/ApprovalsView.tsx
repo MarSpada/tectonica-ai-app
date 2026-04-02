@@ -5,6 +5,7 @@ import type { ApprovalRequest, ApprovalStatus } from "@/lib/types";
 import ApprovalCard from "./ApprovalCard";
 import ApprovalDetailView from "./ApprovalDetailView";
 import CreateApprovalModal from "./CreateApprovalModal";
+import { Button } from "@/components/ui/button";
 
 type FilterTab = "all" | ApprovalStatus;
 type ViewMode = "submitted" | "assigned";
@@ -82,13 +83,13 @@ export default function ApprovalsView({ currentUserId, currentUserRole }: Approv
             Submit ideas or assets for admin review
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-pink-500 rounded-lg hover:bg-pink-600 transition-colors"
+          className="bg-pink-500 hover:bg-pink-600 text-white"
         >
           <span className="material-icons-two-tone text-[16px]">add</span>
           New Request
-        </button>
+        </Button>
       </div>
 
       {/* Admin toggle: Submitted by Me / Assigned to Me */}
@@ -163,12 +164,13 @@ export default function ApprovalsView({ currentUserId, currentUserRole }: Approv
               ? "No approval requests yet."
               : `No ${filter.replace("_", " ")} requests.`}
           </p>
-          <button
+          <Button
+            variant="link"
             onClick={() => setShowCreate(true)}
-            className="mt-3 text-xs text-accent-purple hover:underline"
+            className="mt-3 text-xs"
           >
             Create your first request
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">

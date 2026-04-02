@@ -7,6 +7,12 @@ import {
   getRoleBadgeStyle,
   getRoleLabel,
 } from "@/lib/avatar";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface MemberDetailModalProps {
   member: Member | null;
@@ -27,27 +33,10 @@ export default function MemberDetailModal({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/30"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative bg-card-bg rounded-2xl shadow-xl max-w-md w-full mx-4 p-8">
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1 rounded-lg hover:bg-black/5 transition-colors"
-        >
-          <span className="material-icons-two-tone text-[20px] text-text-muted">
-            close
-          </span>
-        </button>
-
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
         {/* Avatar */}
-        <div className="flex flex-col items-center mb-5">
+        <div className="flex flex-col items-center mb-1">
           {member.avatar_url ? (
             <img
               src={member.avatar_url}
@@ -66,15 +55,13 @@ export default function MemberDetailModal({
             {member.full_name || "Unknown"}
           </h2>
 
-          <span
-            className={`mt-1 text-xs font-semibold px-3 py-1 rounded-full ${badge.bg} ${badge.text}`}
-          >
+          <Badge variant="outline" className={`mt-1 text-xs ${badge.bg} ${badge.text}`}>
             {getRoleLabel(member.role)}
-          </span>
+          </Badge>
         </div>
 
         {/* Divider */}
-        <div className="border-t border-black/5 my-4" />
+        <div className="border-t border-black/5 my-2" />
 
         {/* Info rows */}
         <div className="space-y-3">
@@ -95,21 +82,23 @@ export default function MemberDetailModal({
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-3 mt-6">
-          <button
+        <div className="flex gap-3 mt-4">
+          <Button
+            variant="outline"
             disabled
-            className="flex-1 px-4 py-2 text-sm font-medium text-accent-purple border border-accent-purple/30 rounded-xl hover:bg-accent-purple/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 border-accent-purple/30 text-accent-purple"
           >
             Send Message
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
             disabled
-            className="flex-1 px-4 py-2 text-sm font-medium text-text-secondary border border-black/10 rounded-xl hover:bg-black/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1"
           >
             View Activity
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

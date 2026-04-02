@@ -5,6 +5,8 @@ import type { ProfileData } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { getAvatarColor, getInitials, getRoleLabel } from "@/lib/avatar";
 import { useUserProfile } from "@/lib/UserProfileContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface ProfileTabProps {
   userId: string;
@@ -175,13 +177,12 @@ export default function ProfileTab({ userId, profile }: ProfileTabProps) {
           </div>
         )}
         <div className="space-y-2">
-          <button
+          <Button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="px-4 py-2 text-sm font-semibold text-white bg-accent-purple rounded-lg hover:bg-accent-purple/90 transition-colors disabled:opacity-50"
           >
             {uploading ? "Uploading..." : "Upload Photo"}
-          </button>
+          </Button>
           <input
             ref={fileInputRef}
             type="file"
@@ -190,13 +191,14 @@ export default function ProfileTab({ userId, profile }: ProfileTabProps) {
             className="hidden"
           />
           {avatarUrl && (
-            <button
+            <Button
+              variant="link"
               onClick={handleAvatarRemove}
               disabled={uploading}
-              className="block text-xs text-red-500 hover:underline disabled:opacity-50"
+              className="text-xs text-red-500 p-0 h-auto"
             >
               Remove Photo
-            </button>
+            </Button>
           )}
           <p className="text-[11px] text-text-muted">
             JPG, PNG or WebP. Max 2MB.
@@ -211,13 +213,12 @@ export default function ProfileTab({ userId, profile }: ProfileTabProps) {
           <label className="block text-sm font-medium text-text-primary mb-1">
             Display Name
           </label>
-          <input
+          <Input
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             maxLength={50}
             required
-            className="w-full px-3.5 py-2.5 rounded-lg border border-black/10 text-sm focus:outline-none focus:ring-2 focus:ring-accent-purple/50 focus:border-accent-purple/50"
           />
         </div>
 
@@ -226,11 +227,10 @@ export default function ProfileTab({ userId, profile }: ProfileTabProps) {
           <label className="block text-sm font-medium text-text-primary mb-1">
             Role
           </label>
-          <input
+          <Input
             type="text"
             value={getRoleLabel(profile.role)}
             disabled
-            className="w-full px-3.5 py-2.5 rounded-lg border border-black/10 text-sm bg-black/[0.03] text-text-muted cursor-not-allowed"
           />
         </div>
 
@@ -239,11 +239,10 @@ export default function ProfileTab({ userId, profile }: ProfileTabProps) {
           <label className="block text-sm font-medium text-text-primary mb-1">
             Organization
           </label>
-          <input
+          <Input
             type="text"
             value={profile.orgName}
             disabled
-            className="w-full px-3.5 py-2.5 rounded-lg border border-black/10 text-sm bg-black/[0.03] text-text-muted cursor-not-allowed"
           />
         </div>
 
@@ -252,11 +251,10 @@ export default function ProfileTab({ userId, profile }: ProfileTabProps) {
           <label className="block text-sm font-medium text-text-primary mb-1">
             Group
           </label>
-          <input
+          <Input
             type="text"
             value={profile.groupName}
             disabled
-            className="w-full px-3.5 py-2.5 rounded-lg border border-black/10 text-sm bg-black/[0.03] text-text-muted cursor-not-allowed"
           />
         </div>
 
@@ -281,13 +279,12 @@ export default function ProfileTab({ userId, profile }: ProfileTabProps) {
 
       {/* Save */}
       <div className="flex items-center gap-3">
-        <button
+        <Button
           onClick={handleSave}
           disabled={!isDirty || saving}
-          className="px-5 py-2.5 text-sm font-semibold text-white bg-accent-purple rounded-xl hover:bg-accent-purple/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? "Saving..." : "Save Changes"}
-        </button>
+        </Button>
 
         {/* Toast */}
         {toast && (
@@ -303,16 +300,16 @@ export default function ProfileTab({ userId, profile }: ProfileTabProps) {
 
       {/* Sign Out */}
       <div className="pt-4 border-t border-black/5">
-        <button
+        <Button
+          variant="destructive"
           onClick={async () => {
             const supabase = createClient();
             await supabase.auth.signOut();
             window.location.href = "/login";
           }}
-          className="px-4 py-2 text-sm font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
         >
           Sign Out
-        </button>
+        </Button>
       </div>
     </div>
   );

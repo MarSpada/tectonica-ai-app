@@ -2,6 +2,13 @@
 
 import { getAvatarColor, getInitials } from "@/lib/avatar";
 import type { HourEntry } from "@/lib/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface HoursDetailOverlayProps {
   entries: HourEntry[];
@@ -27,25 +34,24 @@ export default function HoursDetailOverlay({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full max-w-md mx-4 bg-white rounded-2xl shadow-xl max-h-[80vh] flex flex-col">
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col" showCloseButton={false}>
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/5 shrink-0">
+        <DialogHeader className="flex-row items-center justify-between space-y-0">
           <div>
-            <h2 className="text-base font-bold text-text-primary">Volunteer Hours</h2>
+            <DialogTitle>Volunteer Hours</DialogTitle>
             <p className="text-xs text-text-muted mt-0.5">
               Total: <span className="font-semibold text-text-primary">{total}h</span>
               {" · "}This week: <span className="font-semibold text-green-600">{thisWeek}h</span>
             </p>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-black/5 transition-colors">
+          <Button variant="ghost" size="icon-sm" onClick={onClose}>
             <span className="material-icons-two-tone text-[20px] text-text-muted">close</span>
-          </button>
-        </div>
+          </Button>
+        </DialogHeader>
 
         {/* Entries */}
-        <div className="flex-1 overflow-y-auto px-5 py-3">
+        <div className="flex-1 overflow-y-auto -mx-4 px-4">
           {entries.length === 0 ? (
             <div className="text-center py-8">
               <span className="material-icons-two-tone text-[40px] text-text-muted">
@@ -120,15 +126,15 @@ export default function HoursDetailOverlay({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-black/5 shrink-0">
-          <button
+        <div className="-mx-4 -mb-4 px-4 py-3 border-t border-black/5">
+          <Button
             onClick={() => { onClose(); onLogHours(); }}
-            className="w-full px-4 py-2 text-xs font-semibold text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors"
+            className="w-full bg-green-500 hover:bg-green-600 text-white"
           >
             + Log Your Hours
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

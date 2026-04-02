@@ -616,7 +616,7 @@ Status: Complete
 Goal: Replace admin panel table, tabs, modals, and dropdowns with Shadcn components themed with existing design tokens.
 
 ### UI Session B.5 — Complete Shadcn rollout
-Status: Ready to run
+Status: Complete
 Goal: Extend Shadcn components to the remaining parts of the app flagged in the Session B scan. Same principles as Session B — preserve functionality, improve with judgment.
 
 Before starting, read components.json and src/components/ui/ to understand all installed primitives. Do not reinstall anything already present.

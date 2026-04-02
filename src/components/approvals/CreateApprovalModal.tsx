@@ -4,6 +4,15 @@ import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { ApprovalAttachment } from "@/lib/types";
 import { getAvatarColor, getInitials } from "@/lib/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface Reviewer {
   id: string;
@@ -173,25 +182,14 @@ export default function CreateApprovalModal({ onClose, onCreated }: CreateApprov
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="relative w-full max-w-lg mx-4 bg-white rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
-          <h2 className="text-base font-bold text-text-primary">New Approval Request</h2>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-black/5 transition-colors"
-          >
-            <span className="material-icons-two-tone text-[20px] text-text-muted">close</span>
-          </button>
-        </div>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>New Approval Request</DialogTitle>
+        </DialogHeader>
 
         {/* Body */}
-        <div className="p-5 space-y-4">
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto -mx-4 px-4">
           {error && (
             <div className="px-3 py-2 text-xs text-red-700 bg-red-50 rounded-lg">{error}</div>
           )}
@@ -201,13 +199,12 @@ export default function CreateApprovalModal({ onClose, onCreated }: CreateApprov
             <label className="block text-xs font-semibold text-text-primary mb-1">
               Title <span className="text-red-500">*</span>
             </label>
-            <input
+            <Input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Flyer design for weekend event"
               maxLength={150}
-              className="w-full px-3 py-2 text-sm border border-black/10 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent-purple"
             />
           </div>
 
@@ -325,23 +322,19 @@ export default function CreateApprovalModal({ onClose, onCreated }: CreateApprov
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-black/5">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-text-secondary hover:bg-black/5 rounded-lg transition-colors"
-          >
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSubmit}
             disabled={submitting || !title.trim() || !reviewerId}
-            className="px-5 py-2 text-xs font-semibold text-white bg-pink-500 rounded-lg hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="bg-pink-500 hover:bg-pink-600 text-white"
           >
             {submitting ? "Submitting..." : "Submit for Approval"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -5,6 +5,14 @@ import Link from "next/link";
 import { getAvatarColor, getInitials } from "@/lib/avatar";
 import { formatSignupTime } from "@/lib/signup-utils";
 import type { AppNotification, NbSignup, SignupAssignment } from "@/lib/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 export default function NotificationBar() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -115,108 +123,100 @@ export default function NotificationBar() {
             .
           </p>
         </div>
-        <button
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onClick={handleDismiss}
-          className="shrink-0 p-1 rounded-lg hover:bg-amber-100 transition-colors"
           title="Dismiss"
+          className="shrink-0 hover:bg-amber-100"
         >
           <span className="material-icons-two-tone text-[16px] text-amber-600">
             close
           </span>
-        </button>
+        </Button>
       </div>
 
       {/* Signups Lightbox */}
-      {showLightbox && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setShowLightbox(false)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
-              <div>
-                <h2 className="text-sm font-bold text-text-primary">
-                  Signups Assigned to You
-                </h2>
-                <p className="text-[11px] text-text-muted mt-0.5">
-                  {pendingAssignments.length} pending contact
-                  {pendingAssignments.length !== 1 ? "s" : ""}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowLightbox(false)}
-                className="p-1 rounded-lg hover:bg-black/5 transition-colors"
-              >
-                <span className="material-icons-two-tone text-[18px] text-text-muted">
-                  close
-                </span>
-              </button>
+      <Dialog open={showLightbox} onOpenChange={setShowLightbox}>
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+          <DialogHeader className="flex-row items-center justify-between space-y-0">
+            <div>
+              <DialogTitle>Signups Assigned to You</DialogTitle>
+              <DialogDescription>
+                {pendingAssignments.length} pending contact
+                {pendingAssignments.length !== 1 ? "s" : ""}
+              </DialogDescription>
             </div>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setShowLightbox(false)}
+            >
+              <span className="material-icons-two-tone text-[18px] text-text-muted">
+                close
+              </span>
+            </Button>
+          </DialogHeader>
 
-            {/* List */}
-            <div className="max-h-80 overflow-y-auto px-5 py-3 space-y-2">
-              {pendingAssignments.map((a) => {
-                const name = a.nb_signup_name || a.signup?.name || "Unknown";
-                const email = a.signup?.email || "";
-                const phone = a.signup?.phone || "";
-                const time = formatSignupTime(a.signup?.created_at || a.created_at);
-                return (
+          {/* List */}
+          <div className="max-h-80 overflow-y-auto -mx-4 px-4 space-y-2">
+            {pendingAssignments.map((a) => {
+              const name = a.nb_signup_name || a.signup?.name || "Unknown";
+              const email = a.signup?.email || "";
+              const phone = a.signup?.phone || "";
+              const time = formatSignupTime(a.signup?.created_at || a.created_at);
+              return (
+                <div
+                  key={a.id}
+                  className="flex items-start gap-3 px-3 py-3 rounded-xl bg-amber-50 border border-amber-100"
+                >
                   <div
-                    key={a.id}
-                    className="flex items-start gap-3 px-3 py-3 rounded-xl bg-amber-50 border border-amber-100"
+                    className={`w-9 h-9 rounded-full shrink-0 ${getAvatarColor(a.nb_signup_id)} flex items-center justify-center text-xs font-bold text-white`}
                   >
-                    <div
-                      className={`w-9 h-9 rounded-full shrink-0 ${getAvatarColor(a.nb_signup_id)} flex items-center justify-center text-xs font-bold text-white`}
-                    >
-                      {getInitials(name)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-text-primary truncate">
-                          {name}
-                        </p>
-                        <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 shrink-0">
-                          <img src="/nb-icon.png" alt="" className="w-3 h-3" />
-                          NB
-                        </span>
-                      </div>
-                      {email && (
-                        <p className="text-xs text-text-muted truncate">{email}</p>
-                      )}
-                      {phone && (
-                        <p className="text-xs text-text-muted">{phone}</p>
-                      )}
-                      <p
-                        className={`text-[10px] mt-1 ${
-                          time.urgent ? "font-semibold text-red-500" : "text-text-muted"
-                        }`}
-                      >
-                        {time.text}
-                      </p>
-                    </div>
+                    {getInitials(name)}
                   </div>
-                );
-              })}
-              {pendingAssignments.length === 0 && (
-                <p className="text-sm text-text-muted text-center py-4">
-                  No pending signups
-                </p>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="px-5 py-3 border-t border-black/5 bg-gray-50">
-              <p className="text-[10px] text-text-muted text-center">
-                Click a signup in the dashboard widget for full details and actions
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-text-primary truncate">
+                        {name}
+                      </p>
+                      <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 shrink-0">
+                        <img src="/nb-icon.png" alt="" className="w-3 h-3" />
+                        NB
+                      </span>
+                    </div>
+                    {email && (
+                      <p className="text-xs text-text-muted truncate">{email}</p>
+                    )}
+                    {phone && (
+                      <p className="text-xs text-text-muted">{phone}</p>
+                    )}
+                    <p
+                      className={`text-[10px] mt-1 ${
+                        time.urgent ? "font-semibold text-red-500" : "text-text-muted"
+                      }`}
+                    >
+                      {time.text}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+            {pendingAssignments.length === 0 && (
+              <p className="text-sm text-text-muted text-center py-4">
+                No pending signups
               </p>
-            </div>
+            )}
           </div>
-        </div>
-      )}
+
+          {/* Footer */}
+          <div className="-mx-4 -mb-4 px-5 py-3 border-t border-black/5 bg-gray-50 rounded-b-xl">
+            <p className="text-[10px] text-text-muted text-center">
+              Click a signup in the dashboard widget for full details and actions
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

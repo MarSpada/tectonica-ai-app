@@ -5,6 +5,7 @@ import type { ApprovalRequest, ApprovalComment } from "@/lib/types";
 import { getAvatarColor, getInitials } from "@/lib/avatar";
 import StatusBadge from "./StatusBadge";
 import CommentThread from "./CommentThread";
+import { Button } from "@/components/ui/button";
 
 function Avatar({ name, url, size = 32 }: { name: string; url?: string | null; size?: number }) {
   if (url) {
@@ -144,9 +145,9 @@ export default function ApprovalDetailView({
     return (
       <div className="text-center py-20">
         <p className="text-sm text-text-muted">Request not found.</p>
-        <button onClick={onBack} className="text-xs text-accent-purple mt-2 hover:underline">
+        <Button variant="link" onClick={onBack} className="mt-2 text-xs">
           Go back
-        </button>
+        </Button>
       </div>
     );
   }
@@ -158,14 +159,11 @@ export default function ApprovalDetailView({
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button
-          onClick={onBack}
-          className="p-1.5 rounded-lg hover:bg-black/5 transition-colors"
-        >
+        <Button variant="ghost" size="icon-sm" onClick={onBack}>
           <span className="material-icons-two-tone text-[20px] text-text-secondary">
             arrow_back
           </span>
-        </button>
+        </Button>
         <div className="flex-1 min-w-0">
           <h2 className="text-lg font-bold text-text-primary truncate">{request.title}</h2>
           <div className="flex items-center gap-2 mt-0.5">
@@ -278,56 +276,49 @@ export default function ApprovalDetailView({
                 className="w-full px-3 py-2 text-xs border border-black/10 rounded-lg resize-none focus:outline-none focus:ring-1 focus:ring-accent-purple"
               />
               <div className="flex gap-2">
-                <button
+                <Button
                   onClick={() =>
                     handleStatusChange(
                       showActionInput === "approve" ? "approved" : "changes_requested"
                     )
                   }
                   disabled={submitting || (showActionInput === "changes" && !actionComment.trim())}
-                  className={`px-4 py-2 text-xs font-semibold text-white rounded-lg disabled:opacity-50 transition-colors ${
+                  className={
                     showActionInput === "approve"
-                      ? "bg-green-600 hover:bg-green-700"
-                      : "bg-orange-500 hover:bg-orange-600"
-                  }`}
+                      ? "bg-green-600 hover:bg-green-700 text-white"
+                      : "bg-orange-500 hover:bg-orange-600 text-white"
+                  }
                 >
                   {submitting
                     ? "..."
                     : showActionInput === "approve"
                     ? "Confirm Approval"
                     : "Send Changes Request"}
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
                   onClick={() => {
                     setShowActionInput(null);
                     setActionComment("");
                   }}
-                  className="px-4 py-2 text-xs font-medium text-text-secondary hover:bg-black/5 rounded-lg transition-colors"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
             <div className="flex gap-2">
-              <button
-                onClick={() => setShowActionInput("approve")}
-                className="px-4 py-2 text-xs font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <span className="flex items-center gap-1">
-                  <span className="material-icons-two-tone text-[16px]">check_circle</span>
-                  Approve
-                </span>
-              </button>
-              <button
+              <Button onClick={() => setShowActionInput("approve")}>
+                <span className="material-icons-two-tone text-[16px]">check_circle</span>
+                Approve
+              </Button>
+              <Button
+                variant="destructive"
                 onClick={() => setShowActionInput("changes")}
-                className="px-4 py-2 text-xs font-semibold text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors"
               >
-                <span className="flex items-center gap-1">
-                  <span className="material-icons-two-tone text-[16px]">edit_note</span>
-                  Request Changes
-                </span>
-              </button>
+                <span className="material-icons-two-tone text-[16px]">edit_note</span>
+                Request Changes
+              </Button>
             </div>
           )}
         </div>
@@ -352,28 +343,25 @@ export default function ApprovalDetailView({
                 className="w-full px-3 py-2 text-xs border border-black/10 rounded-lg resize-none focus:outline-none focus:ring-1 focus:ring-accent-purple"
               />
               <div className="flex gap-2">
-                <button
+                <Button
+                  variant="outline"
                   onClick={handleResubmit}
                   disabled={submitting}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-accent-purple rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
                 >
                   {submitting ? "..." : "Resubmit"}
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
                   onClick={() => setShowResubmit(false)}
-                  className="px-4 py-2 text-xs font-medium text-text-secondary hover:bg-black/5 rounded-lg transition-colors"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => setShowResubmit(true)}
-              className="px-4 py-2 text-xs font-semibold text-white bg-accent-purple rounded-lg hover:bg-purple-700 transition-colors"
-            >
+            <Button variant="outline" onClick={() => setShowResubmit(true)}>
               Edit & Resubmit
-            </button>
+            </Button>
           )}
         </div>
       )}

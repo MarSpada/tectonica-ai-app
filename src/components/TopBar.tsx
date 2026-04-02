@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 interface TopBarProps {
   onToggleSidebar?: () => void;
@@ -80,7 +81,7 @@ export default function TopBar({ onToggleSidebar }: TopBarProps) {
       {/* Left section */}
       <div className="flex items-center gap-3">
         {/* Sidebar collapse button */}
-        <button onClick={onToggleSidebar} className="p-1.5 rounded-md hover:bg-black/5 transition-colors">
+        <Button variant="ghost" size="icon" onClick={onToggleSidebar}>
           <svg
             width="20"
             height="20"
@@ -91,7 +92,7 @@ export default function TopBar({ onToggleSidebar }: TopBarProps) {
           >
             <path d="M3 12h18M3 6h18M3 18h18" />
           </svg>
-        </button>
+        </Button>
 
         {/* Org icon */}
         <div className="w-8 h-8 rounded-lg bg-orange-400 flex items-center justify-center text-white font-bold text-sm">

@@ -1,6 +1,7 @@
 "use client";
 
 import { Bot, categoryMeta } from "@/lib/bots";
+import { Badge } from "@/components/ui/badge";
 
 interface BotCardProps {
   bot: Bot;
@@ -75,9 +76,9 @@ export default function BotCard({
       </span>
 
       {/* BOT pill */}
-      <span className="mt-auto pt-2 px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-white/40 rounded-full text-text-secondary">
+      <Badge variant="secondary" className="mt-auto text-[10px] uppercase tracking-wider bg-white/40 text-text-secondary">
         Helper
-      </span>
+      </Badge>
 
       {/* Hover overlay — pastel bg at full opacity with black text */}
       <div

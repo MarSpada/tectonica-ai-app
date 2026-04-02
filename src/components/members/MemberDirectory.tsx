@@ -9,6 +9,9 @@ import {
   getRoleBadgeStyle,
   getRoleLabel,
 } from "@/lib/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 interface MemberDirectoryProps {
   members: Member[];
@@ -72,13 +75,10 @@ export default function MemberDirectory({ members }: MemberDirectoryProps) {
               {members.length} member{members.length !== 1 ? "s" : ""}
             </span>
           </div>
-          <button
-            disabled
-            className="px-5 py-2.5 text-sm font-semibold text-white bg-accent-purple rounded-xl hover:bg-accent-purple/90 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <Button disabled>
             <span className="text-lg font-bold">+</span>
             Invite Member
-          </button>
+          </Button>
         </div>
 
         {/* Toolbar: search + filters */}
@@ -88,12 +88,12 @@ export default function MemberDirectory({ members }: MemberDirectoryProps) {
             <span className="absolute left-3 top-1/2 -translate-y-1/2 material-icons-two-tone text-[18px] text-text-muted">
               search
             </span>
-            <input
+            <Input
               type="text"
               placeholder="Search members..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm bg-white/60 rounded-xl border border-black/5 placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent-purple/30"
+              className="w-full pl-10"
             />
           </div>
 
@@ -157,11 +157,9 @@ export default function MemberDirectory({ members }: MemberDirectoryProps) {
                       <p className="text-sm font-semibold text-text-primary truncate">
                         {member.full_name || "Unknown"}
                       </p>
-                      <span
-                        className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${badge.bg} ${badge.text}`}
-                      >
+                      <Badge variant="outline" className={`mt-1 text-[10px] ${badge.bg} ${badge.text}`}>
                         {getRoleLabel(member.role)}
-                      </span>
+                      </Badge>
                     </div>
                   </div>
 

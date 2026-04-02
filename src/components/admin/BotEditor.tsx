@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { BotCategory } from "@/lib/bots";
 import { categoryMeta } from "@/lib/bots";
 import type { AdminBot } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface BotEditorProps {
   bot: AdminBot | null; // null = creating new
@@ -52,14 +54,11 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
   return (
     <div className="max-w-2xl space-y-5">
       <div className="flex items-center gap-3 mb-2">
-        <button
-          onClick={onCancel}
-          className="p-1 rounded hover:bg-black/5 transition-colors"
-        >
+        <Button variant="ghost" size="icon-sm" onClick={onCancel}>
           <span className="material-icons-two-tone text-[20px] text-text-muted">
             arrow_back
           </span>
-        </button>
+        </Button>
         <h2 className="text-lg font-semibold text-text-primary">
           {isNew ? "Create Bot" : `Edit: ${bot.name}`}
         </h2>
@@ -71,12 +70,11 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
           <label className="block text-xs font-semibold text-text-primary mb-1">
             Name
           </label>
-          <input
+          <Input
             type="text"
             value={name}
             onChange={(e) => handleNameChange(e.target.value)}
             placeholder="e.g. Canvassing Planner"
-            className="w-full px-3 py-2 text-sm rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-accent-purple/50"
           />
         </div>
 
@@ -85,7 +83,7 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
           <label className="block text-xs font-semibold text-text-primary mb-1">
             Slug
           </label>
-          <input
+          <Input
             type="text"
             value={slug}
             onChange={(e) => {
@@ -94,7 +92,6 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
             }}
             placeholder="e.g. canvassing-planner"
             disabled={!isNew}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-accent-purple/50 disabled:bg-black/[0.03] disabled:text-text-muted"
           />
           {!isNew && (
             <p className="text-[10px] text-text-muted mt-0.5">
@@ -115,12 +112,12 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
                   {icon || "smart_toy"}
                 </span>
               </div>
-              <input
+              <Input
                 type="text"
                 value={icon}
                 onChange={(e) => setIcon(e.target.value)}
                 placeholder="e.g. palette"
-                className="flex-1 px-3 py-2 text-sm rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-accent-purple/50"
+                className="flex-1"
               />
             </div>
           </div>
@@ -178,19 +175,15 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
 
       {/* Actions */}
       <div className="flex justify-end gap-2">
-        <button
-          onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary"
-        >
+        <Button variant="ghost" onClick={onCancel}>
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleSave}
           disabled={saving || !name.trim() || !slug.trim()}
-          className="px-5 py-2 text-sm font-semibold text-white bg-accent-purple rounded-lg hover:bg-accent-purple/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? "Saving..." : isNew ? "Create Bot" : "Save Changes"}
-        </button>
+        </Button>
       </div>
     </div>
   );

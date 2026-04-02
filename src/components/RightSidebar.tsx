@@ -12,6 +12,8 @@ import ReimbursementModal from "./ReimbursementModal";
 import LogHoursModal from "./hours/LogHoursModal";
 import HoursDetailOverlay from "./hours/HoursDetailOverlay";
 import type { Member, GroupMessage, NbSignup, SignupAssignment, HourEntry, CalendarEvent, FundraisingGoal } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface RightSidebarProps {
   groupMessages?: GroupMessage[];
@@ -271,12 +273,14 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
               <p className="text-[10px] text-text-muted">No messages yet</p>
             )}
           </div>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onOpenConversation}
-            className="mt-auto self-start px-4 py-1.5 text-xs font-semibold text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors"
+            className="mt-auto self-start"
           >
             Open Conversation
-          </button>
+          </Button>
         </div>
 
         {/* Group Actions — cols 7-12, rows 3-7 */}
@@ -319,17 +323,18 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
               Current Month Fundraising Goal
             </h3>
             {isAdmin && !editingGoal && (
-              <button
+              <Button
+                variant="ghost"
+                size="icon-xs"
                 onClick={() => {
                   setGoalInput(String(fundraising?.fundraising_goal || 0));
                   setBudgetInput(String(fundraising?.print_budget || 0));
                   setEditingGoal(true);
                 }}
-                className="p-0.5 rounded hover:bg-orange-200/50 transition-colors"
                 title="Edit goals"
               >
                 <span className="material-icons-two-tone text-[14px] text-text-muted">edit</span>
-              </button>
+              </Button>
             )}
           </div>
 
@@ -337,28 +342,28 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
             <div className="space-y-2">
               <div>
                 <label className="text-[10px] text-text-muted">Fundraising Goal ($)</label>
-                <input
+                <Input
                   type="number"
                   min="0"
                   step="0.01"
                   value={goalInput}
                   onChange={(e) => setGoalInput(e.target.value)}
-                  className="w-full px-2 py-1 text-sm rounded border border-black/10 focus:outline-none focus:ring-1 focus:ring-orange-400"
                 />
               </div>
               <div>
                 <label className="text-[10px] text-text-muted">Print Budget ($)</label>
-                <input
+                <Input
                   type="number"
                   min="0"
                   step="0.01"
                   value={budgetInput}
                   onChange={(e) => setBudgetInput(e.target.value)}
-                  className="w-full px-2 py-1 text-sm rounded border border-black/10 focus:outline-none focus:ring-1 focus:ring-orange-400"
                 />
               </div>
               <div className="flex gap-2">
-                <button
+                <Button
+                  variant="outline"
+                  size="xs"
                   onClick={async () => {
                     try {
                       const res = await fetch("/api/fundraising", {
@@ -374,16 +379,17 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
                     } catch { /* silent */ }
                     setEditingGoal(false);
                   }}
-                  className="flex-1 px-2 py-1 text-[10px] font-semibold text-white bg-orange-400 rounded hover:bg-orange-500 transition-colors"
+                  className="flex-1"
                 >
                   Save
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="xs"
                   onClick={() => setEditingGoal(false)}
-                  className="px-2 py-1 text-[10px] font-semibold text-text-muted rounded hover:bg-black/5 transition-colors"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
@@ -409,12 +415,14 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
             </>
           )}
 
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setShowReimbursementModal(true)}
-            className="mt-auto self-stretch px-3 py-2 text-xs font-semibold text-white bg-orange-400 rounded-lg hover:bg-orange-500 transition-colors"
+            className="mt-auto self-stretch"
           >
             Request Reimbursement
-          </button>
+          </Button>
         </div>
 
         {/* Recruitment Goal — cols 5-8, rows 8-11 */}
@@ -458,12 +466,14 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
           <p className="text-[10px] text-text-muted">
             Send an idea or asset for approval
           </p>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setShowApprovalModal(true)}
-            className="mt-auto self-stretch px-3 py-2 text-xs font-semibold text-white bg-pink-500 rounded-lg hover:bg-pink-600 transition-colors"
+            className="mt-auto self-stretch"
           >
             Start
-          </button>
+          </Button>
         </div>
 
         {/* Connected Systems — cols 9-12, rows 10-14 */}
@@ -507,12 +517,14 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
               </span>
             )}
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="xs"
             onClick={(e) => { e.stopPropagation(); setShowLogHoursModal(true); }}
-            className="mt-1.5 text-[10px] font-semibold text-green-600 hover:text-green-700 transition-colors"
+            className="mt-1.5 text-green-600 hover:text-green-700 p-0 h-auto"
           >
             + Log hours
-          </button>
+          </Button>
         </div>
 
         {/* Upcoming Events — cols 9-12, rows 15-20 */}

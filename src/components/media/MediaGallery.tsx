@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type MediaType = "all" | "images" | "videos" | "documents";
 type ViewMode = "grid" | "list";
@@ -70,10 +72,10 @@ export default function MediaGallery() {
             <h1 className="text-2xl font-bold text-text-primary">Group Media</h1>
             <span className="text-sm text-text-muted">{totalItems} items</span>
           </div>
-          <button className="px-5 py-2.5 text-sm font-semibold text-white bg-accent-purple rounded-xl hover:bg-accent-purple/90 transition-colors flex items-center gap-2">
+          <Button>
             <span className="text-lg font-bold">+</span>
             Upload Media
-          </button>
+          </Button>
         </div>
 
         {/* Toolbar: search + filters + view toggle */}
@@ -84,12 +86,12 @@ export default function MediaGallery() {
               <span className="absolute left-3 top-1/2 -translate-y-1/2 material-icons-two-tone text-[18px] text-text-muted">
                 search
               </span>
-              <input
+              <Input
                 type="text"
                 placeholder="Search media..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-sm bg-white/60 rounded-xl border border-black/5 placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent-purple/30"
+                className="w-full pl-10"
               />
             </div>
 

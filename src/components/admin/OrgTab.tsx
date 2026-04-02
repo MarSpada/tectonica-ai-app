@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Group } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface OrgTabProps {
   orgId: string | null;
@@ -86,8 +89,16 @@ export default function OrgTab({ orgId }: OrgTabProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="w-6 h-6 border-2 border-accent-purple border-t-transparent rounded-full animate-spin" />
+      <div className="space-y-8 max-w-3xl">
+        <div className="bg-card-bg rounded-xl border border-card-stroke p-5 space-y-3">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-8 w-full" />
+        </div>
+        <div className="bg-card-bg rounded-xl border border-card-stroke p-5 space-y-3">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
       </div>
     );
   }
@@ -101,39 +112,35 @@ export default function OrgTab({ orgId }: OrgTabProps) {
         </h2>
         {editingName ? (
           <div className="flex items-center gap-3">
-            <input
+            <Input
               type="text"
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
-              className="flex-1 px-3 py-2 text-sm rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-accent-purple/50"
+              className="flex-1"
               autoFocus
             />
-            <button
+            <Button
               onClick={handleSaveOrgName}
               disabled={savingName}
-              className="px-4 py-2 text-sm font-medium text-white bg-accent-purple rounded-lg hover:bg-accent-purple/90 disabled:opacity-50"
             >
               {savingName ? "Saving..." : "Save"}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
               onClick={() => {
                 setEditingName(false);
                 fetchData();
               }}
-              className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="flex items-center justify-between">
             <p className="text-sm text-text-primary">{orgName}</p>
-            <button
-              onClick={() => setEditingName(true)}
-              className="text-sm font-medium text-accent-purple hover:underline"
-            >
+            <Button variant="link" onClick={() => setEditingName(true)}>
               Edit
-            </button>
+            </Button>
           </div>
         )}
       </section>
@@ -154,12 +161,11 @@ export default function OrgTab({ orgId }: OrgTabProps) {
             >
               {editingGroupId === group.id ? (
                 <div className="space-y-2">
-                  <input
+                  <Input
                     type="text"
                     value={editingGroupName}
                     onChange={(e) => setEditingGroupName(e.target.value)}
                     placeholder="Group name"
-                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-accent-purple/50"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Escape") setEditingGroupId(null);
@@ -174,18 +180,12 @@ export default function OrgTab({ orgId }: OrgTabProps) {
                     className="w-full px-3 py-1.5 text-sm rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-accent-purple/50 resize-none"
                   />
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleUpdateGroup(group.id)}
-                      className="text-xs font-medium text-accent-purple hover:underline"
-                    >
+                    <Button variant="link" size="xs" onClick={() => handleUpdateGroup(group.id)}>
                       Save
-                    </button>
-                    <button
-                      onClick={() => setEditingGroupId(null)}
-                      className="text-xs text-text-muted hover:text-text-primary"
-                    >
+                    </Button>
+                    <Button variant="ghost" size="xs" onClick={() => setEditingGroupId(null)}>
                       Cancel
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : (
@@ -201,28 +201,31 @@ export default function OrgTab({ orgId }: OrgTabProps) {
                     )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-2">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
                       onClick={() => {
                         setEditingGroupId(group.id);
                         setEditingGroupName(group.name);
                         setEditingGroupDesc(group.description || "");
                       }}
-                      className="p-1 rounded hover:bg-black/5 transition-colors"
                       title="Edit group"
                     >
                       <span className="material-icons-two-tone text-[16px] text-text-muted">
                         edit
                       </span>
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
                       onClick={() => handleDeleteGroup(group.id)}
-                      className="p-1 rounded hover:bg-red-50 transition-colors"
+                      className="hover:bg-red-50"
                       title="Delete group"
                     >
                       <span className="material-icons-two-tone text-[16px] text-red-400">
                         delete
                       </span>
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -232,23 +235,22 @@ export default function OrgTab({ orgId }: OrgTabProps) {
 
         {/* Create new group */}
         <div className="mt-4 flex items-center gap-2">
-          <input
+          <Input
             type="text"
             value={newGroupName}
             onChange={(e) => setNewGroupName(e.target.value)}
             placeholder="New group name..."
-            className="flex-1 px-3 py-2 text-sm rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-accent-purple/50"
+            className="flex-1"
             onKeyDown={(e) => {
               if (e.key === "Enter") handleCreateGroup();
             }}
           />
-          <button
+          <Button
             onClick={handleCreateGroup}
             disabled={creatingGroup || !newGroupName.trim()}
-            className="px-4 py-2 text-sm font-medium text-white bg-accent-purple rounded-lg hover:bg-accent-purple/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {creatingGroup ? "Creating..." : "Create Group"}
-          </button>
+          </Button>
         </div>
       </section>
     </div>

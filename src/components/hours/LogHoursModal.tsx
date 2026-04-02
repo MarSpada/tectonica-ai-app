@@ -1,6 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface LogHoursModalProps {
   onClose: () => void;
@@ -52,17 +61,13 @@ export default function LogHoursModal({ onClose, onLogged }: LogHoursModalProps)
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full max-w-sm mx-4 bg-white rounded-2xl shadow-xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
-          <h2 className="text-base font-bold text-text-primary">Log Volunteer Hours</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-black/5 transition-colors">
-            <span className="material-icons-two-tone text-[20px] text-text-muted">close</span>
-          </button>
-        </div>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Log Volunteer Hours</DialogTitle>
+        </DialogHeader>
 
-        <div className="p-5 space-y-4">
+        <div className="space-y-4">
           {error && (
             <div className="px-3 py-2 text-xs text-red-700 bg-red-50 rounded-lg">{error}</div>
           )}
@@ -71,7 +76,7 @@ export default function LogHoursModal({ onClose, onLogged }: LogHoursModalProps)
             <label className="block text-xs font-semibold text-text-primary mb-1">
               Hours <span className="text-red-500">*</span>
             </label>
-            <input
+            <Input
               type="number"
               value={hours}
               onChange={(e) => setHours(e.target.value)}
@@ -79,7 +84,6 @@ export default function LogHoursModal({ onClose, onLogged }: LogHoursModalProps)
               min="0.25"
               max="24"
               step="0.25"
-              className="w-full px-3 py-2 text-sm border border-black/10 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent-purple"
             />
           </div>
 
@@ -98,33 +102,29 @@ export default function LogHoursModal({ onClose, onLogged }: LogHoursModalProps)
             <label className="block text-xs font-semibold text-text-primary mb-1">
               What did you do?
             </label>
-            <input
+            <Input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g., Door knocking, phone banking..."
               maxLength={200}
-              className="w-full px-3 py-2 text-sm border border-black/10 rounded-lg focus:outline-none focus:ring-1 focus:ring-accent-purple"
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-black/5">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-text-secondary hover:bg-black/5 rounded-lg transition-colors"
-          >
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSubmit}
             disabled={submitting || !hours}
-            className="px-5 py-2 text-xs font-semibold text-white bg-green-500 rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="bg-green-500 hover:bg-green-600 text-white"
           >
             {submitting ? "Logging..." : "Log Hours"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
