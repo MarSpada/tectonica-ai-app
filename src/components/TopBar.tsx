@@ -104,9 +104,12 @@ export default function TopBar({ onToggleSidebar }: TopBarProps) {
         </Link>
 
         {/* Group pill */}
-        <span className="px-3 py-1 text-xs font-medium bg-white/50 rounded-full text-text-secondary">
+        <Link
+          href="/group"
+          className="px-3 py-1 text-xs font-medium bg-white/50 rounded-full text-text-secondary hover:bg-white/70 transition-colors"
+        >
           {groupName}
-        </span>
+        </Link>
       </div>
 
       {/* Right section — bell + logo */}

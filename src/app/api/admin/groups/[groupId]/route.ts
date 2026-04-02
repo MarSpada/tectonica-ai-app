@@ -24,14 +24,19 @@ export async function PUT(
   const profile = await getSuperAdmin(supabase);
   if (!profile) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { name } = await request.json();
+  const body = await request.json();
+  const { name, description } = body;
+
   if (!name?.trim()) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
+  const updateData: { name: string; description?: string | null } = { name: name.trim() };
+  if (description !== undefined) updateData.description = description;
+
   const { error } = await supabase
     .from("groups")
-    .update({ name: name.trim() })
+    .update(updateData)
     .eq("id", groupId)
     .eq("org_id", profile.org_id);
 

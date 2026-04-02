@@ -18,6 +18,7 @@ export default function OrgTab({ orgId }: OrgTabProps) {
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingGroupName, setEditingGroupName] = useState("");
+  const [editingGroupDesc, setEditingGroupDesc] = useState("");
 
   const fetchData = useCallback(async () => {
     if (!orgId) return;
@@ -25,7 +26,7 @@ export default function OrgTab({ orgId }: OrgTabProps) {
 
     const [orgRes, groupsRes] = await Promise.all([
       supabase.from("organizations").select("name").eq("id", orgId).single(),
-      supabase.from("groups").select("id, name").eq("org_id", orgId).order("created_at"),
+      supabase.from("groups").select("id, name, description").eq("org_id", orgId).order("created_at"),
     ]);
 
     if (orgRes.data) setOrgName(orgRes.data.name);
@@ -69,7 +70,7 @@ export default function OrgTab({ orgId }: OrgTabProps) {
     const res = await fetch(`/api/admin/groups/${groupId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editingGroupName.trim() }),
+      body: JSON.stringify({ name: editingGroupName.trim(), description: editingGroupDesc }),
     });
     if (res.ok) {
       setEditingGroupId(null);
@@ -149,44 +150,62 @@ export default function OrgTab({ orgId }: OrgTabProps) {
           {groups.map((group) => (
             <div
               key={group.id}
-              className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-black/[0.02] border border-black/5"
+              className="py-2.5 px-3 rounded-lg bg-black/[0.02] border border-black/5"
             >
               {editingGroupId === group.id ? (
-                <div className="flex items-center gap-2 flex-1">
+                <div className="space-y-2">
                   <input
                     type="text"
                     value={editingGroupName}
                     onChange={(e) => setEditingGroupName(e.target.value)}
-                    className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-accent-purple/50"
+                    placeholder="Group name"
+                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-accent-purple/50"
                     autoFocus
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") handleUpdateGroup(group.id);
                       if (e.key === "Escape") setEditingGroupId(null);
                     }}
                   />
-                  <button
-                    onClick={() => handleUpdateGroup(group.id)}
-                    className="text-xs font-medium text-accent-purple hover:underline"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => setEditingGroupId(null)}
-                    className="text-xs text-text-muted hover:text-text-primary"
-                  >
-                    Cancel
-                  </button>
+                  <textarea
+                    value={editingGroupDesc}
+                    onChange={(e) => setEditingGroupDesc(e.target.value)}
+                    placeholder="Group description (visible to all members)..."
+                    maxLength={500}
+                    rows={3}
+                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-accent-purple/50 resize-none"
+                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleUpdateGroup(group.id)}
+                      className="text-xs font-medium text-accent-purple hover:underline"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setEditingGroupId(null)}
+                      className="text-xs text-text-muted hover:text-text-primary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <>
-                  <span className="text-sm text-text-primary font-medium">
-                    {group.name}
-                  </span>
-                  <div className="flex items-center gap-2">
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0">
+                    <span className="text-sm text-text-primary font-medium">
+                      {group.name}
+                    </span>
+                    {group.description && (
+                      <p className="text-xs text-text-muted mt-0.5 line-clamp-2">
+                        {group.description}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
                     <button
                       onClick={() => {
                         setEditingGroupId(group.id);
                         setEditingGroupName(group.name);
+                        setEditingGroupDesc(group.description || "");
                       }}
                       className="p-1 rounded hover:bg-black/5 transition-colors"
                       title="Edit group"
@@ -205,7 +224,7 @@ export default function OrgTab({ orgId }: OrgTabProps) {
                       </span>
                     </button>
                   </div>
-                </>
+                </div>
               )}
             </div>
           ))}

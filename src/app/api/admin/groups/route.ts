@@ -22,7 +22,7 @@ export async function GET() {
 
   const { data: groups } = await supabase
     .from("groups")
-    .select("id, name, created_at")
+    .select("id, name, description, created_at")
     .eq("org_id", profile.org_id)
     .order("created_at");
 
