@@ -363,6 +363,10 @@ Desktop-first design. Mobile is out of scope for now.
 | `010_approval_requests.sql` | Approval workflow: approval_requests + approval_comments tables, status workflow (pending→approved/changes_requested), 5MB approvals storage bucket, create/update/resubmit RPCs |
 | `011_calendar_sources.sql` | Calendar sources per org: iCal/Google/Mobilize feed URLs, enabled toggle, color per source, RLS (members view, super_admin manage) |
 | `012_volunteer_hours.sql` | volunteer_hours table with user/group/date tracking, hours validation (>0), RLS for group member viewing and self-logging |
+| `013_fix_default_role.sql` | Changes default signup role from 'member' to 'supporter' in handle_new_user() trigger |
+| `014_fundraising_goals.sql` | fundraising_goals table (per group/month): goal, amount_raised, print_budget. RLS: members view, admins manage |
+| `015_reimbursement_requests.sql` | reimbursement_requests table + RPCs (create, update_status, resubmit). Storage bucket for attachments. Adds 'reimbursement_request' to notification types |
+| `016_group_description.sql` | Adds description column to groups table |
 
 ---
 
@@ -394,6 +398,11 @@ Desktop-first design. Mobile is out of scope for now.
 | `/api/approvals/[id]/status` | POST | Approve or request changes (sends Resend email) |
 | `/api/approvals/[id]/resubmit` | POST | Resubmit after changes requested |
 | `/api/approvals/reviewers` | GET | List available reviewers (admins) |
+| `/auth/callback` | GET | OAuth/email confirmation callback — signs out after confirmation, redirects to login |
+| `/api/fundraising` | GET/PATCH | GET: current month's fundraising goal for user's group. PATCH: update goal/budget (admin only, upserts) |
+| `/api/reimbursements` | GET/POST | GET: list reimbursement requests for group. POST: create request (RPC + notification to super_admin) |
+| `/api/reimbursements/[id]/status` | POST | Approve or request changes on reimbursement (reviewer only) |
+| `/api/reimbursements/[id]/resubmit` | POST | Resubmit after changes requested (submitter only) |
 | `/auth/callback` | GET | OAuth/email confirmation callback — signs out after confirmation, redirects to login |
 | `/auth/reset-callback` | GET | Password reset callback — exchanges PKCE code, redirects to /reset-password |
 
@@ -443,6 +452,9 @@ Desktop-first design. Mobile is out of scope for now.
 | `settings/SettingsView.tsx` | Main settings container |
 | `settings/ProfileTab.tsx` | Profile edit (name, bio, avatar upload) |
 | `settings/AccountTab.tsx` | Account settings |
+| `settings/ActivityTab.tsx` | Unified chronological activity log (hours, approvals, signups, reimbursements) |
+| `ReimbursementModal.tsx` | Reimbursement request form: amount, description, file upload (jpg/png/pdf) |
+| `GroupProfile.tsx` | Group profile page: name, description, member count, quick links |
 | `GroupConversationOverlay.tsx` | Real-time group messaging overlay |
 | `LeadersChat.tsx` | Slide-in leaders & organizers chat panel |
 
@@ -452,13 +464,13 @@ Desktop-first design. Mobile is out of scope for now.
 
 | File | Description |
 |---|---|
-| `lib/types.ts` | Type definitions: UserRole, Message, Conversation, Member, GroupMessage, NbSignup, SignupAssignment, AppNotification, ApprovalRequest, ApprovalComment, etc. |
+| `lib/types.ts` | Type definitions: UserRole, Message, Conversation, Member, GroupMessage, NbSignup, SignupAssignment, AppNotification, ApprovalRequest, ApprovalComment, FundraisingGoal, ReimbursementRequest, etc. |
 | `lib/bots.ts` | Hardcoded bot definitions: 24 bots with metadata (id, name, icon, category, description), categoryMeta colors, defaultFeaturedBotIds |
 | `lib/bots-prompts.ts` | Bot system prompts mapped by bot ID, falls back to generic prompt |
 | `lib/bot-resolver.ts` | getBots() (DB-first, fallback to hardcoded), getSystemPrompt() (DB-first, fallback to bots-prompts.ts) |
 | `lib/ical-parser.ts` | Lightweight ICS parser (no native deps) — handles DTSTART/DTEND with TZID, line unfolding, escaped chars |
 | `lib/avatar.ts` | Avatar utilities (upload, delete, generate URL) for Supabase Storage |
-| `lib/signup-utils.ts` | NationBuilder signup utilities (fetch, parse, enrich) |
+| `lib/signup-utils.ts` | NationBuilder signup utilities (fetch, parse, enrich). Returns connection status (connected/error/not_configured) |
 | `lib/UserProfileContext.tsx` | React Context for user profile data (role, org, group, name, avatar) |
 | `lib/supabase/server.ts` | Server-side Supabase client factory using cookies |
 | `lib/supabase/client.ts` | Client-side Supabase client factory |
@@ -488,7 +500,15 @@ Desktop-first design. Mobile is out of scope for now.
 - **Upcoming Events widget** — pulls from connected calendar feeds, shows next 30 days
 - **Volunteer hours tracking** — log hours, view detail overlay with entries by date, dashboard widget with real totals
 - **Dynamic top bar** — org name and group name fetched from DB, update when admin changes them
-- Connected Systems widget (NB: Connected, Calendar: reflects live state, Action Network/Mobilize: Not Connected)
+- **Connected Systems widget** — dynamic: NB shows real status (Functional/Error/Not Connected), Calendar reflects live feed state, Action Network/Mobilize: Not Connected
+- **Fundraising goals** — per group/month, admin-editable inline in widget and in admin panel, real data from DB
+- **Reimbursement requests** — submit with amount/description/attachment, approval workflow (pending→approved/changes_requested→resubmit), notifications to super_admin
+- **Activity log** — unified chronological timeline in Settings > Activity tab showing hours, approvals, signups, reimbursements with type tags
+- **Notification bar** — handles multiple notification types simultaneously (signups, approvals, reimbursements), uses real signup_assignments count, clickable signup count opens lightbox
+- **Group profile page** — `/group` route showing group name, description, member count, quick links. Group pill in top bar is clickable link.
+- **Group descriptions** — admin can edit in Organization tab, visible on group profile page
+- **Sidebar role display** — shows dynamic user role instead of hardcoded "Settings"
+- **Default signup role** — new users default to 'supporter' (lowest privilege)
 - GSAP entrance animations throughout
 - Deployed on Railway with auto-deploy from main
 
@@ -505,7 +525,7 @@ Desktop-first design. Mobile is out of scope for now.
 - Action Network API connection
 - Mobilize API connection
 - Image generation for Graphics Creation bot
-- Custom SMTP for Supabase Auth (replace built-in rate-limited SMTP with Resend SMTP)
+- Custom SMTP for Supabase Auth — Resend SMTP is configured in Supabase but `tectonica.co` domain is unverified in Resend. Partner needs to add DNS records in GoDaddy.
 
 ### Priority — Platform
 - Multi-tenancy (multiple orgs/groups — schema supports it, UI is single-group)
@@ -514,12 +534,19 @@ Desktop-first design. Mobile is out of scope for now.
 
 ## Known Issues / Next Session
 
-- Client components that call GET routes (RightSidebar, NotificationBar,
-  TopBar) now receive 401s when unauthenticated. Verify they handle
-  error responses gracefully and don't throw uncaught errors during
-  auth load race conditions.
+- **Resend domain verification BLOCKER** — `tectonica.co` is "Not Started" in Resend.
+  Partner must add DNS records in GoDaddy. Blocks: signup confirmation emails,
+  password reset emails, and all transactional emails to non-owner addresses.
+  Supabase SMTP is configured correctly, just needs the verified domain.
 - LeadersChat contacts/messages and CampaignStats goals/notes/events are
   now empty arrays — these components need real data sources (DB or API)
   before they are functional again.
-- Orphaned seed profiles (no auth.users row) have been deleted from the
-  profiles table. Member directory should now show only real users.
+- Reimbursement email notifications are coded but won't send until Resend
+  domain is verified. In-app notifications work.
+- QA tested and passed: US-03 (Login), US-04 (Logout), US-06 (Edit Profile),
+  US-07 (Member Permissions), US-08 (Group Admin), US-09 (Super Admin),
+  US-10 (Role Change), US-11 (Supporter Visibility). Remaining stories
+  US-12 through US-30 still need testing.
+- Test accounts: mar@tectonica.co (super_admin), ned@tectonica.co (group_admin),
+  production@tectonica.co (group_admin), mar.isabel.spada@gmail.com (member),
+  tectonica-ai-test1@maildrop.cc (supporter, manually created in Supabase).
