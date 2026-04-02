@@ -107,6 +107,12 @@ codebase and follow it — don't invent a new approach.
 - All widget size constraints use WIDGET_CONSTRAINTS — never hardcode minW/maxW/minH/maxH in components
 - To add a new widget: add its ID to WIDGETS, define its LABEL, PERMISSIONS, CONSTRAINTS, and default position in SYSTEM_DEFAULT_LAYOUT — nowhere else
 
+### Overlays
+- Use Shadcn Sheet (side="right") for detail views, multi-field forms, and anything where the user might want to reference background content while interacting
+- Use Shadcn Dialog for confirmations, destructive actions, and small single-purpose forms (1-3 fields)
+- Never use custom lightbox implementations — always Sheet or Dialog
+- Existing modals converted in Session B used Dialog — review against these rules in future sessions and convert to Sheet where appropriate
+
 ---
 
 ## Design System
