@@ -38,9 +38,9 @@ export const SIDEBAR_WIDTH = "180px" as const;
 export const RIGHT_SIDEBAR = "clamp(340px, 42vw, 780px)" as const;
 
 // ─── Border Radii ───────────────────────────────────────────────
-export const RADIUS = "8px" as const;
-export const RADIUS_SM = "6px" as const;
-export const RADIUS_LG = "12px" as const;
+export const RADIUS = "4px" as const;
+export const RADIUS_SM = "2px" as const;
+export const RADIUS_LG = "4px" as const;
 
 // ─── Widget Background Colors (Right Sidebar) ───────────────────
 // Note: "Recruit More People" uses ACCENT_PURPLE — no separate token.

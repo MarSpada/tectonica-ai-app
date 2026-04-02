@@ -113,6 +113,11 @@ codebase and follow it — don't invent a new approach.
 - Never use custom lightbox implementations — always Sheet or Dialog
 - Existing modals converted in Session B used Dialog — review against these rules in future sessions and convert to Sheet where appropriate
 
+### Border radius
+- Shadcn --radius base is set to 4px — deliberately lower than default to match our design language
+- Badges use rounded-full intentionally — do not change
+- Do not override border radius per-component unless there is a specific design reason
+
 ---
 
 ## Design System
@@ -134,9 +139,9 @@ codebase and follow it — don't invent a new approach.
 | `--accent-purple` | `#7C3AED` | Purple accent (buttons, highlights) |
 | `--sidebar-width` | `180px` | Left sidebar width |
 | `--right-sidebar` | `clamp(340px, 42vw, 780px)` | Right sidebar (responsive) |
-| `--radius` | `8px` | Default border radius |
-| `--radius-sm` | `6px` | Small radius |
-| `--radius-lg` | `12px` | Large radius |
+| `--radius` | `4px` | Default border radius |
+| `--radius-sm` | `2px` | Small radius |
+| `--radius-lg` | `4px` | Large radius |
 
 ### Category Pastel Colors (bot cards)
 
