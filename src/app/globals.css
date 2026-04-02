@@ -30,10 +30,11 @@
   /* Text */
   --text-primary: #1a1a2e;
   --text-secondary: #4a4a6a;
-  --text-muted: #6b6b8a;
+  --text-muted: #8a8aaa;
 
   /* Accents */
   --accent-purple: #7C3AED;
+  --accent-purple-light: #9B5CF6;
 
   /* Category pastel colors */
   --cat-advisors: #FFB5A7;
@@ -53,6 +54,30 @@
   --radius: 8px;
   --radius-sm: 6px;
   --radius-lg: 12px;
+
+  /* Widget backgrounds */
+  --widget-bg-signups: #fef3c7;
+  --widget-bg-conversations: #f5f3ff;
+  --widget-bg-actions: #f0e6ff;
+  --widget-bg-fundraising: #fff3e0;
+  --widget-bg-recruitment-goal: #e0f2fe;
+  --widget-bg-request-approval: #fdf2f8;
+  --widget-bg-connected-systems: #f8fafc;
+  --widget-bg-hours: #ecfdf5;
+  --widget-bg-events: #ede9fe;
+
+  /* Status colors */
+  --status-online: #22C55E;
+  --status-away: #F59E0B;
+  --status-offline: #9CA3AF;
+
+  /* Gradient */
+  --gradient-purple: linear-gradient(135deg, #7C3AED, #9B5CF6);
+
+  /* Chat surfaces */
+  --chat-input-bg: rgba(212, 192, 253, .85);
+  --msg-bot-bg: rgba(255, 255, 255, .7);
+  --msg-user-bg: rgba(124, 58, 237, .1);
 }
 
 @theme inline {
@@ -66,6 +91,7 @@
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
   --color-accent-purple: var(--accent-purple);
+  --color-accent-purple-light: var(--accent-purple-light);
   --color-cat-advisors: var(--cat-advisors);
   --color-cat-advisors-accent: var(--cat-advisors-accent);
   --color-cat-create: var(--cat-create);
@@ -74,6 +100,18 @@
   --color-cat-tools-accent: var(--cat-tools-accent);
   --color-cat-analyze: var(--cat-analyze);
   --color-cat-analyze-accent: var(--cat-analyze-accent);
+  --color-widget-bg-signups: var(--widget-bg-signups);
+  --color-widget-bg-conversations: var(--widget-bg-conversations);
+  --color-widget-bg-actions: var(--widget-bg-actions);
+  --color-widget-bg-fundraising: var(--widget-bg-fundraising);
+  --color-widget-bg-recruitment-goal: var(--widget-bg-recruitment-goal);
+  --color-widget-bg-request-approval: var(--widget-bg-request-approval);
+  --color-widget-bg-connected-systems: var(--widget-bg-connected-systems);
+  --color-widget-bg-hours: var(--widget-bg-hours);
+  --color-widget-bg-events: var(--widget-bg-events);
+  --color-status-online: var(--status-online);
+  --color-status-away: var(--status-away);
+  --color-status-offline: var(--status-offline);
 }
 
 body {

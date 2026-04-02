@@ -22,9 +22,9 @@ interface Message {
 const contacts: Contact[] = [];
 
 const statusColors: Record<string, string> = {
-  online: "#22C55E",
-  away: "#F59E0B",
-  offline: "#9CA3AF",
+  online: "var(--status-online)",
+  away: "var(--status-away)",
+  offline: "var(--status-offline)",
 };
 
 const statusLabels: Record<string, string> = {
@@ -59,7 +59,7 @@ export default function LeadersChat({ open, onClose, userName = "" }: LeadersCha
       id: Date.now().toString(),
       sender: userName,
       initials: userName.slice(0, 2).toUpperCase(),
-      color: "#6B3FA0",
+      color: "var(--sidebar-active)",
       text: input.trim(),
       time: new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
     };
@@ -84,7 +84,7 @@ export default function LeadersChat({ open, onClose, userName = "" }: LeadersCha
       {/* Panel */}
       <div
         className="fixed left-[var(--sidebar-width)] top-[52px] bottom-0 w-[360px] bg-white z-50 flex flex-col shadow-2xl"
-        style={{ borderRight: "1px solid rgba(0,0,0,.08)" }}
+        style={{ borderRight: "1px solid var(--card-stroke)" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-black/5">
@@ -213,7 +213,7 @@ export default function LeadersChat({ open, onClose, userName = "" }: LeadersCha
                   disabled={!input.trim()}
                   className="w-8 h-8 rounded-full flex items-center justify-center text-white transition-opacity disabled:opacity-30"
                   style={{
-                    background: "linear-gradient(135deg, #7C3AED, #9B5CF6)",
+                    background: "var(--gradient-purple)",
                   }}
                 >
                   <svg width="16" height="16" fill="none" viewBox="0 0 24 24">

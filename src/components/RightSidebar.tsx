@@ -166,7 +166,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         {/* New Sign-Ups — cols 1-9, rows 1-2 */}
         <div
           className="rounded-xl p-4"
-          style={{ gridColumn: "1 / 10", gridRow: "1 / 3", backgroundColor: "#fef3c7" }}
+          style={{ gridColumn: "1 / 10", gridRow: "1 / 3", backgroundColor: "var(--widget-bg-signups)" }}
         >
           <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-2">
             New Sign-Ups
@@ -239,7 +239,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         {/* Recruit More People — cols 10-12, rows 1-2 */}
         <div
           className="rounded-xl p-3 flex flex-col items-center justify-center text-center text-white"
-          style={{ gridColumn: "10 / 13", gridRow: "1 / 3", backgroundColor: "#0EA5E9" }}
+          style={{ gridColumn: "10 / 13", gridRow: "1 / 3", backgroundColor: "var(--accent-purple)" }}
         >
           <span className="material-icons-two-tone text-[36px] mb-1">
             person_add
@@ -252,7 +252,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         {/* Group Conversations — cols 1-6, rows 3-7 */}
         <div
           className="rounded-xl p-4 flex flex-col"
-          style={{ gridColumn: "1 / 7", gridRow: "3 / 8", backgroundColor: "#f5f3ff" }}
+          style={{ gridColumn: "1 / 7", gridRow: "3 / 8", backgroundColor: "var(--widget-bg-conversations)" }}
         >
           <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-2">
             Group Conversations
@@ -282,7 +282,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         {/* Group Actions — cols 7-12, rows 3-7 */}
         <div
           className="rounded-xl p-4"
-          style={{ gridColumn: "7 / 13", gridRow: "3 / 8", backgroundColor: "#f0e6ff" }}
+          style={{ gridColumn: "7 / 13", gridRow: "3 / 8", backgroundColor: "var(--widget-bg-actions)" }}
         >
           <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-2">
             Group Actions to Take Today
@@ -312,7 +312,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         {/* Fundraising — cols 1-4, rows 8-14 */}
         <div
           className="rounded-xl p-4 flex flex-col"
-          style={{ gridColumn: "1 / 5", gridRow: "8 / 15", backgroundColor: "#fff3e0" }}
+          style={{ gridColumn: "1 / 5", gridRow: "8 / 15", backgroundColor: "var(--widget-bg-fundraising)" }}
         >
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
@@ -420,7 +420,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         {/* Recruitment Goal — cols 5-8, rows 8-11 */}
         <div
           className="rounded-xl p-4"
-          style={{ gridColumn: "5 / 9", gridRow: "8 / 12", backgroundColor: "#e0f2fe" }}
+          style={{ gridColumn: "5 / 9", gridRow: "8 / 12", backgroundColor: "var(--widget-bg-recruitment-goal)" }}
         >
           <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-3">
             Recruitment Goal
@@ -450,7 +450,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         {/* Request Approval — cols 9-12, rows 8-9 */}
         <div
           className="rounded-xl p-4 flex flex-col"
-          style={{ gridColumn: "9 / 13", gridRow: "8 / 10", backgroundColor: "#fdf2f8" }}
+          style={{ gridColumn: "9 / 13", gridRow: "8 / 10", backgroundColor: "var(--widget-bg-request-approval)" }}
         >
           <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
             Request Approval
@@ -469,7 +469,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         {/* Connected Systems — cols 9-12, rows 10-14 */}
         <div
           className="rounded-xl p-4"
-          style={{ gridColumn: "9 / 13", gridRow: "10 / 15", backgroundColor: "#e8e8e8" }}
+          style={{ gridColumn: "9 / 13", gridRow: "10 / 15", backgroundColor: "var(--widget-bg-connected-systems)" }}
         >
           <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-2">
             Connected Systems
@@ -492,7 +492,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         {/* Hours Volunteered — cols 5-9, rows 12-14 */}
         <div
           className="rounded-xl p-4 cursor-pointer hover:ring-2 hover:ring-green-300 transition-all"
-          style={{ gridColumn: "5 / 9", gridRow: "12 / 15", backgroundColor: "#ecfdf5" }}
+          style={{ gridColumn: "5 / 9", gridRow: "12 / 15", backgroundColor: "var(--widget-bg-hours)" }}
           onClick={() => setShowHoursDetail(true)}
           title="Click to see details"
         >
@@ -518,7 +518,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         {/* Upcoming Events — cols 9-12, rows 15-20 */}
         <div
           className="rounded-xl p-4"
-          style={{ gridColumn: "9 / 13", gridRow: "15 / 21", backgroundColor: "#ede9fe" }}
+          style={{ gridColumn: "9 / 13", gridRow: "15 / 21", backgroundColor: "var(--widget-bg-events)" }}
         >
           <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-2">
             Upcoming Events

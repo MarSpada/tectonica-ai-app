@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { CALENDAR_COLORS } from "@/lib/design-tokens";
 
 interface CalendarSource {
   id: string;
@@ -18,10 +19,6 @@ const PROVIDER_OPTIONS = [
   { value: "mobilize", label: "Mobilize", icon: "groups" },
 ];
 
-const COLOR_OPTIONS = [
-  "#7C3AED", "#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#EC4899", "#6366F1", "#14B8A6",
-];
-
 export default function IntegrationsTab() {
   const [sources, setSources] = useState<CalendarSource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +26,7 @@ export default function IntegrationsTab() {
   const [name, setName] = useState("");
   const [feedUrl, setFeedUrl] = useState("");
   const [provider, setProvider] = useState("ical");
-  const [color, setColor] = useState("#7C3AED");
+  const [color, setColor] = useState<string>(CALENDAR_COLORS[0]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -66,7 +63,7 @@ export default function IntegrationsTab() {
         setName("");
         setFeedUrl("");
         setProvider("ical");
-        setColor("#7C3AED");
+        setColor(CALENDAR_COLORS[0]);
         setShowForm(false);
         await fetchSources();
       } else {
@@ -167,7 +164,7 @@ export default function IntegrationsTab() {
               <div>
                 <label className="block text-xs font-semibold text-text-primary mb-1">Color</label>
                 <div className="flex gap-1.5">
-                  {COLOR_OPTIONS.map((c) => (
+                  {CALENDAR_COLORS.map((c) => (
                     <button
                       key={c}
                       onClick={() => setColor(c)}

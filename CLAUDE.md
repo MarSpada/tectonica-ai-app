@@ -602,7 +602,7 @@ Desktop-first design. Mobile is out of scope for now.
 ## UI Improvement Sessions
 
 ### UI Session A — Design token consolidation
-Status: Ready to run
+Status: Complete
 Goal: Centralise all design tokens into lib/design-tokens.ts and tailwind.config.ts. Replace all hardcoded hex/rgba values in components with token references. No visual changes.
 
 ### UI Session B — Shadcn/ui introduction

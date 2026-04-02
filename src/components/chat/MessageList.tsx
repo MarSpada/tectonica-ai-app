@@ -31,7 +31,7 @@ export default function MessageList({
           <p className="text-xs font-semibold text-accent-purple mb-1">{bot.name}</p>
           <div
             className="rounded-[4px_16px_16px_16px] px-4 py-3 backdrop-blur-sm"
-            style={{ backgroundColor: "rgba(255,255,255,.7)" }}
+            style={{ backgroundColor: "var(--msg-bot-bg)" }}
           >
             <p className="text-sm text-text-primary">
               Hi {userName}! I&apos;m the <strong>{bot.name}</strong>.{" "}
@@ -67,8 +67,8 @@ export default function MessageList({
                 style={{
                   backgroundColor:
                     msg.role === "user"
-                      ? "rgba(124,58,237,.1)"
-                      : "rgba(255,255,255,.7)",
+                      ? "var(--msg-user-bg)"
+                      : "var(--msg-bot-bg)",
                 }}
               >
                 {msg.content}

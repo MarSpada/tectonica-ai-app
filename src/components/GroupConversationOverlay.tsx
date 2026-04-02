@@ -197,7 +197,7 @@ export default function GroupConversationOverlay({
             disabled={!input.trim()}
             className="w-8 h-8 rounded-full flex items-center justify-center text-white transition-opacity disabled:opacity-30"
             style={{
-              background: "linear-gradient(135deg, #7C3AED, #9B5CF6)",
+              background: "var(--gradient-purple)",
             }}
           >
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24">

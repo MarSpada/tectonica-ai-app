@@ -37,7 +37,7 @@ export default function ChatInput({
   return (
     <div
       className="px-4 py-3 backdrop-blur-md"
-      style={{ backgroundColor: "rgba(212, 192, 253, .85)" }}
+      style={{ backgroundColor: "var(--chat-input-bg)" }}
     >
       <div className="flex items-end gap-3 max-w-3xl mx-auto">
         <textarea
@@ -62,7 +62,7 @@ export default function ChatInput({
           disabled={!value.trim() || isStreaming}
           className="w-10 h-10 rounded-full flex items-center justify-center text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
-            background: "linear-gradient(135deg, #7C3AED 0%, #9B5CF6 100%)",
+            background: "var(--gradient-purple)",
           }}
         >
           <svg
