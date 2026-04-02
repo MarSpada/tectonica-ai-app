@@ -3,6 +3,15 @@
 import { useState } from "react";
 import type { UserRole } from "@/lib/types";
 import { getRoleLabel } from "@/lib/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface RoleChangeMember {
   id: string;
@@ -42,25 +51,24 @@ export default function RoleChangeModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative bg-card-bg rounded-xl border border-card-stroke p-6 w-full max-w-sm shadow-lg">
-        <h3 className="text-sm font-semibold text-text-primary mb-1">
-          Change Role
-        </h3>
-        <p className="text-xs text-text-muted mb-4">
-          {member.full_name || "Unknown"} — currently{" "}
-          <strong>{getRoleLabel(member.role)}</strong>
-        </p>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Change Role</DialogTitle>
+          <DialogDescription>
+            {member.full_name || "Unknown"} — currently{" "}
+            <strong className="text-foreground">{getRoleLabel(member.role)}</strong>
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="space-y-2 mb-5">
+        <div className="space-y-2">
           {availableRoles.map((r) => (
             <label
               key={r}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
                 selectedRole === r
-                  ? "border-accent-purple bg-accent-purple/5"
-                  : "border-black/5 hover:bg-black/[0.02]"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:bg-muted"
               }`}
             >
               <input
@@ -69,31 +77,27 @@ export default function RoleChangeModal({
                 value={r}
                 checked={selectedRole === r}
                 onChange={() => setSelectedRole(r)}
-                className="accent-accent-purple"
+                className="accent-[var(--accent-purple)]"
               />
-              <span className="text-sm font-medium text-text-primary">
+              <span className="text-sm font-medium text-foreground">
                 {getRoleLabel(r)}
               </span>
             </label>
           ))}
         </div>
 
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary"
-          >
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleConfirm}
             disabled={saving || selectedRole === member.role}
-            className="px-4 py-2 text-sm font-medium text-white bg-accent-purple rounded-lg hover:bg-accent-purple/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? "Saving..." : "Update Role"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

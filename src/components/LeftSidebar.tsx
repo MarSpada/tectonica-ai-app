@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useUserProfile } from "@/lib/UserProfileContext";
 import { getAvatarColor, getInitials } from "@/lib/avatar";
+import { Input } from "@/components/ui/input";
 import LeadersChat from "./LeadersChat";
 
 const recentChats = [
@@ -125,10 +126,10 @@ export default function LeftSidebar({
 
             {/* Search */}
             <div className="sidebar-search px-1 mb-2">
-              <input
+              <Input
                 type="text"
                 placeholder="Search chats..."
-                className="w-full px-3 py-1.5 text-xs bg-white/60 rounded-md border border-black/5 placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent-purple"
+                className="h-7 text-xs"
               />
             </div>
 

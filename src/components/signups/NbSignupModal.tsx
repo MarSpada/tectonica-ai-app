@@ -4,6 +4,15 @@ import { useState } from "react";
 import { getAvatarColor, getInitials } from "@/lib/avatar";
 import { formatSignupTime, isUrgent } from "@/lib/signup-utils";
 import type { NbSignup, Member, SignupAssignment } from "@/lib/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 interface NbSignupModalProps {
   signup: NbSignup | null;
@@ -69,42 +78,28 @@ export default function NbSignupModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="relative bg-card-bg rounded-2xl shadow-xl max-w-md w-full mx-4 p-8 max-h-[90vh] overflow-y-auto">
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1 rounded-lg hover:bg-black/5 transition-colors"
-        >
-          <span className="material-icons-two-tone text-[20px] text-text-muted">
-            close
-          </span>
-        </button>
-
-        {/* Avatar + Name */}
-        <div className="flex flex-col items-center mb-4">
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
+        {/* Avatar + Name header */}
+        <div className="flex flex-col items-center pt-8 px-6 pb-4">
           <div
             className={`w-20 h-20 rounded-full ${getAvatarColor(signup.id)} flex items-center justify-center text-2xl font-bold text-white`}
           >
             {getInitials(signup.name)}
           </div>
 
-          <h2 className="mt-3 text-lg font-bold text-text-primary">
-            {signup.name}
-          </h2>
+          <DialogHeader className="items-center mt-3">
+            <DialogTitle className="text-lg">{signup.name}</DialogTitle>
+          </DialogHeader>
 
-          <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700">
+          <Badge variant="secondary" className="mt-2 bg-blue-50 text-blue-700 border-blue-200 border">
             <img src="/nb-icon.png" alt="" className="w-4 h-4" />
             via NationBuilder
-          </span>
+          </Badge>
 
           <span
             className={`mt-2 text-xs ${
-              time.urgent ? "font-semibold text-red-500" : "text-text-muted"
+              time.urgent ? "font-semibold text-red-500" : "text-muted-foreground"
             }`}
           >
             {time.text}
@@ -113,7 +108,7 @@ export default function NbSignupModal({
 
         {/* Urgency banner */}
         {urgent && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
+          <div className="mx-6 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4">
             <div className="flex items-start gap-2">
               <span className="material-icons-two-tone text-[18px] text-amber-600 mt-0.5">
                 warning
@@ -126,46 +121,45 @@ export default function NbSignupModal({
           </div>
         )}
 
-        {/* Divider */}
-        <div className="border-t border-black/5 my-4" />
+        <Separator />
 
         {/* Info rows */}
-        <div className="space-y-3">
+        <div className="space-y-3 px-6 py-4">
           {signup.email && (
             <div className="flex items-center gap-3">
-              <span className="material-icons-two-tone text-[18px] text-text-muted">
+              <span className="material-icons-two-tone text-[18px] text-muted-foreground">
                 mail
               </span>
-              <span className="text-sm text-text-secondary">
+              <span className="text-sm text-secondary-foreground">
                 {signup.email}
               </span>
             </div>
           )}
           {signup.phone ? (
             <div className="flex items-center gap-3">
-              <span className="material-icons-two-tone text-[18px] text-text-muted">
+              <span className="material-icons-two-tone text-[18px] text-muted-foreground">
                 phone
               </span>
-              <span className="text-sm text-text-secondary">
+              <span className="text-sm text-secondary-foreground">
                 {signup.phone}
               </span>
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <span className="material-icons-two-tone text-[18px] text-text-muted">
+              <span className="material-icons-two-tone text-[18px] text-muted-foreground">
                 phone
               </span>
-              <span className="text-sm text-text-muted italic">
+              <span className="text-sm text-muted-foreground italic">
                 No phone available
               </span>
             </div>
           )}
           {assignment && (
             <div className="flex items-center gap-3">
-              <span className="material-icons-two-tone text-[18px] text-text-muted">
+              <span className="material-icons-two-tone text-[18px] text-muted-foreground">
                 person
               </span>
-              <span className="text-sm text-text-secondary">
+              <span className="text-sm text-secondary-foreground">
                 Assigned to{" "}
                 <strong>{assignment.assignee_name}</strong>
               </span>
@@ -173,58 +167,66 @@ export default function NbSignupModal({
           )}
         </div>
 
-        {/* Divider */}
-        <div className="border-t border-black/5 my-4" />
+        <Separator />
 
-        {/* Action buttons */}
-        <div className="flex gap-3">
-          {signup.email && (
-            <a
-              href={`mailto:${signup.email}`}
-              className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-white bg-accent-purple rounded-xl hover:bg-purple-700 transition-colors"
-            >
-              <span className="material-icons-two-tone text-[16px]">mail</span>
-              Contact
-            </a>
-          )}
-          <a
-            href={signup.phone ? `tel:${signup.phone}` : undefined}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-xl transition-colors ${
-              signup.phone
-                ? "text-white bg-green-500 hover:bg-green-600 cursor-pointer"
-                : "text-text-muted bg-black/5 cursor-not-allowed"
-            }`}
-            onClick={(e) => !signup.phone && e.preventDefault()}
-          >
-            <span className="material-icons-two-tone text-[16px]">call</span>
-            Call
-          </a>
-        </div>
+        {/* Action buttons + Assign */}
+        <div className="px-6 py-4 space-y-3">
+          <div className="flex gap-3">
+            {signup.email && (
+              <Button
+                className="flex-1"
+                render={<a href={`mailto:${signup.email}`} />}
+              >
+                <span className="material-icons-two-tone text-[16px]">mail</span>
+                Contact
+              </Button>
+            )}
+            {signup.phone ? (
+              <Button
+                variant="outline"
+                className="flex-1 text-green-700 border-green-300 hover:bg-green-50"
+                render={<a href={`tel:${signup.phone}`} />}
+              >
+                <span className="material-icons-two-tone text-[16px]">call</span>
+                Call
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                className="flex-1"
+                disabled
+              >
+                <span className="material-icons-two-tone text-[16px]">call</span>
+                Call
+              </Button>
+            )}
+          </div>
 
-        {/* Assign section */}
-        <div className="mt-4">
+          {/* Assign section */}
           {!showAssignDropdown ? (
-            <button
+            <Button
+              variant="outline"
               onClick={() => setShowAssignDropdown(true)}
-              className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-accent-purple border border-accent-purple/30 rounded-xl hover:bg-accent-purple/5 transition-colors"
+              className="w-full text-primary border-primary/30 hover:bg-primary/5"
             >
               <span className="material-icons-two-tone text-[16px]">
                 person_add
               </span>
               {assignment ? "Reassign to Another Person" : "Assign to a Person"}
-            </button>
+            </Button>
           ) : (
-            <div className="border border-black/10 rounded-xl overflow-hidden">
-              <div className="px-3 py-2 bg-black/[0.02] border-b border-black/5 flex items-center justify-between">
-                <span className="text-xs font-semibold text-text-primary uppercase tracking-wider">
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="px-3 py-2 bg-muted/50 border-b border-border flex items-center justify-between">
+                <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
                   Select a member
                 </span>
-                <button
+                <Button
+                  variant="ghost"
+                  size="xs"
                   onClick={() => setShowAssignDropdown(false)}
-                  className="text-xs text-text-muted hover:text-text-primary"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
               <div className="max-h-48 overflow-y-auto">
                 {assignableMembers.map((m) => (
@@ -232,7 +234,7 @@ export default function NbSignupModal({
                     key={m.id}
                     disabled={isAssigning}
                     onClick={() => handleAssign(m.id)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-accent-purple/5 transition-colors disabled:opacity-50 text-left"
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-primary/5 transition-colors disabled:opacity-50 text-left"
                   >
                     {m.avatar_url ? (
                       <img
@@ -248,17 +250,17 @@ export default function NbSignupModal({
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <span className="text-xs font-medium text-text-primary block truncate">
+                      <span className="text-xs font-medium text-foreground block truncate">
                         {m.full_name || "Unknown"}
                       </span>
-                      <span className="text-[10px] text-text-muted capitalize">
+                      <span className="text-[10px] text-muted-foreground capitalize">
                         {m.role}
                       </span>
                     </div>
                     {assignment?.assigned_to === m.id && (
-                      <span className="text-[10px] font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                      <Badge variant="secondary" className="bg-green-50 text-green-600 text-[10px]">
                         Current
-                      </span>
+                      </Badge>
                     )}
                   </button>
                 ))}
@@ -266,7 +268,7 @@ export default function NbSignupModal({
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

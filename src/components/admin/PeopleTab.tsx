@@ -8,6 +8,25 @@ import {
   getRoleBadgeStyle,
   getRoleLabel,
 } from "@/lib/avatar";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import RoleChangeModal from "./RoleChangeModal";
 import GroupReassignModal from "./GroupReassignModal";
 
@@ -139,14 +158,6 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <div className="w-6 h-6 border-2 border-accent-purple border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   const roleFilterOptions: { key: RoleFilter; label: string }[] = [
     { key: "all", label: "All" },
     { key: "super_admin", label: "Super Admin" },
@@ -155,21 +166,68 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
     { key: "supporter", label: "Supporter" },
   ];
 
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {/* Toolbar skeleton */}
+        <div className="flex flex-wrap items-center gap-3">
+          <Skeleton className="h-8 w-72 rounded-lg" />
+          <div className="flex gap-1.5">
+            {roleFilterOptions.map((f) => (
+              <Skeleton key={f.key} className="h-7 w-20 rounded-full" />
+            ))}
+          </div>
+        </div>
+        {/* Table skeleton */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="px-4 py-3 border-b border-border">
+            <div className="flex gap-4">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-20" />
+              {isSuperAdmin && <Skeleton className="h-4 w-24" />}
+              <Skeleton className="h-4 w-16 ml-auto" />
+            </div>
+          </div>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-border last:border-0">
+              <Skeleton className="h-9 w-9 rounded-full flex-shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-3 w-48" />
+              </div>
+              <Skeleton className="h-5 w-20 rounded-full" />
+              {isSuperAdmin && <Skeleton className="h-4 w-24" />}
+              <div className="flex gap-1">
+                <Skeleton className="h-7 w-7 rounded-lg" />
+                {isSuperAdmin && (
+                  <>
+                    <Skeleton className="h-7 w-7 rounded-lg" />
+                    <Skeleton className="h-7 w-7 rounded-lg" />
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
         {/* Search */}
         <div className="relative w-72">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 material-icons-two-tone text-[18px] text-text-muted">
+          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 material-icons-two-tone text-[18px] text-muted-foreground pointer-events-none">
             search
           </span>
-          <input
+          <Input
             type="text"
             placeholder="Search by name or email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm bg-white/60 rounded-xl border border-black/5 placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent-purple/30"
+            className="pl-9"
           />
         </div>
 
@@ -181,8 +239,8 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
               onClick={() => setRoleFilter(f.key)}
               className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
                 roleFilter === f.key
-                  ? "bg-accent-purple text-white"
-                  : "bg-white/60 text-text-secondary border border-black/5 hover:bg-black/5"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-card text-secondary-foreground border border-border hover:bg-muted"
               }`}
             >
               {f.label}
@@ -192,63 +250,56 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
 
         {/* Group filter (super_admin only) */}
         {isSuperAdmin && uniqueGroups.length > 1 && (
-          <select
-            value={groupFilter}
-            onChange={(e) => setGroupFilter(e.target.value)}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg border border-black/10 bg-white focus:outline-none focus:ring-2 focus:ring-accent-purple/30"
-          >
-            <option value="all">All Groups</option>
-            {uniqueGroups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
+          <Select value={groupFilter} onValueChange={(v) => setGroupFilter(v ?? "all")}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Groups</SelectItem>
+              {uniqueGroups.map((g) => (
+                <SelectItem key={g.id} value={g.id}>
+                  {g.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
 
-        <span className="text-xs text-text-muted ml-auto">
+        <Badge variant="outline" className="ml-auto text-muted-foreground">
           {filteredMembers.length} member{filteredMembers.length !== 1 ? "s" : ""}
-        </span>
+        </Badge>
       </div>
 
       {/* Members table */}
       {filteredMembers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16">
-          <span className="material-icons-two-tone text-5xl text-text-muted">
+        <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-border bg-card">
+          <span className="material-icons-two-tone text-5xl text-muted-foreground">
             group_off
           </span>
-          <p className="text-sm text-text-muted mt-2">No members found.</p>
+          <p className="text-sm font-medium text-foreground mt-3">No members found</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {search || roleFilter !== "all"
+              ? "Try adjusting your search or filters."
+              : "No members in this organization yet."}
+          </p>
         </div>
       ) : (
-        <div className="bg-card-bg rounded-xl border border-card-stroke overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-black/5 text-left">
-                <th className="px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                  Member
-                </th>
-                <th className="px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                  Role
-                </th>
-                {isSuperAdmin && (
-                  <th className="px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                    Group
-                  </th>
-                )}
-                <th className="px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="pl-4">Member</TableHead>
+                <TableHead>Role</TableHead>
+                {isSuperAdmin && <TableHead>Group</TableHead>}
+                <TableHead className="text-right pr-4">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filteredMembers.map((member) => {
                 const badge = getRoleBadgeStyle(member.role);
                 return (
-                  <tr
-                    key={member.id}
-                    className="border-b border-black/[0.03] last:border-0 hover:bg-black/[0.02] transition-colors"
-                  >
-                    <td className="px-4 py-3">
+                  <TableRow key={member.id}>
+                    <TableCell className="pl-4">
                       <div className="flex items-center gap-3">
                         {member.avatar_url ? (
                           <img
@@ -266,7 +317,7 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
                         <div className="min-w-0">
                           {editingNameId === member.id ? (
                             <div className="flex items-center gap-1">
-                              <input
+                              <Input
                                 type="text"
                                 value={editingNameValue}
                                 onChange={(e) => setEditingNameValue(e.target.value)}
@@ -275,98 +326,106 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
                                   if (e.key === "Escape") setEditingNameId(null);
                                 }}
                                 autoFocus
-                                className="text-sm font-medium text-text-primary px-1.5 py-0.5 border border-accent-purple rounded focus:outline-none w-40"
+                                className="h-7 w-40 text-sm"
                               />
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="icon-xs"
                                 onClick={() => handleSaveName(member.id)}
-                                className="p-0.5 rounded hover:bg-green-50 transition-colors"
                                 title="Save"
                               >
                                 <span className="material-icons-two-tone text-[16px] text-green-500">check</span>
-                              </button>
-                              <button
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon-xs"
                                 onClick={() => setEditingNameId(null)}
-                                className="p-0.5 rounded hover:bg-black/5 transition-colors"
                                 title="Cancel"
                               >
-                                <span className="material-icons-two-tone text-[16px] text-text-muted">close</span>
-                              </button>
+                                <span className="material-icons-two-tone text-[16px] text-muted-foreground">close</span>
+                              </Button>
                             </div>
                           ) : (
                             <div className="flex items-center gap-1 group/name">
-                              <p className="text-sm font-medium text-text-primary truncate">
+                              <p className="text-sm font-medium text-foreground truncate">
                                 {member.full_name || "Unknown"}
                               </p>
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="icon-xs"
                                 onClick={() => {
                                   setEditingNameId(member.id);
                                   setEditingNameValue(member.full_name || "");
                                 }}
-                                className="p-0.5 rounded hover:bg-black/5 transition-colors opacity-0 group-hover/name:opacity-100"
                                 title="Edit name"
+                                className="opacity-0 group-hover/name:opacity-100"
                               >
-                                <span className="material-icons-two-tone text-[14px] text-text-muted">edit</span>
-                              </button>
+                                <span className="material-icons-two-tone text-[14px] text-muted-foreground">edit</span>
+                              </Button>
                             </div>
                           )}
-                          <p className="text-xs text-text-muted truncate">
+                          <p className="text-xs text-muted-foreground truncate">
                             {member.email}
                           </p>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       <span
                         className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${badge.bg} ${badge.text}`}
                       >
                         {getRoleLabel(member.role)}
                       </span>
-                    </td>
+                    </TableCell>
                     {isSuperAdmin && (
-                      <td className="px-4 py-3 text-xs text-text-secondary">
+                      <TableCell className="text-sm text-secondary-foreground">
                         {member.group_name || "—"}
-                      </td>
+                      </TableCell>
                     )}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
+                    <TableCell className="pr-4">
+                      <div className="flex items-center justify-end gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
                           onClick={() => setRoleChangeTarget(member)}
-                          className="p-1.5 rounded hover:bg-black/5 transition-colors"
                           title="Change role"
                         >
-                          <span className="material-icons-two-tone text-[16px] text-text-muted">
+                          <span className="material-icons-two-tone text-[16px] text-muted-foreground">
                             manage_accounts
                           </span>
-                        </button>
+                        </Button>
                         {isSuperAdmin && (
                           <>
-                            <button
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
                               onClick={() => setGroupReassignTarget(member)}
-                              className="p-1.5 rounded hover:bg-black/5 transition-colors"
                               title="Reassign group"
                             >
-                              <span className="material-icons-two-tone text-[16px] text-text-muted">
+                              <span className="material-icons-two-tone text-[16px] text-muted-foreground">
                                 swap_horiz
                               </span>
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
                               onClick={() => handleRemoveMember(member)}
-                              className="p-1.5 rounded hover:bg-red-50 transition-colors"
                               title="Remove member"
+                              className="hover:bg-destructive/10"
                             >
                               <span className="material-icons-two-tone text-[16px] text-red-400">
                                 person_remove
                               </span>
-                            </button>
+                            </Button>
                           </>
                         )}
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 
