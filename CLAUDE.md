@@ -612,46 +612,104 @@ Desktop-first design. Mobile is out of scope for now.
 
 ## UI Improvement Sessions
 
+### Guiding principle
+Adopt Tremor as the foundational design language for the entire app. Build everything in Tremor neutral defaults first — no custom colors anywhere. Color is applied as a final step in UI Session G.
+
+All color values go through CSS variables in globals.css and lib/design-tokens.ts. During Sessions C through F, every color reference must use a CSS variable — never a hardcoded hex value. Variables start as Tremor neutrals and get overridden in Session G.
+
+Color variables to maintain as neutral during build:
+- --cat-advisors, --cat-create, --cat-tools, --cat-analyze (bot category colors)
+- --widget-bg-* (one per widget)
+- --bg (page background)
+- --card-bg (card surfaces)
+- --accent-purple (primary accent)
+
 ### UI Session A — Design token consolidation
 Status: Complete
-Goal: Centralise all design tokens into lib/design-tokens.ts and tailwind.config.ts. Replace all hardcoded hex/rgba values in components with token references. No visual changes.
 
 ### UI Session B — Shadcn/ui introduction
 Status: Complete
-Goal: Replace admin panel table, tabs, modals, and dropdowns with Shadcn components themed with existing design tokens.
 
 ### UI Session B.5 — Complete Shadcn rollout
 Status: Complete
-Goal: Extend Shadcn components to the remaining parts of the app flagged in the Session B scan. Same principles as Session B — preserve functionality, improve with judgment.
 
-Known gotchas from Sessions B and B.5:
-- Shadcn Button uses render prop for polymorphism, not asChild — keep this in mind for buttons that wrap anchor elements
-- Shadcn Select onValueChange can pass null — wrap with fallback when using with string state setters
-- GroupConversationOverlay is a persistent sidebar, not a modal — Sheet conversion is inappropriate
-- StatusBadge.tsx is a thin wrapper around Shadcn Badge — use it for approval statuses
-- Textareas remain hand-rolled (no Shadcn Textarea installed)
-- RightSidebar widget buttons use ghost/outline only — never default variant inside widgets
+### UI Session C — Tremor foundation
+Status: Ready to run
+Goal: Establish Tremor as the design language baseline. Fix the background/surface hierarchy first, then rebuild the right sidebar widgets using Tremor KPI and Status blocks. Use Tremor neutral defaults throughout — no custom colors.
 
-### UI Session C — Tremor dashboard widgets
-Status: Replanning — pivoting to full Tremor design language
-Goal: Rebuild right sidebar widget content using Tremor components themed with existing design tokens. Same improvement principles as Sessions B and B.5 — preserve functionality, improve with judgment.
+Priority order:
+1. Fix surface hierarchy — main content area background should be white/near-white, not lavender. Lavender (or whatever --bg resolves to) stays only on the page chrome, left sidebar, and topbar. This single change grounds every screen.
+2. Right sidebar widgets — rebuild using Tremor KPI Cards and Status Monitoring blocks:
+   - Fundraising → Tremor KPI card + ProgressBar
+   - Recruitment Goal → Tremor KPI + dual ProgressBar
+   - Hours Volunteered → Tremor KPI + BadgeDelta
+   - Connected Systems → Tremor Status block or Shadcn Badge (whichever is cleaner)
+   - Upcoming Events → Tremor Card list
+   - New Sign-Ups → keep custom, spacing cleanup only
+   - Group Conversations → keep custom, spacing cleanup
+   - Group Actions → keep custom, spacing cleanup
+3. Bot Editor form — rebuild using Tremor/Shadcn Form Layout block. Should feel like it fills the space intentionally, not a narrow card floating on a void.
+4. Profile Settings form — same treatment as Bot Editor. Use Account and User Management block as reference.
 
-Context from B and B.5 handovers:
-- All Shadcn primitives are in src/components/ui/ — import from there, do not reinstall
-- Read components.json before starting to confirm what is installed
-- Widget background colors are in lib/design-tokens.ts as WIDGET_BG_* constants and as CSS vars (var(--widget-bg-signups) etc.)
-- Role-based widget visibility is in lib/dashboard-widgets.ts — do not hardcode role checks in widget components
-- Border radius: Shadcn --radius base is intentionally low — do not override per-component unless there is a specific design reason
-- Badges use rounded-full intentionally — do not change
-- Chat send buttons, tab toggles, filter pills, and card clicks are intentionally left as raw elements
-- Sheet (side="right") for detail views, Dialog for confirmations — see Overlays convention
+WHAT TO PRESERVE: all functionality, handlers, role logic, data fetching, CSS variable structure.
+WHAT TO BUILD: Tremor neutral defaults only. No hardcoded hex values. No custom colors.
 
-### UI Session D — Configurable dashboard grid
+Install: npm install @tremor/react --legacy-peer-deps
+(React 19 peer dep conflict — this flag is required)
+
+Commit: "UI Session C: Tremor foundation and surface hierarchy fix"
+
+### UI Session D — Remaining screens
 Status: Depends on UI Session C
-Goal: Introduce React Grid Layout for drag/resize/persist. Wire to database. Use lib/dashboard-widgets.ts for permissions, constraints, and default layout.
+Goal: Apply Tremor design language to remaining screens. Use Tremor neutral defaults throughout.
+
+Screens to rebuild:
+- Member Directory → Tremor Grid Lists (person card variants)
+- Group Media → Tremor Grid Lists (file/asset card variants, replace colored placeholders with file type icons on neutral backgrounds)
+- Activity Feed (Settings) → Tremor Feed/Onboarding blocks
+- Approvals list → Tremor Table + Filterbar blocks
+- Login / Signup / Reset Password → Tremor Login blocks (centered card, logo above, neutral card on --bg background)
+- Bot chat Recent Conversations sidebar → Tremor Grid Lists for conversation list items (chat itself stays custom)
+
+Commit: "UI Session D: Tremor design language across remaining screens"
+
+### UI Session E — Dashboard grid
+Status: Depends on UI Session D
+Goal: Introduce React Grid Layout for the right sidebar. Wire to database. Use lib/dashboard-widgets.ts.
+
 Key behaviour:
 - Auto-save on drag end with subtle "Layout saved" toast
 - User layouts never overwritten by org default changes
 - Role-invisible widgets disappear and gap closes
 - Rearrangement and resizing applies to right sidebar only
-- Resize is constrained by WIDGET_CONSTRAINTS per widget
+- Resize constrained by WIDGET_CONSTRAINTS per widget
+- Option C: free resize + rearrange within min/max bounds with Reset to Default safety net
+
+Commit: "UI Session E: configurable dashboard grid"
+
+### UI Session F — Icon consolidation
+Status: Depends on UI Session E
+Goal: Replace all icon systems with the custom icon set in the public folder.
+
+- Keep Material Icons Two-Tone for bot card circles only if they remain intentionally distinctive
+- Replace all inline SVGs in nav, buttons, actions with icons from public folder
+- Lucide icons introduced by Shadcn stay where they already are unless the custom set has a better match
+- Establish convention: all new icons use custom set
+
+Commit: "UI Session F: icon consolidation"
+
+### UI Session G — Color theming
+Status: Depends on UI Session F
+Goal: Apply all brand color decisions in one pass. This is the only session that introduces color.
+
+All color decisions made here:
+- --bg (page background)
+- --card-bg (card surfaces)
+- --accent-purple (primary accent — rename if needed)
+- --cat-advisors, --cat-create, --cat-tools, --cat-analyze (bot category colors)
+- --widget-bg-* (one per dashboard widget)
+- Any other color tokens in design-tokens.ts
+
+One session. One file. Complete visual transformation.
+
+Commit: "UI Session G: brand color theming"
