@@ -633,7 +633,7 @@ Known gotchas from Sessions B and B.5:
 - RightSidebar widget buttons use ghost/outline only — never default variant inside widgets
 
 ### UI Session C — Tremor dashboard widgets
-Status: Ready to run
+Status: Replanning — pivoting to full Tremor design language
 Goal: Rebuild right sidebar widget content using Tremor components themed with existing design tokens. Same improvement principles as Sessions B and B.5 — preserve functionality, improve with judgment.
 
 Context from B and B.5 handovers:
