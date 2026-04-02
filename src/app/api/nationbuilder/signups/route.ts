@@ -13,7 +13,13 @@ export async function GET() {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const signups = await fetchRecentSignups(3);
+    const result = await fetchRecentSignups(3);
+    const { signups, status: nbStatus } = result;
+
+    // If NB is not configured or erroring, return early with status
+    if (nbStatus !== "connected") {
+      return Response.json({ signups: [], assignments: [], status: nbStatus });
+    }
 
     // Fetch existing assignments for these signups
     const signupIds = signups.map((s: { id: string }) => s.id);
@@ -86,9 +92,9 @@ export async function GET() {
       }
     }
 
-    return Response.json({ signups, assignments });
+    return Response.json({ signups, assignments, status: "connected" });
   } catch (err) {
     console.error("NationBuilder fetch failed:", err);
-    return Response.json({ error: "Failed to fetch signups" }, { status: 500 });
+    return Response.json({ signups: [], assignments: [], status: "error" }, { status: 200 });
   }
 }

@@ -22,6 +22,7 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
   const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [signups, setSignups] = useState<NbSignup[]>([]);
   const [assignments, setAssignments] = useState<SignupAssignment[]>([]);
+  const [nbStatus, setNbStatus] = useState<"connected" | "error" | "not_configured" | "loading">("loading");
   const [selectedSignup, setSelectedSignup] = useState<NbSignup | null>(null);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -51,8 +52,10 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         const json = await res.json();
         if (json.signups) setSignups(json.signups);
         if (json.assignments) setAssignments(json.assignments);
+        if (json.status) setNbStatus(json.status);
+        else setNbStatus("connected");
       } catch {
-        // NB unavailable — widget stays empty
+        setNbStatus("error");
       }
     }
     async function fetchEvents() {
@@ -151,7 +154,19 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
             New Sign-Ups
           </h3>
           <div className="space-y-2">
-            {signups.length > 0 ? (
+            {nbStatus === "loading" ? (
+              <div className="flex items-center gap-2">
+                <span className="material-icons-two-tone text-[14px] text-text-muted animate-spin">autorenew</span>
+                <p className="text-[10px] text-text-muted">Loading...</p>
+              </div>
+            ) : nbStatus === "error" ? (
+              <div className="flex items-center gap-2">
+                <span className="material-icons-two-tone text-[14px] text-orange-500">warning</span>
+                <p className="text-[10px] text-orange-600 font-medium">Error connecting with source</p>
+              </div>
+            ) : nbStatus === "not_configured" ? (
+              <p className="text-[10px] text-text-muted">No source connected</p>
+            ) : signups.length > 0 ? (
               signups.map((s) => {
                 const time = formatSignupTime(s.created_at);
                 const assignment = getAssignment(s.id);
@@ -359,7 +374,10 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
           </h3>
           <div className="space-y-2">
             <SystemBadge name="Action Network" status="not_connected" />
-            <SystemBadge name="NationBuilder" status="functional" />
+            <SystemBadge
+              name="NationBuilder"
+              status={nbStatus === "connected" ? "functional" : nbStatus === "error" ? "error" : "not_connected"}
+            />
             <SystemBadge name="Mobilize" status="not_connected" />
             <SystemBadge
               name="Calendar"
@@ -542,18 +560,21 @@ function SystemBadge({
   detail,
 }: {
   name: string;
-  status?: "functional" | "issues" | "not_connected";
+  status?: "functional" | "issues" | "error" | "not_connected";
   detail?: string;
 }) {
   const dotColor =
     status === "functional" ? "bg-green-400" :
+    status === "error" ? "bg-red-400" :
     status === "issues" ? "bg-orange-400" : "bg-gray-300";
   const badgeClass =
     status === "functional" ? "text-green-700 bg-green-100" :
+    status === "error" ? "text-red-700 bg-red-100" :
     status === "issues" ? "text-orange-700 bg-orange-100" :
     "text-gray-500 bg-gray-100";
   const badgeLabel =
     status === "functional" ? (detail || "Functional") :
+    status === "error" ? "Error" :
     status === "issues" ? "Issues Found" : "Not Connected";
 
   return (

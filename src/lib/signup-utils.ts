@@ -3,12 +3,19 @@ import type { NbSignup } from "./types";
 const NB_TOKEN = process.env.NATIONBUILDER_API_TOKEN;
 const NB_SLUG = process.env.NATIONBUILDER_SLUG;
 
+export type NbConnectionStatus = "connected" | "error" | "not_configured";
+
+interface FetchSignupsResult {
+  signups: NbSignup[];
+  status: NbConnectionStatus;
+}
+
 /**
  * Fetch the most recent signups from the NationBuilder v2 API (read-only).
- * Returns an empty array if credentials are missing or the API errors.
+ * Returns signups and connection status.
  */
-export async function fetchRecentSignups(limit = 3): Promise<NbSignup[]> {
-  if (!NB_TOKEN || !NB_SLUG) return [];
+export async function fetchRecentSignups(limit = 3): Promise<FetchSignupsResult> {
+  if (!NB_TOKEN || !NB_SLUG) return { signups: [], status: "not_configured" };
 
   const url = `https://${NB_SLUG}.nationbuilder.com/api/v2/signups?sort=-created_at&page[size]=${limit}`;
 
@@ -22,13 +29,13 @@ export async function fetchRecentSignups(limit = 3): Promise<NbSignup[]> {
 
   if (!res.ok) {
     console.error(`NationBuilder API error: ${res.status} ${res.statusText}`);
-    return [];
+    return { signups: [], status: "error" };
   }
 
   const json = await res.json();
   const data = json.data ?? [];
 
-  return data.map(
+  const signups = data.map(
     (person: {
       id: string;
       attributes?: {
@@ -53,6 +60,8 @@ export async function fetchRecentSignups(limit = 3): Promise<NbSignup[]> {
       created_at: person.attributes?.created_at || "",
     })
   );
+
+  return { signups, status: "connected" };
 }
 
 export function formatSignupTime(dateStr: string): { text: string; urgent: boolean } {

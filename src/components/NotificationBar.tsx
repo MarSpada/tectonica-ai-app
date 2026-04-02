@@ -7,6 +7,7 @@ import type { AppNotification } from "@/lib/types";
 export default function NotificationBar() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [dismissed, setDismissed] = useState(false);
+  const [nbConnected, setNbConnected] = useState<boolean | null>(null);
 
   useEffect(() => {
     async function fetchNotifications() {
@@ -18,15 +19,32 @@ export default function NotificationBar() {
         // Notifications unavailable
       }
     }
+    async function checkNbStatus() {
+      try {
+        const res = await fetch("/api/nationbuilder/signups");
+        const json = await res.json();
+        setNbConnected(json.status === "connected");
+      } catch {
+        setNbConnected(false);
+      }
+    }
     fetchNotifications();
+    checkNbStatus();
   }, []);
 
-  if (dismissed || notifications.length === 0) return null;
+  if (dismissed || notifications.length === 0 || nbConnected === null) return null;
 
-  const assignmentCount = notifications.filter(
+  // Filter out signup notifications if NB is not connected
+  const visibleNotifications = nbConnected
+    ? notifications
+    : notifications.filter((n) => n.type !== "signup_assignment");
+
+  if (visibleNotifications.length === 0) return null;
+
+  const assignmentCount = visibleNotifications.filter(
     (n) => n.type === "signup_assignment"
   ).length;
-  const approvalCount = notifications.filter(
+  const approvalCount = visibleNotifications.filter(
     (n) => n.type === "approval_request"
   ).length;
 
