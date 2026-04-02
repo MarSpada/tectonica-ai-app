@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import type { ProfileData } from "@/lib/types";
 import ProfileTab from "./ProfileTab";
 import AccountTab from "./AccountTab";
+import ActivityTab from "./ActivityTab";
 import ApprovalsView from "../approvals/ApprovalsView";
 
 interface SettingsViewProps {
@@ -14,7 +15,7 @@ interface SettingsViewProps {
   userRole?: string;
 }
 
-const tabs = ["Profile", "Account", "Approvals"] as const;
+const tabs = ["Profile", "Account", "Activity", "Approvals"] as const;
 type Tab = (typeof tabs)[number];
 
 export default function SettingsView({
@@ -24,13 +25,15 @@ export default function SettingsView({
   userRole,
 }: SettingsViewProps) {
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") === "approvals" ? "Approvals" : "Profile";
+  const tabParam = searchParams.get("tab");
+  const initialTab = tabParam === "approvals" ? "Approvals" : tabParam === "activity" ? "Activity" : "Profile";
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
 
   // Respond to URL param changes (e.g., clicking bell icon)
   useEffect(() => {
     const tab = searchParams.get("tab");
     if (tab === "approvals") setActiveTab("Approvals");
+    else if (tab === "activity") setActiveTab("Activity");
   }, [searchParams]);
 
   // Filter tabs: hide Approvals for supporters
@@ -69,6 +72,10 @@ export default function SettingsView({
       <div className="flex-1 overflow-y-auto px-6 py-6">
         {activeTab === "Approvals" ? (
           <ApprovalsView currentUserId={userId} currentUserRole={userRole || "member"} />
+        ) : activeTab === "Activity" ? (
+          <div className="max-w-xl mx-auto">
+            <ActivityTab userId={userId} />
+          </div>
         ) : (
           <div className="max-w-xl mx-auto">
             {activeTab === "Profile" ? (
