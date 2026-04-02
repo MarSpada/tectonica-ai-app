@@ -12,6 +12,62 @@ The prototype is a desktop-only, non-functional mockup (vanilla HTML/CSS/JS, no 
 
 ---
 
+## Session Protocol
+
+### Every session — opening ritual
+1. Read this entire CLAUDE.md before writing any code
+2. State which files you will touch this session and why
+3. Run the hygiene audit on those files (see audit prompt)
+4. Wait for approval before making any changes
+
+### Every session — closing ritual
+Ask yourself before ending:
+- What did I build or change?
+- What did I intentionally skip or defer?
+- Are there any new TODOs or known fragile points?
+- What should the next session read or know before starting?
+
+Output a short handover note covering these four points.
+
+### Multi-session continuity
+This is an ongoing project. Previous sessions have already built
+significant functionality. Do not re-implement, rename, or refactor
+anything that is already working unless explicitly asked to.
+When in doubt about an existing pattern, find an example in the
+codebase and follow it — don't invent a new approach.
+
+---
+
+## Conventions (read before writing any code)
+
+### Data fetching
+- Server components and API routes use `createClient()` from `lib/supabase/server.ts`
+- Client components use `createClient()` from `lib/supabase/client.ts`
+- Never import the server client into a client component or vice versa
+
+### API routes
+- All routes return `{ error: string }` on failure with an appropriate HTTP status
+- All routes that require auth call `supabase.auth.getUser()` first and return 401 if no session
+- Role checks use the `profiles` table, not JWT claims directly
+
+### Types
+- All shared types live in `lib/types.ts` — never define types inline in components
+- Never use `any` — if the shape is unknown, define a type for it
+
+### Components
+- User role/org/group data comes from `UserProfileContext` — never re-fetch it inside a component
+- New components go in the most specific folder that makes sense (`admin/`, `chat/`, etc.)
+- No component should fetch data AND render UI — split into a data-fetching parent and a presentational child if needed
+
+### State
+- No global state library — use React Context for cross-tree state, local useState for component state
+- Supabase Realtime subscriptions must be cleaned up in useEffect return functions
+
+### NationBuilder
+- All NationBuilder API calls go through `lib/signup-utils.ts` — never call the NB API directly from a component or route
+
+---
+
 ## Design System
 
 ### Theme: Light Pastel ("Google Labs" style)
@@ -60,14 +116,14 @@ The prototype is a desktop-only, non-functional mockup (vanilla HTML/CSS/JS, no 
 
 ### Top Bar
 - Background: `#B3BBEE`
-- Left: sidebar collapse button, org icon (orange rounded square with "P"), org name "People's Movement" (clickable — returns to dashboard), "Group Name" pill
+- Left: sidebar collapse button, org icon (orange rounded square with first letter of org name), org name (dynamic from DB, clickable — returns to dashboard), group name pill (dynamic from DB)
 - Right: Tectonica.AI logo (`images/logo-color.png`)
 
 ### Left Sidebar (180px)
-- Nav items: **Group Coach Bot**, **Group Media**
+- Nav items: **Group Coach Bot**, **Group Media**, **Members**
 - **Leaders & Organizers** chat button (opens slide-in panel)
-- **Bot Chats** section: search input + list of recent bot chats (Graphics Creation, Canvassing Planner, Events Planning)
-- User info at bottom: avatar, name "Ned Howey", role "Organizer", settings gear
+- **Helper Chats** section: search input + list of recent bot chats (Graphics Creation, Canvassing Planner, Events Planning)
+- User info at bottom: avatar, name, role, settings gear
 - Collapses to 64px icon-only at 899px, becomes overlay drawer at 699px
 
 ### Main Content
@@ -77,7 +133,7 @@ The prototype is a desktop-only, non-functional mockup (vanilla HTML/CSS/JS, no 
 
 ### Right Sidebar ("Group Dashboard")
 - 12-column CSS grid with explicit row/column placement
-- Widgets: New Sign-Ups, Recruit More People, Group Conversations, Group Actions, Fundraising, Recruitment Goal, Request Approval, Connected Systems, Hours Volunteered, Group Directory
+- Widgets: New Sign-Ups, Recruit More People, Group Conversations, Group Actions, Fundraising, Recruitment Goal, Request Approval, Connected Systems, Hours Volunteered, Group Directory, Upcoming Events
 
 ---
 
@@ -94,6 +150,7 @@ The prototype is a desktop-only, non-functional mockup (vanilla HTML/CSS/JS, no 
 | Request Approval | 9–12 | 8–11 | `#fdf2f8` |
 | Connected Systems | 9–12 | 11–15 | `#f8fafc` |
 | Hours Volunteered | 5–8 | 12–14 | `#ecfdf5` |
+| Upcoming Events | 9–12 | 15–20 | `#f0f9ff` |
 | Group Directory | 1–8 | 15–20 | `#fff` |
 
 ---
@@ -183,6 +240,30 @@ Main bot grid + right sidebar dashboard. Body has no special class.
 - Triggered by sidebar chat button
 - Slide-in panel from left with contact list + message thread
 
+### 7. Super Admin Panel (`/admin`)
+- Role-guarded (super_admin only, group_admin gets limited access)
+- 4 tabs: Organization, People, Bots, Integrations
+- **Organization tab**: Edit org name, manage groups (rename)
+- **People tab**: List all org members, change roles (super_admin/group_admin/member/supporter), reassign groups, remove members, inline name editing
+- **Bots tab**: DB-driven bot management (create, edit, delete), system prompt editor, category/icon picker
+- **Integrations tab**: Calendar source management (add/remove iCal/Google/Mobilize feeds, toggle enable/disable, color coding), NationBuilder status, Action Network/Mobilize status
+
+### 8. Approvals Page (`/approvals`)
+- Submit items for admin/group_admin review (text + file attachments)
+- Status workflow: pending → approved OR changes_requested → resubmit
+- Comment thread per approval request
+- Email notifications via Resend to reviewer on submit and to submitter on status change
+- In-app notification bar for approval-related updates
+
+### 9. Members Page (`/members`)
+- Group member directory with search
+- Shows roles and avatars
+- Member detail view (`/members/[id]`)
+
+### 10. Settings Page (`/settings`)
+- Profile tab: edit name, bio, avatar upload (Supabase Storage)
+- Account tab: account settings
+
 ---
 
 ## Navigation Pattern
@@ -199,17 +280,18 @@ Clicking org name "People's Movement" in top bar → `returnToDashboard()`
 
 ## User & Organization
 
-- **User**: Ned Howey (Organizer)
-- **Organization**: People's Movement
-- **Group members** (directory): Ned Howey, Sara Chen, Marcus Rivera, Jasmine Okafor, David Park, Lucia Torres
+- **Organization**: People's Movement (dynamic from DB)
+- **Group**: Sample group (dynamic from DB, editable by super_admin)
+- **Role hierarchy**: super_admin > group_admin > member > supporter
 
 ---
 
 ## Connected Systems (integrations)
 
-- Action Network
-- NationBuilder
-- Mobilize
+- **NationBuilder** — Connected (read-only signup ingestion, v2 API)
+- **Calendar Sources** — System-agnostic iCal/ICS feeds (Google Calendar, Outlook, Mobilize, etc.), managed by super_admin in Integrations tab
+- **Action Network** — Not Connected (coming soon)
+- **Mobilize** — Not Connected (coming soon)
 
 ---
 
@@ -244,9 +326,9 @@ Desktop-first design. Mobile is out of scope for now.
 - **Database**: Supabase PostgreSQL with RLS, Realtime subscriptions
 - **Auth**: Supabase Auth (email/password, email confirmation)
 - **AI**: OpenAI GPT-4o (streaming SSE via API routes)
-- **Email**: Resend (transactional emails for signup assignment notifications)
+- **Email**: Resend (transactional emails for signups, approvals, notifications)
 - **Animations**: GSAP entrance transitions + stagger animations
-- **Integrations**: NationBuilder v2 API (read-only signup ingestion)
+- **Integrations**: NationBuilder v2 API (read-only signup ingestion), iCal/ICS calendar feeds
 - **Deployment**: Railway (auto-deploy from `main` branch)
 
 ---
@@ -261,6 +343,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `NATIONBUILDER_API_TOKEN` | NationBuilder v2 API Bearer token |
 | `NATIONBUILDER_SLUG` | NationBuilder subdomain slug |
 | `RESEND_API_KEY` | Resend email API key |
+| `RESEND_FROM_EMAIL` | Sender email address for Resend transactional emails |
 
 ---
 
@@ -275,6 +358,11 @@ Desktop-first design. Mobile is out of scope for now.
 | `005_profile_settings.sql` | Bio column, public avatars storage bucket (2MB, JPEG/PNG/WebP) |
 | `006_group_messages.sql` | group_messages table with Realtime, get_group_messages() RPC with pagination |
 | `007_signup_assignments.sql` | signup_assignments + notifications tables, RLS, create_signup_assignment() atomic RPC |
+| `008_auto_assign_group.sql` | Auto-assigns new users to default group on signup, backfills existing users |
+| `009_admin_roles.sql` | Role hierarchy (super_admin/group_admin/member/supporter), admin helper functions (is_admin, is_super_admin, get_my_org_id), org-wide RLS, update_member_role() and reassign_member_group() RPCs, seeds 24 bots into DB |
+| `010_approval_requests.sql` | Approval workflow: approval_requests + approval_comments tables, status workflow (pending→approved/changes_requested), 5MB approvals storage bucket, create/update/resubmit RPCs |
+| `011_calendar_sources.sql` | Calendar sources per org: iCal/Google/Mobilize feed URLs, enabled toggle, color per source, RLS (members view, super_admin manage) |
+| `012_volunteer_hours.sql` | volunteer_hours table with user/group/date tracking, hours validation (>0), RLS for group member viewing and self-logging |
 
 ---
 
@@ -288,7 +376,26 @@ Desktop-first design. Mobile is out of scope for now.
 | `/api/signups/assign` | POST | Assigns NB signup to team member (RPC + Resend email notification) |
 | `/api/notifications` | GET | Unread notifications for current user (max 10) |
 | `/api/notifications/read` | POST | Mark notifications as read (by IDs or "all") |
+| `/api/events` | GET | Fetches enabled calendar sources for user's org, parses ICS feeds, returns next 30 days of events (max 20) |
+| `/api/hours` | GET/POST | GET: list group volunteer hours with totals. POST: log hours for current user |
+| `/api/admin/org` | GET/PATCH | View/edit organization settings (super_admin) |
+| `/api/admin/groups` | GET/PATCH | List/manage groups (super_admin) |
+| `/api/admin/members` | GET | List all org members (super_admin) or group members (group_admin) |
+| `/api/admin/members/[memberId]` | GET/PATCH/DELETE | View, edit name, remove member |
+| `/api/admin/members/[memberId]/role` | POST | Change member role with hierarchy enforcement |
+| `/api/admin/members/[memberId]/group` | POST | Reassign member to different group (super_admin) |
+| `/api/admin/bots` | GET/POST | List org bots (DB-first + global fallback), create new bot |
+| `/api/admin/bots/[botId]` | GET/PATCH/DELETE | View, edit, delete individual bot |
+| `/api/admin/calendars` | GET/POST | List calendar sources, add new feed (super_admin) |
+| `/api/admin/calendars/[id]` | PATCH/DELETE | Update/remove calendar source (super_admin) |
+| `/api/approvals` | GET/POST | List approval requests (filterable), create new request with Resend email to reviewer |
+| `/api/approvals/[id]` | GET | Get single approval with full details |
+| `/api/approvals/[id]/comments` | GET/POST | Fetch/create approval comments |
+| `/api/approvals/[id]/status` | POST | Approve or request changes (sends Resend email) |
+| `/api/approvals/[id]/resubmit` | POST | Resubmit after changes requested |
+| `/api/approvals/reviewers` | GET | List available reviewers (admins) |
 | `/auth/callback` | GET | OAuth/email confirmation callback — signs out after confirmation, redirects to login |
+| `/auth/reset-callback` | GET | Password reset callback — exchanges PKCE code, redirects to /reset-password |
 
 ---
 
@@ -297,67 +404,122 @@ Desktop-first design. Mobile is out of scope for now.
 | Component | Description |
 |---|---|
 | `AppShell.tsx` | Main layout: TopBar + NotificationBar + LeftSidebar + content |
-| `TopBar.tsx` | Header with org info + Tectonica.AI logo |
+| `TopBar.tsx` | Header with dynamic org/group names from DB + Tectonica.AI logo |
 | `LeftSidebar.tsx` | Navigation, bot chats list, user info footer |
-| `RightSidebar.tsx` | 12-column widget grid dashboard with live NB signups |
-| `NotificationBar.tsx` | Amber bar for unread signup assignment notifications |
+| `RightSidebar.tsx` | 12-column widget grid dashboard with live NB signups, events, hours, group chat |
+| `NotificationBar.tsx` | Amber bar for unread signup/approval notifications |
 | `BotGrid.tsx` | Featured carousel + categorized bot card grid with GSAP |
 | `BotCard.tsx` | Individual bot card with star/favorite, hover description |
+| `WelcomeHelper.tsx` | Welcome bot chat on dashboard |
+| `DashboardShell.tsx` | Dashboard layout container |
 | `chat/ChatView.tsx` | Bot chat with streaming, conversation persistence |
+| `chat/ChatHeader.tsx` | Bot name, status, back button |
+| `chat/ChatInput.tsx` | Message input with send button |
+| `chat/MessageList.tsx` | Scrollable message history |
+| `chat/RecentConversations.tsx` | Sidebar of recent bot chats |
 | `coach/CoachChatView.tsx` | Group Coach Bot with campaign stats sidebar |
+| `coach/CampaignStats.tsx` | Campaign goals, strategy notes, upcoming events sidebar |
 | `media/MediaGallery.tsx` | Media gallery with filters, grid/list view |
 | `signups/NbSignupModal.tsx` | NB signup detail modal with contact/call/assign actions |
-| `members/MemberDirectory.tsx` | Group member list with roles and avatars |
+| `members/MemberDirectory.tsx` | Group member list with roles and search |
+| `members/MemberDetailModal.tsx` | Member detail popup |
+| `members/MemberProfile.tsx` | Member profile card |
+| `admin/AdminView.tsx` | Main admin tab container with role guard |
+| `admin/OrgTab.tsx` | Organization settings (name, details) |
+| `admin/PeopleTab.tsx` | Member management with role/group changes, inline name editing |
+| `admin/BotsTab.tsx` | Bot CRUD management |
+| `admin/BotEditor.tsx` | Bot form (slug, name, icon, category, description, system prompt) |
+| `admin/IntegrationsTab.tsx` | Calendar source management + integration status |
+| `admin/RoleChangeModal.tsx` | Modal to change member role |
+| `admin/GroupReassignModal.tsx` | Modal to reassign member to different group |
+| `approvals/ApprovalsView.tsx` | Approval requests list |
+| `approvals/ApprovalCard.tsx` | Individual approval card |
+| `approvals/ApprovalDetailView.tsx` | Full approval detail with comments |
+| `approvals/CommentThread.tsx` | Comment thread display + input |
+| `approvals/CreateApprovalModal.tsx` | Modal to create approval request |
+| `approvals/StatusBadge.tsx` | Status badge (pending/approved/changes_requested) |
+| `hours/LogHoursModal.tsx` | Modal to log volunteer hours |
+| `hours/HoursDetailOverlay.tsx` | Detailed volunteer hours view with entries grouped by date |
+| `settings/SettingsView.tsx` | Main settings container |
+| `settings/ProfileTab.tsx` | Profile edit (name, bio, avatar upload) |
+| `settings/AccountTab.tsx` | Account settings |
 | `GroupConversationOverlay.tsx` | Real-time group messaging overlay |
 | `LeadersChat.tsx` | Slide-in leaders & organizers chat panel |
 
 ---
 
+## Key Lib Files
+
+| File | Description |
+|---|---|
+| `lib/types.ts` | Type definitions: UserRole, Message, Conversation, Member, GroupMessage, NbSignup, SignupAssignment, AppNotification, ApprovalRequest, ApprovalComment, etc. |
+| `lib/bots.ts` | Hardcoded bot definitions: 24 bots with metadata (id, name, icon, category, description), categoryMeta colors, defaultFeaturedBotIds |
+| `lib/bots-prompts.ts` | Bot system prompts mapped by bot ID, falls back to generic prompt |
+| `lib/bot-resolver.ts` | getBots() (DB-first, fallback to hardcoded), getSystemPrompt() (DB-first, fallback to bots-prompts.ts) |
+| `lib/ical-parser.ts` | Lightweight ICS parser (no native deps) — handles DTSTART/DTEND with TZID, line unfolding, escaped chars |
+| `lib/avatar.ts` | Avatar utilities (upload, delete, generate URL) for Supabase Storage |
+| `lib/signup-utils.ts` | NationBuilder signup utilities (fetch, parse, enrich) |
+| `lib/UserProfileContext.tsx` | React Context for user profile data (role, org, group, name, avatar) |
+| `lib/supabase/server.ts` | Server-side Supabase client factory using cookies |
+| `lib/supabase/client.ts` | Client-side Supabase client factory |
+
+---
+
 ## What's Working (Functional)
 
-- Auth (email/password signup, login, email confirmation, session management)
-- Role-based profiles (admin, organizer, leader, member, supporter) with group assignment
-- Dashboard with 20 bot cards in 4 categories, star/favorite system
+- Auth (email/password signup, login, email confirmation, forgot/reset password, session management)
+- Role-based profiles (super_admin, group_admin, member, supporter) with group assignment
+- Auto-assignment of new users to default group on signup
+- Dashboard with 24 bot cards in 4 categories, star/favorite system
+- Welcome helper bot chat on dashboard
 - Bot chat with GPT-4o streaming responses + conversation persistence
 - Group Coach Bot page with campaign stats sidebar
 - Media gallery (mock data, UI functional)
-- Member directory with RPC-based group member fetching
+- Member directory with RPC-based group member fetching + member detail pages
 - Profile settings (name, bio, avatar upload)
 - Real-time group messaging (Supabase Realtime)
 - NationBuilder integration (read-only signup ingestion with NB icon badges)
 - Interactive NB signup assignments (click → modal → contact/call/assign)
-- Email notifications to assignees via Resend
-- In-app notification bar for assigned signups
-- Connected Systems widget (NB: Functional, Action Network/Mobilize: Issues Found)
+- Email notifications via Resend (signups, approvals, status changes)
+- In-app notification bar for signup assignments and approvals
+- **Super Admin Panel** — org settings, people management (roles, groups, inline name editing), DB-driven bot management, integrations
+- **Approval workflow** — submit, review, approve/request changes, resubmit, comment threads
+- **Calendar integration** — system-agnostic iCal/ICS feeds (Google Calendar, Outlook, Mobilize), managed in admin Integrations tab
+- **Upcoming Events widget** — pulls from connected calendar feeds, shows next 30 days
+- **Volunteer hours tracking** — log hours, view detail overlay with entries by date, dashboard widget with real totals
+- **Dynamic top bar** — org name and group name fetched from DB, update when admin changes them
+- Connected Systems widget (NB: Connected, Calendar: reflects live state, Action Network/Mobilize: Not Connected)
 - GSAP entrance animations throughout
 - Deployed on Railway with auto-deploy from main
 
 ## What Still Needs Work (Prioritized)
-
-### Immediate — Auth & Onboarding Fixes
-1. **Forgot password flow** — "Forgot password?" link on login → reset email → /reset-password page → `supabase.auth.updateUser({ password })`. Critical for real users.
-2. **Login page `?confirmed=true` message** — Show "Email confirmed! Please log in." when redirected from auth callback
-3. **Custom SMTP for Supabase Auth** — Replace Supabase's built-in SMTP (rate-limited ~3-4 emails/hr) with Resend SMTP or similar. Configure in Supabase Dashboard → Authentication → SMTP Settings.
-4. **New user onboarding** — Currently new signups get a profile but no group/org assignment. Need a flow to assign them (admin invite, or auto-join default group).
-
-### Next Session — Super Admin Panel (spec written)
-- **Phase A**: Role hierarchy migration (`admin` → `super_admin` + `group_admin`), admin route guard, tab shell at /admin
-- **Phase B**: Organization tab (edit org name, manage groups) + People tab (role changes, remove members, group reassignment)
-- **Phase C**: Bots tab (bot_configs table, DB-driven bots replacing hardcoded bots.ts, API key management with server-side encryption)
-- **Phase D**: Group Admin features (invitations, recruiter IDs, /join flow, member role management from directory)
 
 ### Priority — Next Features
 - Media gallery with real file upload (currently mock data)
 - Group Coach Bot with real campaign data (currently mock stats)
 - Graphics Creation bot with visual editor iframe integration
 - Leaders & Organizers real-time chat (UI exists, needs real-time backend)
+- Group Admin features (invitations, recruiter IDs, /join flow)
 
 ### Priority — Integrations
 - Action Network API connection
 - Mobilize API connection
 - Image generation for Graphics Creation bot
+- Custom SMTP for Supabase Auth (replace built-in rate-limited SMTP with Resend SMTP)
 
 ### Priority — Platform
 - Multi-tenancy (multiple orgs/groups — schema supports it, UI is single-group)
-- Configurable bot system prompts per org
+- Configurable bot system prompts per org (admin can already edit via Bots tab)
 - Mobile responsive layout (desktop-first, mobile out of scope for now)
+
+## Known Issues / Next Session
+
+- Client components that call GET routes (RightSidebar, NotificationBar,
+  TopBar) now receive 401s when unauthenticated. Verify they handle
+  error responses gracefully and don't throw uncaught errors during
+  auth load race conditions.
+- LeadersChat contacts/messages and CampaignStats goals/notes/events are
+  now empty arrays — these components need real data sources (DB or API)
+  before they are functional again.
+- Orphaned seed profiles (no auth.users row) have been deleted from the
+  profiles table. Member directory should now show only real users.
