@@ -606,7 +606,7 @@ Status: Complete
 Goal: Centralise all design tokens into lib/design-tokens.ts and tailwind.config.ts. Replace all hardcoded hex/rgba values in components with token references. No visual changes.
 
 ### UI Session B — Shadcn/ui introduction
-Status: Depends on UI Session A
+Status: In progress
 Goal: Replace admin panel table, tabs, modals, and dropdowns with Shadcn components themed with existing design tokens.
 
 ### UI Session C — Tremor dashboard widgets
