@@ -3,26 +3,21 @@ import { createClient } from "@/lib/supabase/server";
 import { getBots, getSystemPrompt } from "@/lib/bot-resolver";
 
 export async function POST(req: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { botId, messages, conversationId } = await req.json();
 
   // Validate bot (DB-first, falls back to hardcoded)
   const allBots = await getBots();
   const bot = allBots.find((b) => b.id === botId);
   if (!bot) {
-    return new Response("Bot not found", { status: 404 });
-  }
-
-  // Get authenticated user for persistence
-  let userId: string | null = null;
-  let supabase: Awaited<ReturnType<typeof createClient>> | null = null;
-  try {
-    supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    userId = user?.id ?? null;
-  } catch {
-    // Auth not available — chat still works, just no persistence
+    return Response.json({ error: "Bot not found" }, { status: 404 });
   }
 
   // Get system prompt (DB-first, falls back to hardcoded)
@@ -60,10 +55,10 @@ export async function POST(req: Request) {
         }
 
         // Persist conversation (fire-and-forget)
-        if (userId && supabase) {
+        {
           const newConvId = await persistConversation(
             supabase,
-            userId,
+            user.id,
             botId,
             messages,
             fullContent,
