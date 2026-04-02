@@ -1,7 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-
-const NB_TOKEN = process.env.NATIONBUILDER_API_TOKEN;
-const NB_SLUG = process.env.NATIONBUILDER_SLUG;
+import { fetchRecentSignups } from "@/lib/signup-utils";
 
 export async function GET() {
   try {
@@ -15,50 +13,7 @@ export async function GET() {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!NB_TOKEN || !NB_SLUG) {
-      return Response.json({ signups: [], assignments: [] });
-    }
-
-    // Fetch last 3 signups from NationBuilder v2 API (read-only)
-    const url = `https://${NB_SLUG}.nationbuilder.com/api/v2/signups?sort=-created_at&page[size]=3`;
-
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${NB_TOKEN}`,
-        Accept: "application/json",
-      },
-      next: { revalidate: 300 }, // Cache for 5 minutes
-    });
-
-    if (!res.ok) {
-      console.error(`NationBuilder API error: ${res.status} ${res.statusText}`);
-      return Response.json({ signups: [], assignments: [] });
-    }
-
-    const json = await res.json();
-    const data = json.data ?? [];
-
-    const signups = data.map(
-      (person: {
-        id: string;
-        attributes?: {
-          first_name?: string;
-          last_name?: string;
-          email?: string;
-          phone_number?: string;
-          mobile_number?: string;
-          created_at?: string;
-        };
-      }) => ({
-        id: String(person.id),
-        name: [person.attributes?.first_name, person.attributes?.last_name]
-          .filter(Boolean)
-          .join(" ") || "Unknown",
-        email: person.attributes?.email || "",
-        phone: person.attributes?.phone_number || person.attributes?.mobile_number || "",
-        created_at: person.attributes?.created_at || "",
-      })
-    );
+    const signups = await fetchRecentSignups(3);
 
     // Fetch existing assignments for these signups
     const signupIds = signups.map((s: { id: string }) => s.id);
