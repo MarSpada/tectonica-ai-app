@@ -10,27 +10,7 @@ import NbSignupModal from "./signups/NbSignupModal";
 import CreateApprovalModal from "./approvals/CreateApprovalModal";
 import LogHoursModal from "./hours/LogHoursModal";
 import HoursDetailOverlay from "./hours/HoursDetailOverlay";
-import type { Member, GroupMessage, NbSignup, SignupAssignment } from "@/lib/types";
-
-interface HourEntry {
-  id: string;
-  user_id: string;
-  hours: number;
-  description: string | null;
-  activity_date: string;
-  user_name?: string;
-  user_avatar?: string | null;
-}
-
-interface CalendarEvent {
-  id: string;
-  title: string;
-  start: string;
-  end: string | null;
-  location: string | null;
-  sourceName: string;
-  sourceColor: string;
-}
+import type { Member, GroupMessage, NbSignup, SignupAssignment, HourEntry, CalendarEvent } from "@/lib/types";
 
 interface RightSidebarProps {
   groupMessages?: GroupMessage[];

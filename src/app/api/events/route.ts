@@ -1,17 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { parseIcs } from "@/lib/ical-parser";
-
-export interface CalendarEvent {
-  id: string;
-  title: string;
-  start: string;
-  end: string | null;
-  location: string | null;
-  description: string | null;
-  sourceName: string;
-  sourceColor: string;
-}
+import type { CalendarEvent } from "@/lib/types";
 
 export async function GET() {
   try {

@@ -3,16 +3,7 @@
 import { useState } from "react";
 import type { BotCategory } from "@/lib/bots";
 import { categoryMeta } from "@/lib/bots";
-
-interface AdminBot {
-  id: string;
-  slug: string;
-  name: string;
-  icon: string;
-  category: BotCategory;
-  description: string;
-  system_prompt: string | null;
-}
+import type { AdminBot } from "@/lib/types";
 
 interface BotEditorProps {
   bot: AdminBot | null; // null = creating new

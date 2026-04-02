@@ -1,3 +1,5 @@
+import type { BotCategory } from "./bots";
+
 export type UserRole = "super_admin" | "group_admin" | "member" | "supporter";
 
 export interface Message {
@@ -71,6 +73,52 @@ export interface ProfileData {
   role: string;
   orgName: string;
   groupName: string;
+}
+
+/* ── Volunteer Hours ── */
+
+export interface HourEntry {
+  id: string;
+  user_id: string;
+  hours: number;
+  description: string | null;
+  activity_date: string;
+  created_at?: string;
+  user_name?: string;
+  user_avatar?: string | null;
+}
+
+/* ── Admin / Bots ── */
+
+export interface AdminBot {
+  id: string;
+  slug: string;
+  name: string;
+  icon: string;
+  category: BotCategory;
+  description: string;
+  system_prompt: string | null;
+}
+
+/* ── Calendar ── */
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  start: string;
+  end: string | null;
+  location: string | null;
+  description?: string | null;
+  sourceName: string;
+  sourceColor: string;
+}
+
+/* ── Groups ── */
+
+export interface Group {
+  id: string;
+  name: string;
+  member_count?: number;
 }
 
 /* ── Approval Workflow ── */

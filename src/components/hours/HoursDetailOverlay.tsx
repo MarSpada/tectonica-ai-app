@@ -1,16 +1,7 @@
 "use client";
 
 import { getAvatarColor, getInitials } from "@/lib/avatar";
-
-interface HourEntry {
-  id: string;
-  user_id: string;
-  hours: number;
-  description: string | null;
-  activity_date: string;
-  user_name?: string;
-  user_avatar?: string | null;
-}
+import type { HourEntry } from "@/lib/types";
 
 interface HoursDetailOverlayProps {
   entries: HourEntry[];

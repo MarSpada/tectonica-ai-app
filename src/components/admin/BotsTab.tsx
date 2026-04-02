@@ -3,17 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import type { BotCategory } from "@/lib/bots";
 import { categoryMeta } from "@/lib/bots";
+import type { AdminBot } from "@/lib/types";
 import BotEditor from "./BotEditor";
-
-interface AdminBot {
-  id: string;
-  slug: string;
-  name: string;
-  icon: string;
-  category: BotCategory;
-  description: string;
-  system_prompt: string | null;
-}
 
 interface BotsTabProps {
   orgId: string | null;

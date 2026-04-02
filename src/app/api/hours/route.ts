@@ -1,16 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-
-export interface VolunteerHourEntry {
-  id: string;
-  user_id: string;
-  hours: number;
-  description: string | null;
-  activity_date: string;
-  created_at: string;
-  user_name?: string;
-  user_avatar?: string | null;
-}
+import type { HourEntry } from "@/lib/types";
 
 // GET — list volunteer hours for the user's group
 export async function GET(request: Request) {
@@ -40,7 +30,7 @@ export async function GET(request: Request) {
       .limit(limit);
 
     // Enrich with user names
-    const enriched: VolunteerHourEntry[] = [];
+    const enriched: HourEntry[] = [];
     if (entries && entries.length > 0) {
       const userIds = [...new Set(entries.map((e) => e.user_id))];
       const { data: profiles } = await supabase

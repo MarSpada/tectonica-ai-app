@@ -2,12 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-
-interface Group {
-  id: string;
-  name: string;
-  member_count?: number;
-}
+import type { Group } from "@/lib/types";
 
 interface OrgTabProps {
   orgId: string | null;

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import type { Group } from "@/lib/types";
 
 interface GroupReassignMember {
   id: string;
@@ -15,11 +16,6 @@ interface GroupReassignModalProps {
   orgId: string | null;
   onConfirm: (memberId: string, newGroupId: string) => void;
   onClose: () => void;
-}
-
-interface Group {
-  id: string;
-  name: string;
 }
 
 export default function GroupReassignModal({
