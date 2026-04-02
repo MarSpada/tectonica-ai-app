@@ -300,6 +300,20 @@ export default function ProfileTab({ userId, profile }: ProfileTabProps) {
           </span>
         )}
       </div>
+
+      {/* Sign Out */}
+      <div className="pt-4 border-t border-black/5">
+        <button
+          onClick={async () => {
+            const supabase = createClient();
+            await supabase.auth.signOut();
+            window.location.href = "/login";
+          }}
+          className="px-4 py-2 text-sm font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+        >
+          Sign Out
+        </button>
+      </div>
     </div>
   );
 }

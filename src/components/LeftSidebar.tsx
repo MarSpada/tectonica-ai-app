@@ -171,7 +171,7 @@ export default function LeftSidebar({
                 <p className="text-sm font-medium text-text-primary truncate">
                   {displayName}
                 </p>
-                <p className="text-xs text-text-muted">Settings</p>
+                <p className="text-xs text-text-muted capitalize">{profile?.role?.replace("_", " ") || "Member"}</p>
               </div>
             </Link>
             <Link

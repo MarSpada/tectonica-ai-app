@@ -74,12 +74,6 @@ export default function AccountTab({ email }: AccountTabProps) {
     }
   }
 
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    window.location.href = "/login";
-  }
-
   return (
     <div className="space-y-6">
       {/* Email */}
@@ -177,21 +171,6 @@ export default function AccountTab({ email }: AccountTabProps) {
           Danger Zone
         </h2>
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-text-primary">Sign Out</p>
-              <p className="text-[11px] text-text-muted">
-                Sign out of your account on this device
-              </p>
-            </div>
-            <button
-              onClick={handleSignOut}
-              className="px-4 py-2 text-sm font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-            >
-              Sign Out
-            </button>
-          </div>
-          <div className="border-t border-black/5" />
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-text-primary">
