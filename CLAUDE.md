@@ -17,8 +17,44 @@ The prototype is a desktop-only, non-functional mockup (vanilla HTML/CSS/JS, no 
 ### Every session — opening ritual
 1. Read this entire CLAUDE.md before writing any code
 2. State which files you will touch this session and why
-3. Run the hygiene audit on those files (see audit prompt)
+3. Run the hygiene audit on those files (see audit prompt below)
 4. Wait for approval before making any changes
+
+### Hygiene audit prompt
+Before touching any file, scan it for:
+
+TYPES
+- Any use of `any` type (explicit or implicit)
+- Types defined inline instead of in lib/types.ts
+- Duplicate type definitions already in lib/types.ts
+
+DATA FETCHING
+- Components that both fetch data and render UI
+- Supabase server client imported in a client component
+- Supabase client imported in a server component or API route
+- User role/org/group data fetched directly instead of via UserProfileContext
+
+API ROUTES
+- Routes missing an auth check
+- Routes returning errors without { error: string } shape
+- NationBuilder API called directly instead of through lib/signup-utils.ts
+
+STATE + EFFECTS
+- Supabase Realtime subscriptions without useEffect cleanup
+- useEffect with missing or incorrect dependency arrays
+
+DEAD CODE
+- Unused imports
+- Commented-out code blocks
+- TODO/FIXME comments
+- Components or functions defined but never called
+
+HARDCODED VALUES
+- Hardcoded user IDs, org IDs, or group IDs
+- Hardcoded strings that should come from DB or config
+- Hardcoded color values that should use design tokens
+
+Report findings grouped by category. Do not fix anything until instructed.
 
 ### Every session — closing ritual
 Ask yourself before ending:
@@ -65,6 +101,11 @@ codebase and follow it — don't invent a new approach.
 
 ### NationBuilder
 - All NationBuilder API calls go through `lib/signup-utils.ts` — never call the NB API directly from a component or route
+
+### Dashboard widgets
+- All dashboard widget visibility uses WIDGET_PERMISSIONS from `lib/dashboard-widgets.ts` — never hardcode role checks for widgets inline
+- All widget size constraints use WIDGET_CONSTRAINTS — never hardcode minW/maxW/minH/maxH in components
+- To add a new widget: add its ID to WIDGETS, define its LABEL, PERMISSIONS, CONSTRAINTS, and default position in SYSTEM_DEFAULT_LAYOUT — nowhere else
 
 ---
 
@@ -472,6 +513,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `lib/avatar.ts` | Avatar utilities (upload, delete, generate URL) for Supabase Storage |
 | `lib/signup-utils.ts` | NationBuilder signup utilities (fetch, parse, enrich). Returns connection status (connected/error/not_configured) |
 | `lib/UserProfileContext.tsx` | React Context for user profile data (role, org, group, name, avatar) |
+| `lib/dashboard-widgets.ts` | Widget IDs, role-based visibility permissions, labels, size constraints, system default layout, and layout utility functions (getVisibleWidgets, filterLayoutToRole, mergeLayoutWithDefaults) |
 | `lib/supabase/server.ts` | Server-side Supabase client factory using cookies |
 | `lib/supabase/client.ts` | Client-side Supabase client factory |
 
@@ -534,6 +576,10 @@ Desktop-first design. Mobile is out of scope for now.
 
 ## Known Issues / Next Session
 
+- Client components that call GET routes (RightSidebar, NotificationBar,
+  TopBar) now receive 401s when unauthenticated. Verify they handle
+  error responses gracefully and don't throw uncaught errors during
+  auth load race conditions.
 - **Resend domain verification BLOCKER** — `tectonica.co` is "Not Started" in Resend.
   Partner must add DNS records in GoDaddy. Blocks: signup confirmation emails,
   password reset emails, and all transactional emails to non-owner addresses.
@@ -550,3 +596,29 @@ Desktop-first design. Mobile is out of scope for now.
 - Test accounts: mar@tectonica.co (super_admin), ned@tectonica.co (group_admin),
   production@tectonica.co (group_admin), mar.isabel.spada@gmail.com (member),
   tectonica-ai-test1@maildrop.cc (supporter, manually created in Supabase).
+
+---
+
+## UI Improvement Sessions
+
+### UI Session A — Design token consolidation
+Status: Ready to run
+Goal: Centralise all design tokens into lib/design-tokens.ts and tailwind.config.ts. Replace all hardcoded hex/rgba values in components with token references. No visual changes.
+
+### UI Session B — Shadcn/ui introduction
+Status: Depends on UI Session A
+Goal: Replace admin panel table, tabs, modals, and dropdowns with Shadcn components themed with existing design tokens.
+
+### UI Session C — Tremor dashboard widgets
+Status: Depends on UI Session B
+Goal: Rebuild right sidebar widget content using Tremor components themed with existing design tokens.
+
+### UI Session D — Configurable dashboard grid
+Status: Depends on UI Session C
+Goal: Introduce React Grid Layout for drag/resize/persist. Wire to database. Use lib/dashboard-widgets.ts for permissions, constraints, and default layout.
+Key behaviour:
+- Auto-save on drag end with subtle "Layout saved" toast
+- User layouts never overwritten by org default changes
+- Role-invisible widgets disappear and gap closes
+- Rearrangement and resizing applies to right sidebar only
+- Resize is constrained by WIDGET_CONSTRAINTS per widget
