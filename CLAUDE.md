@@ -609,9 +609,66 @@ Goal: Centralise all design tokens into lib/design-tokens.ts and tailwind.config
 Status: Complete
 Goal: Replace admin panel table, tabs, modals, and dropdowns with Shadcn components themed with existing design tokens.
 
+### UI Session B.5 — Complete Shadcn rollout
+Status: Ready to run
+Goal: Extend Shadcn components to the remaining parts of the app flagged in the Session B scan. Same principles as Session B — preserve functionality, improve with judgment.
+
+Before starting, read components.json and src/components/ui/ to understand all installed primitives. Do not reinstall anything already present.
+
+Known gotchas from Session B:
+- Shadcn Button uses render prop for polymorphism, not asChild — keep this in mind for buttons that wrap anchor elements
+- Shadcn Select onValueChange can pass null — wrap with fallback when using with string state setters
+
+Scope (in priority order):
+
+MODALS — replace with Shadcn Dialog or Sheet:
+- LogHoursModal.tsx
+- HoursDetailOverlay.tsx
+- MemberDetailModal.tsx
+- CreateApprovalModal.tsx
+- LeadersChat.tsx (slide-in panel — use Sheet)
+- GroupConversationOverlay.tsx (use Sheet)
+- NotificationBar lightbox
+- ReimbursementModal
+
+BUTTONS:
+- Replace raw <button> elements with Shadcn Button
+- variant="ghost" for icon-only buttons
+- variant="outline" for secondary actions
+- default variant for primary actions
+
+INPUTS:
+- Replace hand-rolled <input> elements with Shadcn Input
+- Preserve all existing onChange handlers and validation
+
+BADGES / PILLS:
+- Replace hand-rolled badge/pill styles with Shadcn Badge
+- Preserve existing colors using custom variants where needed (same approach as role badges in Session B)
+
+SETTINGS + REMAINING ADMIN TABS:
+- SettingsView tabs → Shadcn Tabs
+- OrgTab, BotsTab, IntegrationsTab inputs and loading states → Shadcn Input + Skeleton
+
+Same principles as Session B:
+WHAT TO PRESERVE: all functionality, handlers, role logic, data fetching, design token colors and typography
+WHAT TO IMPROVE WITH JUDGMENT: spacing, visual hierarchy, consistency, hover/focus states, empty states, loading states, responsive behaviour
+
+For each group of components: show proposed changes and UI improvements, wait for approval before applying.
+Flag anything outside scope for Session C.
+
+Commit with message: "UI Session B.5: complete Shadcn rollout across remaining components"
+Output closing handover note.
+
 ### UI Session C — Tremor dashboard widgets
-Status: Depends on UI Session B
+Status: Depends on UI Session B.5
 Goal: Rebuild right sidebar widget content using Tremor components themed with existing design tokens.
+
+Additional context from Session B handover:
+- All Shadcn primitives are in src/components/ui/ — import from there, do not reinstall
+- Read components.json before starting to understand what is already installed
+- Widget background colors are in lib/design-tokens.ts as WIDGET_BG_* constants and available as CSS vars
+- Role-based widget visibility is in lib/dashboard-widgets.ts — do not hardcode role checks in widget components
+- Apply same improvement principles as Sessions B and B.5: preserve functionality, improve spacing, add loading skeletons and empty states, flag anything outside scope for Session D
 
 ### UI Session D — Configurable dashboard grid
 Status: Depends on UI Session C
