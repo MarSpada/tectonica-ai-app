@@ -62,8 +62,11 @@ export default function NotificationBar() {
   const approvalCount = notifications.filter(
     (n) => n.type === "approval_request"
   ).length;
+  const reimbursementCount = notifications.filter(
+    (n) => n.type === "reimbursement_request"
+  ).length;
 
-  if (assignmentCount === 0 && approvalCount === 0) return null;
+  if (assignmentCount === 0 && approvalCount === 0 && reimbursementCount === 0) return null;
 
   async function handleDismiss() {
     setDismissed(true);
@@ -86,47 +89,30 @@ export default function NotificationBar() {
             notifications_active
           </span>
           <p className="text-xs text-amber-800 truncate">
-            {assignmentCount > 0 && approvalCount > 0 ? (
+            You have{" "}
+            {assignmentCount > 0 && (
               <>
-                You have{" "}
                 <button
                   onClick={() => setShowLightbox(true)}
                   className="underline hover:no-underline font-bold"
                 >
-                  {assignmentCount} new signup
-                  {assignmentCount !== 1 ? "s" : ""}
-                </button>{" "}
-                and{" "}
-                <Link href="/settings?tab=approvals" className="underline hover:no-underline">
-                  <strong>{approvalCount}</strong> approval update
-                  {approvalCount !== 1 ? "s" : ""}
-                </Link>
-                .
-              </>
-            ) : assignmentCount > 0 ? (
-              <>
-                You have{" "}
-                <button
-                  onClick={() => setShowLightbox(true)}
-                  className="underline hover:no-underline font-bold"
-                >
-                  {assignmentCount} new signup
-                  {assignmentCount !== 1 ? "s" : ""} assigned to you
+                  {assignmentCount} new signup{assignmentCount !== 1 ? "s" : ""}
                 </button>
-                . Contact them within 24 hours for best results.
               </>
-            ) : approvalCount > 0 ? (
-              <>
-                You have{" "}
-                <Link href="/settings?tab=approvals" className="underline hover:no-underline">
-                  <strong>{approvalCount}</strong> approval update
-                  {approvalCount !== 1 ? "s" : ""}
-                </Link>
-                . Check your approval requests.
-              </>
-            ) : (
-              <>You have new notifications.</>
             )}
+            {assignmentCount > 0 && (approvalCount > 0 || reimbursementCount > 0) && ", "}
+            {approvalCount > 0 && (
+              <Link href="/settings?tab=approvals" className="underline hover:no-underline">
+                <strong>{approvalCount}</strong> approval update{approvalCount !== 1 ? "s" : ""}
+              </Link>
+            )}
+            {approvalCount > 0 && reimbursementCount > 0 && ", "}
+            {reimbursementCount > 0 && (
+              <Link href="/settings?tab=approvals" className="underline hover:no-underline">
+                <strong>{reimbursementCount}</strong> reimbursement update{reimbursementCount !== 1 ? "s" : ""}
+              </Link>
+            )}
+            .
           </p>
         </div>
         <button

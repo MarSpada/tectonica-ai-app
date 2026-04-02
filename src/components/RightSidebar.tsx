@@ -8,9 +8,10 @@ import { getAvatarColor, getInitials, getRoleLabel } from "@/lib/avatar";
 import { formatSignupTime } from "@/lib/signup-utils";
 import NbSignupModal from "./signups/NbSignupModal";
 import CreateApprovalModal from "./approvals/CreateApprovalModal";
+import ReimbursementModal from "./ReimbursementModal";
 import LogHoursModal from "./hours/LogHoursModal";
 import HoursDetailOverlay from "./hours/HoursDetailOverlay";
-import type { Member, GroupMessage, NbSignup, SignupAssignment, HourEntry, CalendarEvent } from "@/lib/types";
+import type { Member, GroupMessage, NbSignup, SignupAssignment, HourEntry, CalendarEvent, FundraisingGoal } from "@/lib/types";
 
 interface RightSidebarProps {
   groupMessages?: GroupMessage[];
@@ -33,6 +34,12 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
   const [weekHours, setWeekHours] = useState(0);
   const [showLogHoursModal, setShowLogHoursModal] = useState(false);
   const [showHoursDetail, setShowHoursDetail] = useState(false);
+  const [fundraising, setFundraising] = useState<FundraisingGoal | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalInput, setGoalInput] = useState("");
+  const [budgetInput, setBudgetInput] = useState("");
+  const [showReimbursementModal, setShowReimbursementModal] = useState(false);
   const directoryMembers = allMembers.slice(0, 6);
 
   const memberCount = allMembers.filter((m) =>
@@ -89,11 +96,22 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         // Hours unavailable
       }
     }
+    async function fetchFundraising() {
+      try {
+        const res = await fetch("/api/fundraising");
+        const json = await res.json();
+        if (json.goal) setFundraising(json.goal);
+        if (json.isAdmin) setIsAdmin(json.isAdmin);
+      } catch {
+        // Fundraising unavailable
+      }
+    }
     fetchMembers();
     fetchSignups();
     fetchEvents();
     fetchCalendarSources();
     fetchHours();
+    fetchFundraising();
   }, []);
 
   useEffect(() => {
@@ -296,21 +314,105 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
           className="rounded-xl p-4 flex flex-col"
           style={{ gridColumn: "1 / 5", gridRow: "8 / 15", backgroundColor: "#fff3e0" }}
         >
-          <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-2">
-            Current Month Fundraising Goal
-          </h3>
-          <div className="text-2xl font-bold text-text-primary">
-            $1,500 <span className="text-xs font-normal text-text-muted">of $1,900</span>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
+              Current Month Fundraising Goal
+            </h3>
+            {isAdmin && !editingGoal && (
+              <button
+                onClick={() => {
+                  setGoalInput(String(fundraising?.fundraising_goal || 0));
+                  setBudgetInput(String(fundraising?.print_budget || 0));
+                  setEditingGoal(true);
+                }}
+                className="p-0.5 rounded hover:bg-orange-200/50 transition-colors"
+                title="Edit goals"
+              >
+                <span className="material-icons-two-tone text-[14px] text-text-muted">edit</span>
+              </button>
+            )}
           </div>
-          <p className="text-[11px] text-text-muted mt-1">Total Raised: $12,340</p>
-          <div className="mt-2 w-full h-2 bg-white/60 rounded-full overflow-hidden">
-            <div className="h-full bg-orange-400 rounded-full" style={{ width: "79%" }} />
-          </div>
-          <div className="mt-3 pt-3 border-t border-black/5">
-            <p className="text-[10px] text-text-muted">Monthly Supply & Print Budget</p>
-            <p className="text-lg font-bold text-text-primary">$150</p>
-          </div>
-          <button className="mt-auto self-stretch px-3 py-2 text-xs font-semibold text-white bg-orange-400 rounded-lg hover:bg-orange-500 transition-colors">
+
+          {editingGoal ? (
+            <div className="space-y-2">
+              <div>
+                <label className="text-[10px] text-text-muted">Fundraising Goal ($)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={goalInput}
+                  onChange={(e) => setGoalInput(e.target.value)}
+                  className="w-full px-2 py-1 text-sm rounded border border-black/10 focus:outline-none focus:ring-1 focus:ring-orange-400"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-text-muted">Print Budget ($)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={budgetInput}
+                  onChange={(e) => setBudgetInput(e.target.value)}
+                  className="w-full px-2 py-1 text-sm rounded border border-black/10 focus:outline-none focus:ring-1 focus:ring-orange-400"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch("/api/fundraising", {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          fundraising_goal: parseFloat(goalInput) || 0,
+                          print_budget: parseFloat(budgetInput) || 0,
+                        }),
+                      });
+                      const json = await res.json();
+                      if (json.goal) setFundraising(json.goal);
+                    } catch { /* silent */ }
+                    setEditingGoal(false);
+                  }}
+                  className="flex-1 px-2 py-1 text-[10px] font-semibold text-white bg-orange-400 rounded hover:bg-orange-500 transition-colors"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => setEditingGoal(false)}
+                  className="px-2 py-1 text-[10px] font-semibold text-text-muted rounded hover:bg-black/5 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="text-2xl font-bold text-text-primary">
+                ${fundraising?.amount_raised || 0}
+                {(fundraising?.fundraising_goal || 0) > 0 && (
+                  <span className="text-xs font-normal text-text-muted"> of ${fundraising?.fundraising_goal || 0}</span>
+                )}
+              </div>
+              {(fundraising?.fundraising_goal || 0) > 0 && (
+                <div className="mt-2 w-full h-2 bg-white/60 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-orange-400 rounded-full transition-all"
+                    style={{ width: `${Math.min(100, ((fundraising?.amount_raised || 0) / (fundraising?.fundraising_goal || 1)) * 100)}%` }}
+                  />
+                </div>
+              )}
+              <div className="mt-3 pt-3 border-t border-black/5">
+                <p className="text-[10px] text-text-muted">Monthly Supply & Print Budget</p>
+                <p className="text-lg font-bold text-text-primary">${fundraising?.print_budget || 0}</p>
+              </div>
+            </>
+          )}
+
+          <button
+            onClick={() => setShowReimbursementModal(true)}
+            className="mt-auto self-stretch px-3 py-2 text-xs font-semibold text-white bg-orange-400 rounded-lg hover:bg-orange-500 transition-colors"
+          >
             Request Reimbursement
           </button>
         </div>
@@ -548,6 +650,16 @@ No upcoming events
           thisWeek={weekHours}
           onClose={() => setShowHoursDetail(false)}
           onLogHours={() => setShowLogHoursModal(true)}
+        />
+      )}
+
+      {/* Reimbursement Modal */}
+      {showReimbursementModal && (
+        <ReimbursementModal
+          onClose={() => setShowReimbursementModal(false)}
+          onCreated={() => {
+            // Optionally refresh fundraising data
+          }}
         />
       )}
     </aside>

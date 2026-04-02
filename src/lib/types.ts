@@ -58,7 +58,7 @@ export interface SignupAssignment {
 export interface AppNotification {
   id: string;
   user_id: string;
-  type: "signup_assignment" | "general" | "approval_request";
+  type: "signup_assignment" | "general" | "approval_request" | "reimbursement_request";
   title: string;
   body: string | null;
   metadata: Record<string, unknown>;
@@ -162,4 +162,33 @@ export interface ApprovalComment {
   // Joined fields from API
   author_name?: string;
   author_avatar?: string | null;
+}
+
+export interface FundraisingGoal {
+  id: string;
+  group_id: string;
+  month: string;
+  fundraising_goal: number;
+  amount_raised: number;
+  print_budget: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReimbursementRequest {
+  id: string;
+  group_id: string;
+  submitter_id: string;
+  reviewer_id: string;
+  amount: number;
+  description: string;
+  status: ApprovalStatus;
+  attachments: ApprovalAttachment[];
+  created_at: string;
+  updated_at: string;
+  // Joined fields from API
+  submitter_name?: string;
+  submitter_avatar?: string | null;
+  reviewer_name?: string;
+  reviewer_avatar?: string | null;
 }
