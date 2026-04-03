@@ -6,6 +6,7 @@ import ApprovalCard from "./ApprovalCard";
 import ApprovalDetailView from "./ApprovalDetailView";
 import CreateApprovalModal from "./CreateApprovalModal";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 type FilterTab = "all" | ApprovalStatus;
 type ViewMode = "submitted" | "assigned";
@@ -51,9 +52,7 @@ export default function ApprovalsView({ currentUserId, currentUserRole }: Approv
 
   // Filter requests
   const filtered = requests.filter((r) => {
-    // Filter by status tab
     if (filter !== "all" && r.status !== filter) return false;
-    // Filter by view mode (admin toggle)
     if (isAdmin) {
       if (viewMode === "submitted" && r.submitter_id !== currentUserId) return false;
       if (viewMode === "assigned" && r.reviewer_id !== currentUserId) return false;
@@ -74,102 +73,105 @@ export default function ApprovalsView({ currentUserId, currentUserRole }: Approv
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-text-primary">Approval Requests</h1>
-          <p className="text-xs text-text-muted mt-0.5">
-            Submit ideas or assets for admin review
-          </p>
+    <div className="space-y-4">
+      {/* Toolbar — matches admin panel pattern */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Admin toggle: Submitted by Me / Assigned to Me */}
+        {isAdmin && (
+          <div className="flex gap-1 bg-muted rounded-lg p-1">
+            <button
+              onClick={() => setViewMode("submitted")}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                viewMode === "submitted"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-secondary-foreground"
+              }`}
+            >
+              Submitted by Me
+            </button>
+            <button
+              onClick={() => setViewMode("assigned")}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                viewMode === "assigned"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-secondary-foreground"
+              }`}
+            >
+              Assigned to Me
+            </button>
+          </div>
+        )}
+
+        {/* Status filter pills — matches admin panel pattern */}
+        <div className="flex gap-1.5">
+          {FILTER_TABS.map((tab) => {
+            const count = requests.filter((r) => {
+              if (tab.key !== "all" && r.status !== tab.key) return false;
+              if (isAdmin) {
+                if (viewMode === "submitted" && r.submitter_id !== currentUserId) return false;
+                if (viewMode === "assigned" && r.reviewer_id !== currentUserId) return false;
+              }
+              return true;
+            }).length;
+
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setFilter(tab.key)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                  filter === tab.key
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card text-secondary-foreground border border-border hover:bg-muted"
+                }`}
+              >
+                {tab.label}
+                {count > 0 && (
+                  <span className="ml-1 opacity-70">({count})</span>
+                )}
+              </button>
+            );
+          })}
         </div>
-        <Button
-          onClick={() => setShowCreate(true)}
-        >
+
+        <Badge variant="outline" className="ml-auto text-muted-foreground">
+          {filtered.length} request{filtered.length !== 1 ? "s" : ""}
+        </Badge>
+
+        <Button onClick={() => setShowCreate(true)}>
           <span className="material-icons-two-tone text-[16px]">add</span>
           New Request
         </Button>
       </div>
 
-      {/* Admin toggle: Submitted by Me / Assigned to Me */}
-      {isAdmin && (
-        <div className="flex gap-1 bg-black/5 rounded-lg p-1 w-fit">
-          <button
-            onClick={() => setViewMode("submitted")}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              viewMode === "submitted"
-                ? "bg-card-bg text-text-primary shadow-sm"
-                : "text-text-muted hover:text-text-secondary"
-            }`}
-          >
-            Submitted by Me
-          </button>
-          <button
-            onClick={() => setViewMode("assigned")}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              viewMode === "assigned"
-                ? "bg-card-bg text-text-primary shadow-sm"
-                : "text-text-muted hover:text-text-secondary"
-            }`}
-          >
-            Assigned to Me
-          </button>
-        </div>
-      )}
-
-      {/* Filter tabs */}
-      <div className="flex gap-1.5">
-        {FILTER_TABS.map((tab) => {
-          const count = requests.filter((r) => {
-            if (tab.key !== "all" && r.status !== tab.key) return false;
-            if (isAdmin) {
-              if (viewMode === "submitted" && r.submitter_id !== currentUserId) return false;
-              if (viewMode === "assigned" && r.reviewer_id !== currentUserId) return false;
-            }
-            return true;
-          }).length;
-
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
-                filter === tab.key
-                  ? "bg-accent-purple text-white"
-                  : "bg-card-bg text-text-secondary border border-black/5 hover:bg-black/5"
-              }`}
-            >
-              {tab.label}
-              {count > 0 && (
-                <span className="ml-1 opacity-70">({count})</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
       {/* Request list */}
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="w-6 h-6 border-2 border-accent-purple border-t-transparent rounded-full animate-spin" />
+        <div className="flex items-center justify-center py-16 rounded-xl border border-border bg-card">
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16">
-          <span className="material-icons-two-tone text-[48px] text-text-muted/30 mb-3 block">
+        <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-border bg-card">
+          <span className="material-icons-two-tone text-5xl text-muted-foreground">
             approval
           </span>
-          <p className="text-sm text-text-muted">
+          <p className="text-sm font-medium text-foreground mt-3">
             {filter === "all"
-              ? "No approval requests yet."
-              : `No ${filter.replace("_", " ")} requests.`}
+              ? "No approval requests yet"
+              : `No ${filter.replace("_", " ")} requests`}
           </p>
-          <Button
-            variant="link"
-            onClick={() => setShowCreate(true)}
-            className="mt-3 text-xs"
-          >
-            Create your first request
-          </Button>
+          <p className="text-xs text-muted-foreground mt-1">
+            {filter === "all"
+              ? "Submit an idea or asset for admin review."
+              : "Try adjusting your filters."}
+          </p>
+          {filter === "all" && (
+            <Button
+              variant="link"
+              onClick={() => setShowCreate(true)}
+              className="mt-2 text-xs"
+            >
+              Create your first request
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">

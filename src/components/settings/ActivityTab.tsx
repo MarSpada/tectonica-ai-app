@@ -137,25 +137,26 @@ export default function ActivityTab({ userId }: ActivityTabProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <span className="material-icons-two-tone text-[24px] text-text-muted animate-spin">
-          autorenew
-        </span>
+      <div className="flex items-center justify-center py-16 rounded-xl border border-border bg-card">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (items.length === 0) {
     return (
-      <div className="text-center py-12">
-        <span className="material-icons-two-tone text-[36px] text-text-muted">history</span>
-        <p className="text-sm text-text-muted mt-2">No activity yet</p>
+      <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-border bg-card">
+        <span className="material-icons-two-tone text-5xl text-muted-foreground">history</span>
+        <p className="text-sm font-medium text-foreground mt-3">No activity yet</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Your hours, approvals, and other activity will appear here.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
       {items.map((item) => {
         const typeStyle = TYPE_STYLES[item.type];
         const statusStyle = item.status ? STATUS_STYLES[item.status] : null;
@@ -164,7 +165,7 @@ export default function ActivityTab({ userId }: ActivityTabProps) {
         return (
           <div
             key={item.id}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card-bg border border-black/5 hover:border-black/10 transition-colors"
+            className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
           >
             {/* Type tag */}
             <Badge variant="outline" className={`text-[10px] shrink-0 ${typeStyle.bg} ${typeStyle.text}`}>
@@ -173,9 +174,9 @@ export default function ActivityTab({ userId }: ActivityTabProps) {
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-text-primary truncate">{item.title}</p>
+              <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
               {item.detail && (
-                <p className="text-[11px] text-text-muted truncate">{item.detail}</p>
+                <p className="text-xs text-muted-foreground truncate">{item.detail}</p>
               )}
             </div>
 
@@ -186,7 +187,7 @@ export default function ActivityTab({ userId }: ActivityTabProps) {
                   {statusLabel}
                 </Badge>
               )}
-              <span className="text-[11px] text-text-muted whitespace-nowrap">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
                 {formatRelativeTime(item.date)}
               </span>
             </div>

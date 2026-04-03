@@ -35,6 +35,11 @@ export default function LeftSidebar({
   const avatarUrl = profile?.avatarUrl || null;
   const initials = getInitials(displayName);
 
+  const activeClass = isCollapsed
+    ? "bg-black/10 text-text-primary"
+    : "bg-sidebar-active text-white";
+  const inactiveClass = "text-text-primary hover:bg-black/5";
+
   return (
     <>
       {/* Backdrop for drawer mode (<=699px) */}
@@ -53,9 +58,7 @@ export default function LeftSidebar({
           <Link
             href="/coach"
             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              pathname === "/coach"
-                ? "bg-sidebar-active text-white"
-                : "text-text-primary hover:bg-black/5"
+              pathname === "/coach" ? activeClass : inactiveClass
             }`}
           >
             <span className="material-icons-two-tone text-[18px]">groups</span>
@@ -66,9 +69,7 @@ export default function LeftSidebar({
           <Link
             href="/media"
             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              pathname === "/media"
-                ? "bg-sidebar-active text-white"
-                : "text-text-primary hover:bg-black/5"
+              pathname === "/media" ? activeClass : inactiveClass
             }`}
           >
             <span className="material-icons-two-tone text-[18px]">
@@ -81,9 +82,7 @@ export default function LeftSidebar({
           <Link
             href="/members"
             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              pathname === "/members"
-                ? "bg-sidebar-active text-white"
-                : "text-text-primary hover:bg-black/5"
+              pathname === "/members" ? activeClass : inactiveClass
             }`}
           >
             <span className="material-icons-two-tone text-[18px]">people</span>
@@ -95,9 +94,7 @@ export default function LeftSidebar({
             <Link
               href="/admin"
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                pathname?.startsWith("/admin")
-                  ? "bg-sidebar-active text-white"
-                  : "text-text-primary hover:bg-black/5"
+                pathname?.startsWith("/admin") ? activeClass : inactiveClass
               }`}
             >
               <span className="material-icons-two-tone text-[18px]">
@@ -111,9 +108,7 @@ export default function LeftSidebar({
           <button
             onClick={() => setLeadersChatOpen(true)}
             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              leadersChatOpen
-                ? "bg-sidebar-active text-white"
-                : "text-text-primary hover:bg-black/5"
+              leadersChatOpen ? activeClass : inactiveClass
             }`}
           >
             <span className="material-icons-two-tone text-[18px]">chat</span>

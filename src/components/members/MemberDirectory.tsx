@@ -39,9 +39,9 @@ export default function MemberDirectory({ members }: MemberDirectoryProps) {
 
   const filteredMembers = members.filter((m) => {
     const matchesRole = roleFilterMap[roleFilter].includes(m.role);
-    const matchesSearch = (m.full_name ?? "")
-      .toLowerCase()
-      .includes(search.toLowerCase());
+    const matchesSearch =
+      (m.full_name ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (m.email ?? "").toLowerCase().includes(search.toLowerCase());
     return matchesRole && matchesSearch;
   });
 
@@ -65,117 +65,117 @@ export default function MemberDirectory({ members }: MemberDirectoryProps) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-content-bg">
       {/* Header */}
-      <div className="px-6 py-5">
-        <div className="flex items-baseline justify-between mb-4">
-          <div className="flex items-baseline gap-3">
-            <h1 className="text-2xl font-bold text-text-primary">
-              Member Directory
-            </h1>
-            <span className="text-sm text-text-muted">
-              {members.length} member{members.length !== 1 ? "s" : ""}
-            </span>
-          </div>
-          <Button disabled>
-            <span className="text-lg font-bold">+</span>
-            Invite Member
-          </Button>
-        </div>
-
-        {/* Toolbar: search + filters */}
-        <div className="flex items-center gap-4">
+      <div className="px-6 py-5 space-y-4">
+        {/* Toolbar: search + filters + count */}
+        <div className="flex flex-wrap items-center gap-3">
           {/* Search */}
           <div className="relative w-72">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 material-icons-two-tone text-[18px] text-text-muted">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 material-icons-two-tone text-[18px] text-muted-foreground pointer-events-none">
               search
             </span>
             <Input
               type="text"
-              placeholder="Search members..."
+              placeholder="Search by name or email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10"
+              className="pl-9"
             />
           </div>
 
-          {/* Filter pills */}
-          <div className="flex gap-2">
+          {/* Filter pills — matches admin panel pattern */}
+          <div className="flex gap-1.5">
             {filterLabels.map((f) => (
               <button
                 key={f.key}
                 onClick={() => setRoleFilter(f.key)}
-                className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
+                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
                   roleFilter === f.key
-                    ? "bg-accent-purple text-white"
-                    : "bg-card-bg text-text-secondary border border-black/5 hover:bg-black/5"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card text-secondary-foreground border border-border hover:bg-muted"
                 }`}
               >
                 {f.label}
               </button>
             ))}
           </div>
+
+          <Badge variant="outline" className="ml-auto text-muted-foreground">
+            {filteredMembers.length} member{filteredMembers.length !== 1 ? "s" : ""}
+          </Badge>
+
+          <Button disabled>
+            <span className="material-icons-two-tone text-[16px]">person_add</span>
+            Invite Member
+          </Button>
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-6 pb-6">
         {filteredMembers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <span className="material-icons-two-tone text-6xl text-text-muted">
+          <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-border bg-card">
+            <span className="material-icons-two-tone text-5xl text-muted-foreground">
               group_off
             </span>
-            <p className="text-sm text-text-muted mt-2">
-              No members found matching your search.
+            <p className="text-sm font-medium text-foreground mt-3">No members found</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {search || roleFilter !== "all"
+                ? "Try adjusting your search or filters."
+                : "No members in this group yet."}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
+          <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
             {filteredMembers.map((member) => {
               const badge = getRoleBadgeStyle(member.role);
               return (
                 <Link
                   key={member.id}
                   href={`/members/${member.id}`}
-                  className="bg-card-bg rounded-xl border border-card-stroke p-5 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
                 >
-                  <div className="flex items-center gap-4">
-                    {/* Avatar */}
-                    {member.avatar_url ? (
-                      <img
-                        src={member.avatar_url}
-                        alt={member.full_name || "Member"}
-                        className="w-16 h-16 rounded-full object-cover flex-shrink-0"
-                      />
-                    ) : (
-                      <div
-                        className={`w-16 h-16 rounded-full ${getAvatarColor(member.id)} flex items-center justify-center text-xl font-bold text-white flex-shrink-0`}
-                      >
-                        {getInitials(member.full_name)}
-                      </div>
-                    )}
-
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-text-primary truncate">
-                        {member.full_name || "Unknown"}
-                      </p>
-                      <Badge variant="outline" className={`mt-1 text-[10px] ${badge.bg} ${badge.text}`}>
-                        {getRoleLabel(member.role)}
-                      </Badge>
+                  {/* Avatar */}
+                  {member.avatar_url ? (
+                    <img
+                      src={member.avatar_url}
+                      alt={member.full_name || "Member"}
+                      className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div
+                      className={`w-9 h-9 rounded-full ${getAvatarColor(member.id)} flex items-center justify-center text-xs font-bold text-white flex-shrink-0`}
+                    >
+                      {getInitials(member.full_name)}
                     </div>
+                  )}
+
+                  {/* Name + email */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {member.full_name || "Unknown"}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {member.email}
+                    </p>
                   </div>
 
-                  <p className="text-xs text-text-muted mt-3 truncate">
-                    {member.email}
-                  </p>
-                  <p className="text-[10px] text-text-muted mt-0.5">
+                  {/* Role badge */}
+                  <span
+                    className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${badge.bg} ${badge.text}`}
+                  >
+                    {getRoleLabel(member.role)}
+                  </span>
+
+                  {/* Joined date */}
+                  <span className="text-xs text-muted-foreground shrink-0 w-32 text-right">
                     {formatRelativeDate(member.created_at)}
-                  </p>
+                  </span>
                 </Link>
               );
             })}
           </div>
         )}
       </div>
-
     </div>
   );
 }
