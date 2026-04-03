@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Responsive, WidthProvider } from "react-grid-layout/legacy";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -91,9 +91,15 @@ export default function RightSidebar({
   const [layout, setLayout] = useState<LayoutItem[]>([]);
   const [layoutLoading, setLayoutLoading] = useState(true);
   const [layoutSource, setLayoutSource] = useState<"user" | "org" | "system">("system");
+  const [isEditMode, setIsEditMode] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasUserInteracted = useRef(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const layoutRef = useRef<LayoutItem[]>([]);
+
+  // Keep ref in sync for unmount save
+  useEffect(() => {
+    layoutRef.current = layout;
+  }, [layout]);
 
   // Data state
   const [allMembers, setAllMembers] = useState<Member[]>([]);
@@ -132,7 +138,6 @@ export default function RightSidebar({
           setLayout(json.layout);
           setLayoutSource(json.source || "system");
         } else {
-          // Fallback to system default filtered by role
           setLayout(filterLayoutToRole(SYSTEM_DEFAULT_LAYOUT, role));
           setLayoutSource("system");
         }
@@ -240,33 +245,26 @@ export default function RightSidebar({
     fetchHoursHistory();
   }, []);
 
-  // Auto-save layout (debounced)
-  const saveLayout = useCallback(
-    (newLayout: LayoutItem[]) => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = setTimeout(async () => {
-        try {
-          const res = await fetch("/api/dashboard/layout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ layout: newLayout }),
-          });
-          if (res.ok) {
-            toast.success("Layout saved");
-            setLayoutSource("user");
-          } else {
-            toast.error("Failed to save layout");
-          }
-        } catch {
-          toast.error("Failed to save layout");
-        }
-      }, 1000);
-    },
-    []
-  );
+  // Auto-save on unmount if in edit mode
+  const isEditModeRef = useRef(false);
+  useEffect(() => {
+    isEditModeRef.current = isEditMode;
+  }, [isEditMode]);
 
+  useEffect(() => {
+    return () => {
+      if (isEditModeRef.current) {
+        fetch("/api/dashboard/layout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ layout: layoutRef.current }),
+        }).catch(() => {});
+      }
+    };
+  }, []);
+
+  // Track layout changes from RGL (no auto-save — only on explicit Save)
   function handleLayoutChange(newLayout: RGLLayout) {
-    if (!hasUserInteracted.current) return;
     const mapped: LayoutItem[] = newLayout.map((item) => ({
       i: item.i,
       x: item.x,
@@ -275,13 +273,66 @@ export default function RightSidebar({
       h: item.h,
     }));
     setLayout(mapped);
-    saveLayout(mapped);
   }
 
-  // Force recompaction after resize — RGL sometimes doesn't
-  // recompact other widgets after a resize event
+  // Force recompaction after resize
   function handleResizeStop() {
     setLayout((prev) => [...prev]);
+  }
+
+  // Save to user layout
+  async function saveUserLayout() {
+    try {
+      const res = await fetch("/api/dashboard/layout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ layout }),
+      });
+      if (res.ok) {
+        setLayoutSource("user");
+        toast.success("Layout saved");
+      } else {
+        toast.error("Failed to save layout");
+      }
+    } catch {
+      toast.error("Failed to save layout");
+    }
+  }
+
+  // Save as org default + user layout
+  async function saveOrgDefault() {
+    try {
+      const [orgRes, userRes] = await Promise.all([
+        fetch("/api/admin/dashboard/layout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ layout }),
+        }),
+        fetch("/api/dashboard/layout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ layout }),
+        }),
+      ]);
+      if (orgRes.ok && userRes.ok) {
+        setLayoutSource("user");
+        toast.success("Org default updated");
+      } else {
+        toast.error("Failed to save org default");
+      }
+    } catch {
+      toast.error("Failed to save org default");
+    }
+  }
+
+  // Handle save button click
+  function handleSave() {
+    if (isSuperAdmin) {
+      setShowSaveDialog(true);
+    } else {
+      saveUserLayout();
+      setIsEditMode(false);
+    }
   }
 
   // Reset to default
@@ -290,37 +341,19 @@ export default function RightSidebar({
     try {
       const res = await fetch("/api/dashboard/layout", { method: "DELETE" });
       if (res.ok) {
-        // Reload layout
         const layoutRes = await fetch("/api/dashboard/layout");
         const json = await layoutRes.json();
         if (json.layout) {
           setLayout(json.layout);
           setLayoutSource(json.source || "system");
         }
+        setIsEditMode(false);
         toast.success("Layout reset");
       } else {
         toast.error("Failed to reset layout");
       }
     } catch {
       toast.error("Failed to reset layout");
-    }
-  }
-
-  // Save as org default (super_admin)
-  async function handleSaveAsOrgDefault() {
-    try {
-      const res = await fetch("/api/admin/dashboard/layout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ layout }),
-      });
-      if (res.ok) {
-        toast.success("Saved as org default");
-      } else {
-        toast.error("Failed to save org default");
-      }
-    } catch {
-      toast.error("Failed to save org default");
     }
   }
 
@@ -442,28 +475,26 @@ export default function RightSidebar({
       <div className="flex items-center justify-between p-4 pb-0">
         <h2 className="text-lg font-bold text-text-primary">Group Dashboard</h2>
         <div className="flex items-center gap-1">
-          {isSuperAdmin && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSaveAsOrgDefault}
-              className="text-xs text-text-muted"
-              title="Save current layout as default for your organization"
-            >
+          {isEditMode ? (
+            <Button variant="outline" size="sm" onClick={handleSave}>
               <Icon name="check" size={14} className="mr-1" />
-              Save as default
+              Save
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setIsEditMode(true)}>
+              <Icon name="edit" size={14} className="mr-1" />
+              Edit layout
             </Button>
           )}
-          {layoutSource === "user" && (
+          {!isSuperAdmin && layoutSource === "user" && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowResetDialog(true)}
               className="text-xs text-text-muted"
-              title="Reset to default layout"
             >
               <Icon name="refresh" size={14} className="mr-1" />
-              Reset layout
+              Reset to default
             </Button>
           )}
         </div>
@@ -492,10 +523,8 @@ export default function RightSidebar({
             compactType="vertical"
             preventCollision={false}
             draggableHandle=".widget-drag-handle"
-            isResizable={true}
-            isDraggable={true}
-            onDragStart={() => { hasUserInteracted.current = true; }}
-            onResizeStart={() => { hasUserInteracted.current = true; }}
+            isResizable={isEditMode}
+            isDraggable={isEditMode}
             onResizeStop={handleResizeStop}
             onLayoutChange={handleLayoutChange}
             useCSSTransforms={true}
@@ -505,18 +534,22 @@ export default function RightSidebar({
               return (
                 <div
                   key={widgetId}
-                  className="group/widget rounded-lg border border-gray-200 shadow-xs overflow-hidden"
+                  className={`rounded-lg shadow-xs overflow-hidden ${
+                    isEditMode
+                      ? "border-2 border-dashed border-border"
+                      : "border border-gray-200"
+                  }`}
                   style={{ backgroundColor: WIDGET_BG[widgetId] || "var(--card-bg)" }}
                 >
-                  {/* Drag handle */}
-                  <div className="widget-drag-handle flex items-center justify-between px-4 pt-2 cursor-grab active:cursor-grabbing">
-                    <span className="text-[10px] font-medium uppercase tracking-wider text-text-muted opacity-0 group-hover/widget:opacity-60 transition-opacity select-none">
-                      {WIDGET_LABELS[widgetId]}
-                    </span>
-                    <div className="opacity-0 group-hover/widget:opacity-40 hover:!opacity-100 transition-opacity">
-                      <Icon name="drag-handle" size={14} />
+                  {/* Drag handle — only in edit mode */}
+                  {isEditMode && (
+                    <div className="widget-drag-handle flex items-center justify-between px-4 pt-2 cursor-grab active:cursor-grabbing">
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-text-muted opacity-60 select-none">
+                        {WIDGET_LABELS[widgetId]}
+                      </span>
+                      <Icon name="drag-handle" size={14} className="opacity-40" />
                     </div>
-                  </div>
+                  )}
                   {renderWidget(widgetId)}
                 </div>
               );
@@ -531,7 +564,7 @@ export default function RightSidebar({
           <DialogHeader>
             <DialogTitle>Reset to default layout?</DialogTitle>
             <DialogDescription>
-              Your current arrangement will be lost. The dashboard will use the
+              Your personal arrangement will be lost. The dashboard will use the
               organization default or system default layout.
             </DialogDescription>
           </DialogHeader>
@@ -540,6 +573,39 @@ export default function RightSidebar({
               Cancel
             </Button>
             <Button onClick={handleReset}>Reset</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Super Admin Save Dialog */}
+      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save layout</DialogTitle>
+            <DialogDescription>
+              Choose where to save your dashboard arrangement.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={() => {
+                saveUserLayout();
+                setIsEditMode(false);
+                setShowSaveDialog(false);
+              }}
+            >
+              Save for me only
+            </Button>
+            <Button
+              onClick={() => {
+                saveOrgDefault();
+                setIsEditMode(false);
+                setShowSaveDialog(false);
+              }}
+            >
+              Save as org default
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
