@@ -164,7 +164,7 @@ export default function ActivityTab({ userId }: ActivityTabProps) {
         return (
           <div
             key={item.id}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-black/5 hover:border-black/10 transition-colors"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card-bg border border-black/5 hover:border-black/10 transition-colors"
           >
             {/* Type tag */}
             <Badge variant="outline" className={`text-[10px] shrink-0 ${typeStyle.bg} ${typeStyle.text}`}>

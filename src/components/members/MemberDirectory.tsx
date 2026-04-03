@@ -106,7 +106,7 @@ export default function MemberDirectory({ members }: MemberDirectoryProps) {
                 className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
                   roleFilter === f.key
                     ? "bg-accent-purple text-white"
-                    : "bg-white/60 text-text-secondary border border-black/5 hover:bg-black/5"
+                    : "bg-card-bg text-text-secondary border border-black/5 hover:bg-black/5"
                 }`}
               >
                 {f.label}

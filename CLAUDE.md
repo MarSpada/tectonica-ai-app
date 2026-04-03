@@ -634,7 +634,7 @@ Status: Complete
 Status: Complete
 
 ### UI Session C — Tremor foundation
-Status: Partial — continuing in UI Session C.2
+Status: Complete — continued as C.2
 Goal: Establish Tremor as the design language baseline. Fix the background/surface hierarchy first, then rebuild the right sidebar widgets using Tremor KPI and Status blocks. Use Tremor neutral defaults throughout — no custom colors.
 
 Priority order:

@@ -85,7 +85,6 @@ export default function ApprovalsView({ currentUserId, currentUserRole }: Approv
         </div>
         <Button
           onClick={() => setShowCreate(true)}
-          className="bg-pink-500 hover:bg-pink-600 text-white"
         >
           <span className="material-icons-two-tone text-[16px]">add</span>
           New Request
@@ -99,7 +98,7 @@ export default function ApprovalsView({ currentUserId, currentUserRole }: Approv
             onClick={() => setViewMode("submitted")}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
               viewMode === "submitted"
-                ? "bg-white text-text-primary shadow-sm"
+                ? "bg-card-bg text-text-primary shadow-sm"
                 : "text-text-muted hover:text-text-secondary"
             }`}
           >
@@ -109,7 +108,7 @@ export default function ApprovalsView({ currentUserId, currentUserRole }: Approv
             onClick={() => setViewMode("assigned")}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
               viewMode === "assigned"
-                ? "bg-white text-text-primary shadow-sm"
+                ? "bg-card-bg text-text-primary shadow-sm"
                 : "text-text-muted hover:text-text-secondary"
             }`}
           >
@@ -137,7 +136,7 @@ export default function ApprovalsView({ currentUserId, currentUserRole }: Approv
               className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
                 filter === tab.key
                   ? "bg-accent-purple text-white"
-                  : "bg-black/5 text-text-secondary hover:bg-black/10"
+                  : "bg-card-bg text-text-secondary border border-black/5 hover:bg-black/5"
               }`}
             >
               {tab.label}

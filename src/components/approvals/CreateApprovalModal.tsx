@@ -329,7 +329,6 @@ export default function CreateApprovalModal({ onClose, onCreated }: CreateApprov
           <Button
             onClick={handleSubmit}
             disabled={submitting || !title.trim() || !reviewerId}
-            className="bg-pink-500 hover:bg-pink-600 text-white"
           >
             {submitting ? "Submitting..." : "Submit for Approval"}
           </Button>

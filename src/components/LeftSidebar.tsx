@@ -16,12 +16,14 @@ const recentChats = [
 
 interface LeftSidebarProps {
   userName?: string;
+  isCollapsed?: boolean;
   isDrawerOpen?: boolean;
   onDrawerClose?: () => void;
 }
 
 export default function LeftSidebar({
   userName = "",
+  isCollapsed,
   isDrawerOpen,
   onDrawerClose,
 }: LeftSidebarProps) {
@@ -42,8 +44,8 @@ export default function LeftSidebar({
 
       <aside
         className={`left-sidebar-responsive w-[var(--sidebar-width)] bg-sidebar-bg flex flex-col h-full border-r border-black/5 ${
-          isDrawerOpen ? "drawer-open" : ""
-        }`}
+          isCollapsed ? "sidebar-collapsed" : ""
+        } ${isDrawerOpen ? "drawer-open" : ""}`}
       >
         {/* Navigation */}
         <nav className="flex-1 px-3 pt-4 space-y-1">

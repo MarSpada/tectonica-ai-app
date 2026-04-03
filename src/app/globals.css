@@ -23,13 +23,13 @@
 }
 
 :root {
-  /* Page & layout */
-  --bg: #E3D1FF;
+  /* Page & layout — Tremor neutral defaults (Session G applies brand colors) */
+  --bg: #F4F4F5;
   --card-bg: #ffffff;
   --card-stroke: rgba(0, 0, 0, 0.08);
-  --sidebar-bg: #E3D1FF;
-  --sidebar-active: #6B3FA0;
-  --topbar-bg: #EEE7F6;
+  --sidebar-bg: #FAFAFA;
+  --sidebar-active: #18181B;
+  --topbar-bg: #FFFFFF;
 
   /* Text */
   --text-primary: #1a1a2e;
@@ -83,7 +83,7 @@
   --gradient-purple: linear-gradient(135deg, #7C3AED, #9B5CF6);
 
   /* Chat surfaces */
-  --chat-input-bg: rgba(212, 192, 253, .85);
+  --chat-input-bg: rgba(244, 244, 245, .85);
   --msg-bot-bg: rgba(255, 255, 255, .7);
   --msg-user-bg: rgba(124, 58, 237, .1);
   /* ─── Shadcn/ui → Tectonica Design Token Mapping ─── */
@@ -240,6 +240,31 @@ body {
 .sidebar-backdrop {
   display: none;
 }
+
+/* JS-driven collapse — mirrors the <=899px icon-only treatment */
+.left-sidebar-responsive.sidebar-collapsed {
+  width: 64px !important;
+  align-items: center;
+}
+.left-sidebar-responsive.sidebar-collapsed .sidebar-label { display: none; }
+.left-sidebar-responsive.sidebar-collapsed .sidebar-search { display: none; }
+.left-sidebar-responsive.sidebar-collapsed .sidebar-user-details { display: none; }
+.left-sidebar-responsive.sidebar-collapsed .sidebar-bot-chats { display: none; }
+.left-sidebar-responsive.sidebar-collapsed nav a,
+.left-sidebar-responsive.sidebar-collapsed nav button {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+  gap: 0;
+}
+.left-sidebar-responsive.sidebar-collapsed nav {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+.left-sidebar-responsive.sidebar-collapsed .sidebar-user-row {
+  justify-content: center;
+}
+.left-sidebar-responsive.sidebar-collapsed .sidebar-signout { display: none; }
 
 /* ===== Responsive Breakpoints (desktop-first) ===== */
 

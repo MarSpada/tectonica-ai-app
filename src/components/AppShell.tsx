@@ -12,6 +12,7 @@ interface AppShellProps {
 }
 
 export default function AppShell({ userName, children }: AppShellProps) {
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isDrawerMode = useMediaQuery("(max-width: 699px)");
 
@@ -19,13 +20,16 @@ export default function AppShell({ userName, children }: AppShellProps) {
     <div className="h-screen flex flex-col overflow-hidden">
       <TopBar
         onToggleSidebar={
-          isDrawerMode ? () => setSidebarOpen((prev) => !prev) : undefined
+          isDrawerMode
+            ? () => setSidebarOpen((prev) => !prev)
+            : () => setIsCollapsed((prev) => !prev)
         }
       />
       <NotificationBar />
       <div className="flex flex-1 overflow-hidden">
         <LeftSidebar
           userName={userName}
+          isCollapsed={!isDrawerMode && isCollapsed}
           isDrawerOpen={isDrawerMode && sidebarOpen}
           onDrawerClose={() => setSidebarOpen(false)}
         />

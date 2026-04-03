@@ -104,7 +104,7 @@ export default function MediaGallery() {
                   className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
                     filter === f
                       ? "bg-accent-purple text-white"
-                      : "bg-white/60 text-text-secondary border border-black/5 hover:bg-black/5"
+                      : "bg-card-bg text-text-secondary border border-black/5 hover:bg-black/5"
                   }`}
                 >
                   {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -114,11 +114,11 @@ export default function MediaGallery() {
           </div>
 
           {/* View toggle */}
-          <div className="flex gap-1 bg-white/50 rounded-lg p-1">
+          <div className="flex gap-1 bg-card-bg/50 rounded-lg p-1">
             <button
               onClick={() => setViewMode("grid")}
               className={`p-1.5 rounded-md transition-colors ${
-                viewMode === "grid" ? "bg-white shadow-sm" : "hover:bg-black/5"
+                viewMode === "grid" ? "bg-card-bg shadow-sm" : "hover:bg-black/5"
               }`}
             >
               <span className="material-icons-two-tone text-[18px] text-text-secondary">grid_view</span>
@@ -126,7 +126,7 @@ export default function MediaGallery() {
             <button
               onClick={() => setViewMode("list")}
               className={`p-1.5 rounded-md transition-colors ${
-                viewMode === "list" ? "bg-white shadow-sm" : "hover:bg-black/5"
+                viewMode === "list" ? "bg-card-bg shadow-sm" : "hover:bg-black/5"
               }`}
             >
               <span className="material-icons-two-tone text-[18px] text-text-secondary">view_list</span>
@@ -137,7 +137,16 @@ export default function MediaGallery() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-6 pb-4">
-        {viewMode === "grid" ? (
+        {filteredMedia.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <span className="material-icons-two-tone text-6xl text-text-muted">
+              perm_media
+            </span>
+            <p className="text-sm text-text-muted mt-2">
+              No media found matching your filters.
+            </p>
+          </div>
+        ) : viewMode === "grid" ? (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
             {filteredMedia.map((item) => (
               <div key={item.id} className="cursor-pointer group">
@@ -203,13 +212,13 @@ export default function MediaGallery() {
             className={`w-8 h-8 text-xs font-semibold rounded-lg transition-colors ${
               i === 0
                 ? "bg-accent-purple text-white"
-                : "bg-white/60 text-text-secondary hover:bg-black/5"
+                : "bg-card-bg text-text-secondary hover:bg-black/5"
             }`}
           >
             {i + 1}
           </button>
         ))}
-        <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/60 text-text-secondary hover:bg-black/5 transition-colors">
+        <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-card-bg text-text-secondary hover:bg-black/5 transition-colors">
           <span className="material-icons-two-tone text-[16px]">chevron_right</span>
         </button>
       </div>

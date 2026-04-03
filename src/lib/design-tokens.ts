@@ -6,13 +6,13 @@
  * Tailwind token classes (bg-card, text-accent, etc.) — never raw hex.
  */
 
-// ─── Page & Layout ───────────────────────────────────────────────
-export const BG = "#E3D1FF" as const;
+// ─── Page & Layout — Tremor neutral defaults (Session G applies brand colors) ──
+export const BG = "#F4F4F5" as const;
 export const CARD_BG = "#ffffff" as const;
 export const CARD_STROKE = "rgba(0, 0, 0, 0.08)" as const;
-export const SIDEBAR_BG = "#E3D1FF" as const;
-export const SIDEBAR_ACTIVE = "#6B3FA0" as const;
-export const TOPBAR_BG = "#EEE7F6" as const;
+export const SIDEBAR_BG = "#FAFAFA" as const;
+export const SIDEBAR_ACTIVE = "#18181B" as const;
+export const TOPBAR_BG = "#FFFFFF" as const;
 
 // ─── Text ────────────────────────────────────────────────────────
 export const TEXT_PRIMARY = "#1a1a2e" as const;
@@ -65,7 +65,7 @@ export const STATUS_OFFLINE = "#9CA3AF" as const;
 export const GRADIENT_PURPLE = "linear-gradient(135deg, #7C3AED, #9B5CF6)" as const;
 
 // ─── Chat Surfaces ──────────────────────────────────────────────
-export const CHAT_INPUT_BG = "rgba(212, 192, 253, .85)" as const;
+export const CHAT_INPUT_BG = "rgba(244, 244, 245, .85)" as const;
 export const MSG_BOT_BG = "rgba(255, 255, 255, .7)" as const;
 export const MSG_USER_BG = "rgba(124, 58, 237, .1)" as const;
 
