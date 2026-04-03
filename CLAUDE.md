@@ -660,7 +660,7 @@ Install: npm install @tremor/react --legacy-peer-deps
 Commit: "UI Session C: Tremor foundation and surface hierarchy fix"
 
 ### UI Session D — Remaining screens
-Status: Depends on UI Session C
+Status: Complete
 Goal: Apply Tremor design language to remaining screens. Use Tremor neutral defaults throughout.
 
 Screens to rebuild:
@@ -673,8 +673,24 @@ Screens to rebuild:
 
 Commit: "UI Session D: Tremor design language across remaining screens"
 
+### UI Session D.5 — Icon consolidation
+Status: Ready to run
+Goal: Replace all Material Icons and Lucide icons with Streamline icons from public/streamline-vectors-main/ultimate/regular/
+
+Icon mapping defined and approved. Claude Code should use judgment for any icons not in the explicit mapping — choose based on semantic meaning, document all additions in handover note.
+
+Key files:
+- src/components/ui/icon.tsx (new)
+- src/lib/icon-map.ts (new)
+- src/lib/bots.ts (update icon field)
+- src/components/BotCard.tsx
+- src/components/LeftSidebar.tsx
+- src/app/layout.tsx (remove Material Icons CDN)
+
+Commit: "UI Session D.5: icon consolidation with Streamline vectors"
+
 ### UI Session E — Dashboard grid
-Status: Depends on UI Session D
+Status: Depends on UI Session D.5
 Goal: Introduce React Grid Layout for the right sidebar. Wire to database. Use lib/dashboard-widgets.ts.
 
 Key behaviour:
