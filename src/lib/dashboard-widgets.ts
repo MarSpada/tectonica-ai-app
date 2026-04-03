@@ -60,13 +60,13 @@ export const WIDGET_CONSTRAINTS: Record<WidgetId, {
 }> = {
   signups:           { minW: 2, maxW: 3, minH: 2, maxH: 5 },
   recruit:           { minW: 1, maxW: 2, minH: 2, maxH: 4 },
-  conversations:     { minW: 2, maxW: 3, minH: 3, maxH: 8 },
+  conversations:     { minW: 1, maxW: 3, minH: 3, maxH: 8 },
   actions:           { minW: 1, maxW: 3, minH: 3, maxH: 8 },
   fundraising:       { minW: 1, maxW: 2, minH: 3, maxH: 7 },
-  recruitment_goal:  { minW: 2, maxW: 3, minH: 3, maxH: 6 },
+  recruitment_goal:  { minW: 1, maxW: 3, minH: 3, maxH: 6 },
   request_approval:  { minW: 1, maxW: 2, minH: 2, maxH: 4 },
   connected_systems: { minW: 1, maxW: 2, minH: 3, maxH: 6 },
-  hours_volunteered: { minW: 2, maxW: 3, minH: 3, maxH: 6 },
+  hours_volunteered: { minW: 1, maxW: 3, minH: 3, maxH: 6 },
   upcoming_events:   { minW: 1, maxW: 2, minH: 3, maxH: 8 },
   group_directory:   { minW: 2, maxW: 3, minH: 3, maxH: 8 },
 }
