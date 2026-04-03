@@ -381,7 +381,11 @@ Desktop-first design. Mobile is out of scope for now.
 - **Email**: Resend (transactional emails for signups, approvals, notifications)
 - **Animations**: GSAP entrance transitions + stagger animations
 - **Integrations**: NationBuilder v2 API (read-only signup ingestion), iCal/ICS calendar feeds
-- **Deployment**: Railway (auto-deploy from `main` branch)
+- **Deployment**: Railway (two services, same repo, same Supabase DB)
+  - `tectonica-ai-app` — original app, auto-deploys from `main` branch
+  - `tectonica-ai-v2` — redesigned app, auto-deploys from `v2` branch
+  - **All development happens on the `v2` branch** unless explicitly told otherwise
+  - Never push redesign changes to `main` — it would break the original service
 
 ---
 
@@ -566,9 +570,9 @@ Desktop-first design. Mobile is out of scope for now.
 - **Group descriptions** — admin can edit in Organization tab, visible on group profile page
 - **Sidebar role display** — shows dynamic user role instead of hardcoded "Settings"
 - **Default signup role** — new users default to 'supporter' (lowest privilege)
-- **Configurable dashboard grid** — React Grid Layout for drag-and-drop widget rearrangement + resizing, auto-save to DB, reset to default, super admin org default layout, per-widget size constraints from WIDGET_CONSTRAINTS, role-based widget visibility, sonner toasts for feedback
-- GSAP entrance animations throughout
-- Deployed on Railway with auto-deploy from main
+- **Configurable dashboard grid** — React Grid Layout (3-column snap grid with vertical compaction), edit mode toggle, role-aware save (super admin gets "Save for me" vs "Save as org default" dialog), reset to default for non-super-admin, per-widget size constraints from WIDGET_CONSTRAINTS, role-based widget visibility, sonner toasts for feedback, CSS fade-in animation
+- GSAP entrance animations throughout (except right sidebar — uses CSS fade-in)
+- Deployed on Railway with auto-deploy from `v2` branch
 
 ## What Still Needs Work (Prioritized)
 
@@ -592,6 +596,8 @@ Desktop-first design. Mobile is out of scope for now.
 
 ## Known Issues / Next Session
 
+- **Branch strategy**: `v2` branch = redesigned app, `main` = original. Local
+  checkout should always be on `v2`. Push to `v2` only.
 - Client components that call GET routes (RightSidebar, NotificationBar,
   TopBar) now receive 401s when unauthenticated. Verify they handle
   error responses gracefully and don't throw uncaught errors during
@@ -705,12 +711,19 @@ Status: Complete
 Goal: Introduce React Grid Layout for the right sidebar. Wire to database. Use lib/dashboard-widgets.ts.
 
 Key behaviour:
-- Auto-save on drag end with subtle "Layout saved" toast
-- User layouts never overwritten by org default changes
-- Role-invisible widgets disappear and gap closes
-- Rearrangement and resizing applies to right sidebar only
-- Resize constrained by WIDGET_CONSTRAINTS per widget
-- Option C: free resize + rearrange within min/max bounds with Reset to Default safety net
+- 3-column snap grid with vertical compaction (no gaps)
+- Edit mode toggle — widgets locked by default, "Edit layout" button to enter edit mode
+- Edit mode shows dashed borders + drag handles, "Save" button replaces "Edit layout"
+- Super admin save: dialog with "Save for me only" vs "Save as org default"
+- Non-super-admin: saves directly to user layout, no dialog
+- Reset to default: only visible to non-super-admin when personal layout exists
+- Role-invisible widgets removed from layout, remaining widgets reflow
+- Per-widget size constraints from WIDGET_CONSTRAINTS (signups/directory minW:2)
+- Auto-save on unmount if edit mode active (user layout only, never org default)
+- CSS fade-in animation (GSAP removed from sidebar)
+- 11 extracted widget components in src/components/dashboard/
+- Layout persistence: user → org default → system default fallback chain
+- Migration 017: dashboard_layouts_default + dashboard_layouts_user tables
 
 Commit: "UI Session E: configurable dashboard grid"
 
