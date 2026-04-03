@@ -607,6 +607,12 @@ Desktop-first design. Mobile is out of scope for now.
 - Test accounts: mar@tectonica.co (super_admin), ned@tectonica.co (group_admin),
   production@tectonica.co (group_admin), mar.isabel.spada@gmail.com (member),
   tectonica-ai-test1@maildrop.cc (supporter, manually created in Supabase).
+- Database bot records still store old Material Icons
+  strings in the icon field. Only affects admin-created
+  bots via BotEditor. Needs migration when BotEditor
+  is properly built out in a future feature session.
+  The icon dropdown picker in BotEditor now uses
+  Streamline icon names for new bots.
 
 ---
 
@@ -674,7 +680,7 @@ Screens to rebuild:
 Commit: "UI Session D: Tremor design language across remaining screens"
 
 ### UI Session D.5 — Icon consolidation
-Status: Ready to run
+Status: Complete
 Goal: Replace all Material Icons and Lucide icons with Streamline icons from public/streamline-vectors-main/ultimate/regular/
 
 Icon mapping defined and approved. Claude Code should use judgment for any icons not in the explicit mapping — choose based on semantic meaning, document all additions in handover note.
