@@ -6,6 +6,8 @@ import type { Group } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Icon } from "@/components/ui/icon";
+import { toast } from "sonner";
 
 interface OrgTabProps {
   orgId: string | null;
@@ -22,6 +24,9 @@ export default function OrgTab({ orgId }: OrgTabProps) {
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingGroupName, setEditingGroupName] = useState("");
   const [editingGroupDesc, setEditingGroupDesc] = useState("");
+  const [orgLayoutExists, setOrgLayoutExists] = useState(false);
+  const [orgLayoutUpdatedAt, setOrgLayoutUpdatedAt] = useState<string | null>(null);
+  const [layoutLoading, setLayoutLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     if (!orgId) return;
@@ -40,6 +45,24 @@ export default function OrgTab({ orgId }: OrgTabProps) {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    async function fetchOrgLayout() {
+      try {
+        const res = await fetch("/api/admin/dashboard/layout");
+        if (res.ok) {
+          const json = await res.json();
+          setOrgLayoutExists(!!json.layout);
+          setOrgLayoutUpdatedAt(json.updated_at || null);
+        }
+      } catch {
+        // Not super_admin or unavailable
+      } finally {
+        setLayoutLoading(false);
+      }
+    }
+    fetchOrgLayout();
+  }, []);
 
   async function handleSaveOrgName() {
     if (!orgId || !orgName.trim()) return;
@@ -211,9 +234,7 @@ export default function OrgTab({ orgId }: OrgTabProps) {
                       }}
                       title="Edit group"
                     >
-                      <span className="material-icons-two-tone text-[16px] text-text-muted">
-                        edit
-                      </span>
+                      <Icon name="edit" size={16} className="opacity-60" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -222,9 +243,7 @@ export default function OrgTab({ orgId }: OrgTabProps) {
                       className="hover:bg-red-50"
                       title="Delete group"
                     >
-                      <span className="material-icons-two-tone text-[16px] text-red-400">
-                        delete
-                      </span>
+                      <Icon name="delete" size={16} />
                     </Button>
                   </div>
                 </div>
@@ -252,6 +271,69 @@ export default function OrgTab({ orgId }: OrgTabProps) {
             {creatingGroup ? "Creating..." : "Create Group"}
           </Button>
         </div>
+      </section>
+
+      {/* Default Dashboard Layout */}
+      <section className="bg-card-bg rounded-xl border border-card-stroke p-5">
+        <h2 className="text-sm font-semibold text-text-primary mb-1">
+          Default Dashboard Layout
+        </h2>
+        <p className="text-xs text-text-muted mb-4">
+          Set the default widget arrangement for new members in your organization.
+        </p>
+
+        {layoutLoading ? (
+          <Skeleton className="h-8 w-48" />
+        ) : orgLayoutExists ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-400" />
+              <span className="text-sm text-text-primary">Custom default layout set</span>
+            </div>
+            {orgLayoutUpdatedAt && (
+              <p className="text-xs text-text-muted">
+                Last updated: {new Date(orgLayoutUpdatedAt).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+              </p>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                if (!confirm("Reset to system default? Members without a personal layout will see the system default.")) return;
+                try {
+                  const res = await fetch("/api/admin/dashboard/layout", { method: "DELETE" });
+                  if (res.ok) {
+                    setOrgLayoutExists(false);
+                    setOrgLayoutUpdatedAt(null);
+                    toast.success("Reset to system default");
+                  } else {
+                    toast.error("Failed to reset");
+                  }
+                } catch {
+                  toast.error("Failed to reset");
+                }
+              }}
+            >
+              Reset to system default
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-gray-300" />
+              <span className="text-sm text-text-muted">Using system default layout</span>
+            </div>
+            <p className="text-xs text-text-muted">
+              To set a custom default, arrange your dashboard widgets, then click &quot;Save as default&quot; in the Group Dashboard sidebar.
+            </p>
+          </div>
+        )}
       </section>
     </div>
   );

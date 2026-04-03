@@ -419,6 +419,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `014_fundraising_goals.sql` | fundraising_goals table (per group/month): goal, amount_raised, print_budget. RLS: members view, admins manage |
 | `015_reimbursement_requests.sql` | reimbursement_requests table + RPCs (create, update_status, resubmit). Storage bucket for attachments. Adds 'reimbursement_request' to notification types |
 | `016_group_description.sql` | Adds description column to groups table |
+| `017_dashboard_layouts.sql` | dashboard_layouts_default (org-level) + dashboard_layouts_user (per-user) tables for React Grid Layout persistence. RLS: members read org default, super_admin writes; users manage own layout |
 
 ---
 
@@ -455,6 +456,8 @@ Desktop-first design. Mobile is out of scope for now.
 | `/api/reimbursements` | GET/POST | GET: list reimbursement requests for group. POST: create request (RPC + notification to super_admin) |
 | `/api/reimbursements/[id]/status` | POST | Approve or request changes on reimbursement (reviewer only) |
 | `/api/reimbursements/[id]/resubmit` | POST | Resubmit after changes requested (submitter only) |
+| `/api/dashboard/layout` | GET/POST/DELETE | GET: load user layout (user→org→system fallback). POST: save user layout. DELETE: reset user layout |
+| `/api/admin/dashboard/layout` | GET/POST/DELETE | GET: org default layout. POST: save org default (super_admin). DELETE: reset to system default (super_admin) |
 | `/auth/callback` | GET | OAuth/email confirmation callback — signs out after confirmation, redirects to login |
 | `/auth/reset-callback` | GET | Password reset callback — exchanges PKCE code, redirects to /reset-password |
 
@@ -509,6 +512,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `GroupProfile.tsx` | Group profile page: name, description, member count, quick links |
 | `GroupConversationOverlay.tsx` | Real-time group messaging overlay |
 | `LeadersChat.tsx` | Slide-in leaders & organizers chat panel |
+| `dashboard/*.tsx` | 11 extracted widget components (SignupsWidget, RecruitWidget, ConversationsWidget, ActionsWidget, FundraisingWidget, RecruitmentGoalWidget, RequestApprovalWidget, ConnectedSystemsWidget, HoursWidget, EventsWidget, DirectoryWidget) |
 
 ---
 
@@ -562,6 +566,7 @@ Desktop-first design. Mobile is out of scope for now.
 - **Group descriptions** — admin can edit in Organization tab, visible on group profile page
 - **Sidebar role display** — shows dynamic user role instead of hardcoded "Settings"
 - **Default signup role** — new users default to 'supporter' (lowest privilege)
+- **Configurable dashboard grid** — React Grid Layout for drag-and-drop widget rearrangement + resizing, auto-save to DB, reset to default, super admin org default layout, per-widget size constraints from WIDGET_CONSTRAINTS, role-based widget visibility, sonner toasts for feedback
 - GSAP entrance animations throughout
 - Deployed on Railway with auto-deploy from main
 
@@ -696,7 +701,7 @@ Key files:
 Commit: "UI Session D.5: icon consolidation with Streamline vectors"
 
 ### UI Session E — Dashboard grid
-Status: Depends on UI Session D.5
+Status: Complete
 Goal: Introduce React Grid Layout for the right sidebar. Wire to database. Use lib/dashboard-widgets.ts.
 
 Key behaviour:

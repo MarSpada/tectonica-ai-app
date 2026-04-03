@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { UserProfileProvider } from "@/lib/UserProfileContext";
 import type { UserRole } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -61,15 +62,11 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={cn("font-sans", geist.variable)}>
-      <head>
-        <link
-          href="https://fonts.googleapis.com/icon?family=Material+Icons+Two+Tone"
-          rel="stylesheet"
-        />
-      </head>
+      <head />
       <body className={`${inter.variable} antialiased`}>
         <UserProfileProvider initialProfile={initialProfile}>
           {children}
+          <Toaster position="bottom-right" />
         </UserProfileProvider>
       </body>
     </html>

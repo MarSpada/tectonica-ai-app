@@ -1,41 +1,101 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import gsap from "gsap";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Responsive, WidthProvider } from "react-grid-layout/legacy";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
+import type { Layout as RGLLayout } from "react-grid-layout/legacy";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { getAvatarColor, getInitials, getRoleLabel } from "@/lib/avatar";
-import { formatSignupTime } from "@/lib/signup-utils";
+import { useUserProfile } from "@/lib/UserProfileContext";
+import {
+  WIDGET_CONSTRAINTS,
+  WIDGET_LABELS,
+  SYSTEM_DEFAULT_LAYOUT,
+  getVisibleWidgets,
+  filterLayoutToRole,
+} from "@/lib/dashboard-widgets";
+import type { WidgetId } from "@/lib/dashboard-widgets";
+import type {
+  Member,
+  GroupMessage,
+  NbSignup,
+  SignupAssignment,
+  HourEntry,
+  CalendarEvent,
+  FundraisingGoal,
+  FundraisingHistory,
+  HoursWeekBucket,
+  LayoutItem,
+} from "@/lib/types";
+import type { UserRole } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 import NbSignupModal from "./signups/NbSignupModal";
 import CreateApprovalModal from "./approvals/CreateApprovalModal";
 import ReimbursementModal from "./ReimbursementModal";
 import LogHoursModal from "./hours/LogHoursModal";
 import HoursDetailOverlay from "./hours/HoursDetailOverlay";
-import { ProgressCircle } from "@/components/tremor/ProgressCircle";
-import { SparkAreaChart } from "@/components/tremor/SparkChart";
-import { BadgeDelta } from "@/components/tremor/BadgeDelta";
-import type { Member, GroupMessage, NbSignup, SignupAssignment, HourEntry, CalendarEvent, FundraisingGoal } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
-interface FundraisingHistory {
-  month: string;
-  raised: number;
-  goal: number;
-}
+import SignupsWidget from "./dashboard/SignupsWidget";
+import RecruitWidget from "./dashboard/RecruitWidget";
+import ConversationsWidget from "./dashboard/ConversationsWidget";
+import ActionsWidget from "./dashboard/ActionsWidget";
+import FundraisingWidget from "./dashboard/FundraisingWidget";
+import RecruitmentGoalWidget from "./dashboard/RecruitmentGoalWidget";
+import RequestApprovalWidget from "./dashboard/RequestApprovalWidget";
+import ConnectedSystemsWidget from "./dashboard/ConnectedSystemsWidget";
+import HoursWidget from "./dashboard/HoursWidget";
+import EventsWidget from "./dashboard/EventsWidget";
+import DirectoryWidget from "./dashboard/DirectoryWidget";
 
-interface HoursWeekBucket {
-  week: string;
-  hours: number;
-}
+const ResponsiveGridLayout = WidthProvider(Responsive);
+
+const WIDGET_BG: Record<WidgetId, string> = {
+  signups: "var(--widget-bg-signups)",
+  recruit: "var(--widget-bg-recruit)",
+  conversations: "var(--widget-bg-conversations)",
+  actions: "var(--widget-bg-actions)",
+  fundraising: "var(--widget-bg-fundraising)",
+  recruitment_goal: "var(--widget-bg-recruitment-goal)",
+  request_approval: "var(--widget-bg-request-approval)",
+  connected_systems: "var(--widget-bg-connected-systems)",
+  hours_volunteered: "var(--widget-bg-hours)",
+  upcoming_events: "var(--widget-bg-events)",
+  group_directory: "var(--widget-bg-directory, #fff)",
+};
 
 interface RightSidebarProps {
   groupMessages?: GroupMessage[];
   onOpenConversation?: () => void;
 }
 
-export default function RightSidebar({ groupMessages = [], onOpenConversation }: RightSidebarProps) {
-  const widgetGridRef = useRef<HTMLDivElement>(null);
+export default function RightSidebar({
+  groupMessages = [],
+  onOpenConversation,
+}: RightSidebarProps) {
+  const { profile } = useUserProfile();
+  const role = (profile?.role || "member") as UserRole;
+  const isSuperAdmin = role === "super_admin";
+
+  // Layout state
+  const [layout, setLayout] = useState<LayoutItem[]>([]);
+  const [layoutLoading, setLayoutLoading] = useState(true);
+  const [layoutSource, setLayoutSource] = useState<"user" | "org" | "system">("system");
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasUserInteracted = useRef(false);
+
+  // Data state
   const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [signups, setSignups] = useState<NbSignup[]>([]);
   const [assignments, setAssignments] = useState<SignupAssignment[]>([]);
@@ -53,19 +113,40 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
   const [showHoursDetail, setShowHoursDetail] = useState(false);
   const [fundraising, setFundraising] = useState<FundraisingGoal | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [editingGoal, setEditingGoal] = useState(false);
-  const [goalInput, setGoalInput] = useState("");
-  const [budgetInput, setBudgetInput] = useState("");
   const [showReimbursementModal, setShowReimbursementModal] = useState(false);
   const [fundraisingHistory, setFundraisingHistory] = useState<FundraisingHistory[]>([]);
   const [hoursHistory, setHoursHistory] = useState<HoursWeekBucket[]>([]);
-  const directoryMembers = allMembers.slice(0, 6);
 
   const memberCount = allMembers.filter((m) =>
     ["super_admin", "group_admin", "member"].includes(m.role)
   ).length;
   const supporterCount = allMembers.filter((m) => m.role === "supporter").length;
 
+  // Fetch layout
+  useEffect(() => {
+    async function fetchLayout() {
+      try {
+        const res = await fetch("/api/dashboard/layout");
+        const json = await res.json();
+        if (json.layout) {
+          setLayout(json.layout);
+          setLayoutSource(json.source || "system");
+        } else {
+          // Fallback to system default filtered by role
+          setLayout(filterLayoutToRole(SYSTEM_DEFAULT_LAYOUT, role));
+          setLayoutSource("system");
+        }
+      } catch {
+        setLayout(filterLayoutToRole(SYSTEM_DEFAULT_LAYOUT, role));
+        setLayoutSource("system");
+      } finally {
+        setLayoutLoading(false);
+      }
+    }
+    fetchLayout();
+  }, [role]);
+
+  // Fetch all widget data
   useEffect(() => {
     async function fetchMembers() {
       const supabase = createClient();
@@ -99,7 +180,8 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
       try {
         const res = await fetch("/api/admin/calendars");
         const json = await res.json();
-        if (json.sources) setCalendarSourceCount(json.sources.filter((s: { enabled: boolean }) => s.enabled).length);
+        if (json.sources)
+          setCalendarSourceCount(json.sources.filter((s: { enabled: boolean }) => s.enabled).length);
       } catch {
         // Not admin or unavailable
       }
@@ -140,7 +222,6 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         const json = await res.json();
         if (json.weeks) {
           setHoursHistory(json.weeks);
-          // Calculate previous week hours for delta
           if (json.weeks.length >= 2) {
             setPrevWeekHours(json.weeks[json.weeks.length - 2].hours);
           }
@@ -159,19 +240,90 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
     fetchHoursHistory();
   }, []);
 
-  useEffect(() => {
-    const el = widgetGridRef.current;
-    if (!el) return;
+  // Auto-save layout (debounced)
+  const saveLayout = useCallback(
+    (newLayout: LayoutItem[]) => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(async () => {
+        try {
+          const res = await fetch("/api/dashboard/layout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ layout: newLayout }),
+          });
+          if (res.ok) {
+            toast.success("Layout saved");
+            setLayoutSource("user");
+          } else {
+            toast.error("Failed to save layout");
+          }
+        } catch {
+          toast.error("Failed to save layout");
+        }
+      }, 1000);
+    },
+    []
+  );
 
-    const children = Array.from(el.children);
-    gsap.fromTo(children,
-      { x: 20, opacity: 0 },
-      { x: 0, opacity: 1, duration: 0.5, stagger: 0.08, delay: 0.3, ease: "power2.out" }
-    );
-  }, []);
+  function handleLayoutChange(newLayout: RGLLayout) {
+    if (!hasUserInteracted.current) return;
+    const mapped: LayoutItem[] = newLayout.map((item) => ({
+      i: item.i,
+      x: item.x,
+      y: item.y,
+      w: item.w,
+      h: item.h,
+    }));
+    setLayout(mapped);
+    saveLayout(mapped);
+  }
 
-  function getAssignment(signupId: string): SignupAssignment | null {
-    return assignments.find((a) => a.nb_signup_id === signupId) || null;
+  // Reset to default
+  async function handleReset() {
+    setShowResetDialog(false);
+    try {
+      const res = await fetch("/api/dashboard/layout", { method: "DELETE" });
+      if (res.ok) {
+        // Reload layout
+        const layoutRes = await fetch("/api/dashboard/layout");
+        const json = await layoutRes.json();
+        if (json.layout) {
+          setLayout(json.layout);
+          setLayoutSource(json.source || "system");
+        }
+        toast.success("Layout reset");
+      } else {
+        toast.error("Failed to reset layout");
+      }
+    } catch {
+      toast.error("Failed to reset layout");
+    }
+  }
+
+  // Save as org default (super_admin)
+  async function handleSaveAsOrgDefault() {
+    try {
+      const res = await fetch("/api/admin/dashboard/layout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ layout }),
+      });
+      if (res.ok) {
+        toast.success("Saved as org default");
+      } else {
+        toast.error("Failed to save org default");
+      }
+    } catch {
+      toast.error("Failed to save org default");
+    }
+  }
+
+  function handleAssigned(newAssignment: SignupAssignment) {
+    setAssignments((prev) => {
+      const filtered = prev.filter((a) => a.nb_signup_id !== newAssignment.nb_signup_id);
+      return [...filtered, newAssignment];
+    });
+    setSelectedSignup(null);
   }
 
   async function refreshHours() {
@@ -186,560 +338,229 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
     }
   }
 
-  function handleAssigned(newAssignment: SignupAssignment) {
-    setAssignments((prev) => {
-      const filtered = prev.filter((a) => a.nb_signup_id !== newAssignment.nb_signup_id);
-      return [...filtered, newAssignment];
-    });
-    setSelectedSignup(null);
+  // Visible widgets for current role
+  const visibleWidgetIds = new Set(getVisibleWidgets(role));
+
+  // Filter layout to only visible widgets
+  const visibleLayout = layout.filter((item) => visibleWidgetIds.has(item.i as WidgetId));
+
+  // Build RGL layout with constraints
+  const rglLayout = visibleLayout.map((item) => {
+    const constraints = WIDGET_CONSTRAINTS[item.i as WidgetId];
+    return {
+      ...item,
+      ...(constraints && {
+        minW: constraints.minW,
+        maxW: constraints.maxW,
+        minH: constraints.minH,
+        maxH: constraints.maxH,
+      }),
+    };
+  });
+
+  // Render widget by ID
+  function renderWidget(widgetId: WidgetId) {
+    switch (widgetId) {
+      case "signups":
+        return (
+          <SignupsWidget
+            signups={signups}
+            nbStatus={nbStatus}
+            assignments={assignments}
+            onSignupClick={setSelectedSignup}
+          />
+        );
+      case "recruit":
+        return <RecruitWidget />;
+      case "conversations":
+        return (
+          <ConversationsWidget
+            groupMessages={groupMessages}
+            onOpenConversation={onOpenConversation}
+          />
+        );
+      case "actions":
+        return <ActionsWidget />;
+      case "fundraising":
+        return (
+          <FundraisingWidget
+            fundraising={fundraising}
+            fundraisingHistory={fundraisingHistory}
+            isAdmin={isAdmin}
+            onFundraisingUpdate={setFundraising}
+            onRequestReimbursement={() => setShowReimbursementModal(true)}
+          />
+        );
+      case "recruitment_goal":
+        return (
+          <RecruitmentGoalWidget
+            memberCount={memberCount}
+            supporterCount={supporterCount}
+          />
+        );
+      case "request_approval":
+        return (
+          <RequestApprovalWidget onStartApproval={() => setShowApprovalModal(true)} />
+        );
+      case "connected_systems":
+        return (
+          <ConnectedSystemsWidget
+            nbStatus={nbStatus}
+            calendarSourceCount={calendarSourceCount}
+            eventsCount={events.length}
+          />
+        );
+      case "hours_volunteered":
+        return (
+          <HoursWidget
+            totalHours={totalHours}
+            weekHours={weekHours}
+            prevWeekHours={prevWeekHours}
+            hoursHistory={hoursHistory}
+            onLogHours={() => setShowLogHoursModal(true)}
+            onShowDetail={() => setShowHoursDetail(true)}
+          />
+        );
+      case "upcoming_events":
+        return <EventsWidget events={events} eventsLoading={eventsLoading} />;
+      case "group_directory":
+        return <DirectoryWidget members={allMembers} />;
+      default:
+        return null;
+    }
   }
 
-  // Computed values for widgets
-  const fundraisingPct = (fundraising?.fundraising_goal || 0) > 0
-    ? Math.round(((fundraising?.amount_raised || 0) / (fundraising?.fundraising_goal || 1)) * 100)
-    : 0;
-  const memberPct = Math.round((memberCount / 18) * 100);
-  const supporterPct = Math.round((supporterCount / 25) * 100);
-  const hoursDelta = weekHours - prevWeekHours;
-
   return (
-    <aside className="right-sidebar-responsive w-[var(--right-sidebar)] bg-bg border-l border-black/5 overflow-y-auto p-4">
-      <h2 className="text-lg font-bold text-text-primary mb-4">
-        Group Dashboard
-      </h2>
-
-      <div
-        ref={widgetGridRef}
-        className="widget-grid-responsive grid gap-3"
-        style={{
-          gridTemplateColumns: "repeat(12, 1fr)",
-          gridAutoRows: "minmax(40px, auto)",
-        }}
-      >
-        {/* ═══ New Sign-Ups ═══ */}
-        <div
-          className="rounded-lg border border-gray-200 shadow-xs p-6"
-          style={{ gridColumn: "1 / 10", gridRow: "1 / 3", backgroundColor: "var(--widget-bg-signups)" }}
-        >
-          <h3 className="text-sm font-semibold text-text-primary mb-3">
-            New Sign-Ups
-          </h3>
-          <div className="space-y-2.5">
-            {nbStatus === "loading" ? (
-              <div className="flex items-center gap-2">
-                <span className="material-icons-two-tone text-[16px] text-text-muted animate-spin">autorenew</span>
-                <p className="text-sm text-text-muted">Loading...</p>
-              </div>
-            ) : nbStatus === "error" ? (
-              <div className="flex items-center gap-2">
-                <span className="material-icons-two-tone text-[16px] text-orange-500">warning</span>
-                <p className="text-sm text-orange-600 font-medium">Error connecting with source</p>
-              </div>
-            ) : nbStatus === "not_configured" ? (
-              <p className="text-sm text-text-muted">No source connected</p>
-            ) : signups.length > 0 ? (
-              signups.map((s) => {
-                const time = formatSignupTime(s.created_at);
-                const assignment = getAssignment(s.id);
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => setSelectedSignup(s)}
-                    className="w-full flex items-center justify-between hover:bg-amber-100/50 rounded-lg px-2 -mx-2 py-1.5 transition-colors cursor-pointer text-left"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`w-9 h-9 rounded-full shrink-0 ${getAvatarColor(s.id)} flex items-center justify-center text-xs font-bold text-white`}
-                      >
-                        {getInitials(s.name)}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-text-primary truncate">{s.name}</span>
-                          <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 shrink-0">
-                            <img src="/nb-icon.png" alt="" className="w-4 h-4" />
-                            via NB
-                          </span>
-                        </div>
-                        {assignment && (
-                          <span className="text-xs text-text-muted block truncate">
-                            Assigned to {assignment.assignee_name}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <span
-                      className={`text-xs shrink-0 ml-2 ${
-                        time.urgent ? "font-semibold text-red-500" : "text-text-muted"
-                      }`}
-                    >
-                      {time.text}
-                    </span>
-                  </button>
-                );
-              })
-            ) : (
-              <p className="text-sm text-text-muted">No recent sign-ups</p>
-            )}
-          </div>
-          {signups.length > 0 && (
-            <p className="text-xs text-text-muted mt-3">
-              Click a sign-up to view details and assign to a team member.
-            </p>
+    <aside className="right-sidebar-responsive w-[var(--right-sidebar)] bg-bg border-l border-black/5 overflow-y-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 pb-0">
+        <h2 className="text-lg font-bold text-text-primary">Group Dashboard</h2>
+        <div className="flex items-center gap-1">
+          {isSuperAdmin && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSaveAsOrgDefault}
+              className="text-xs text-text-muted"
+              title="Save current layout as default for your organization"
+            >
+              <Icon name="check" size={14} className="mr-1" />
+              Save as default
+            </Button>
           )}
-        </div>
-
-        {/* ═══ Recruit More People ═══ */}
-        <div
-          className="rounded-lg border border-gray-200 shadow-xs p-6 flex flex-col items-center justify-center text-center text-text-primary"
-          style={{ gridColumn: "10 / 13", gridRow: "1 / 3", backgroundColor: "var(--widget-bg-recruit)" }}
-        >
-          <span className="material-icons-two-tone text-[40px] mb-2">
-            person_add
-          </span>
-          <span className="text-sm font-bold leading-tight uppercase">
-            Recruit More People
-          </span>
-        </div>
-
-        {/* ═══ Group Conversations ═══ */}
-        <div
-          className="rounded-lg border border-gray-200 shadow-xs p-6 flex flex-col"
-          style={{ gridColumn: "1 / 7", gridRow: "3 / 8", backgroundColor: "var(--widget-bg-conversations)" }}
-        >
-          <h3 className="text-sm font-semibold text-text-primary mb-3">
-            Group Conversations
-          </h3>
-          <div className="space-y-2 flex-1">
-            {groupMessages.length > 0 ? (
-              groupMessages.slice(-3).map((msg) => (
-                <p key={msg.id} className="text-sm text-text-primary truncate">
-                  <span className="font-semibold text-accent-purple">
-                    @{msg.sender_name || "Unknown"}
-                  </span>{" "}
-                  {msg.content}
-                </p>
-              ))
-            ) : (
-              <p className="text-sm text-text-muted">No messages yet</p>
-            )}
-          </div>
-          <Button
-            variant="outline"
-            onClick={onOpenConversation}
-            className="mt-auto self-start"
-          >
-            Open Conversation
-          </Button>
-        </div>
-
-        {/* ═══ Group Actions ═══ */}
-        <div
-          className="rounded-lg border border-gray-200 shadow-xs p-6"
-          style={{ gridColumn: "7 / 13", gridRow: "3 / 8", backgroundColor: "var(--widget-bg-actions)" }}
-        >
-          <h3 className="text-sm font-semibold text-text-primary mb-3">
-            Group Actions to Take Today
-          </h3>
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between bg-white rounded-lg px-4 py-2.5">
-              <span className="text-sm font-medium text-accent-purple cursor-pointer hover:underline">
-                Call New Supporters
-              </span>
-              <span className="text-xs text-text-muted">9 AM</span>
-            </div>
-            <div className="flex items-center justify-between bg-white rounded-lg px-4 py-2.5">
-              <span className="text-sm font-medium text-accent-purple cursor-pointer hover:underline">
-                Distribute Flyers at Campus
-              </span>
-              <span className="text-xs text-text-muted">11 AM</span>
-            </div>
-            <div className="flex items-center justify-between bg-white rounded-lg px-4 py-2.5">
-              <span className="text-sm font-medium text-accent-purple cursor-pointer hover:underline">
-                Host Community Meetup
-              </span>
-              <span className="text-xs text-text-muted">12 PM</span>
-            </div>
-          </div>
-        </div>
-
-        {/* ═══ Fundraising (Tremor KPI) ═══ */}
-        <div
-          className="rounded-lg border border-gray-200 shadow-xs p-6 flex flex-col"
-          style={{ gridColumn: "1 / 7", gridRow: "8 / 14", backgroundColor: "var(--widget-bg-fundraising)" }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-text-primary">
-              Current Month Goal
-            </h3>
-            {isAdmin && !editingGoal && (
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => {
-                  setGoalInput(String(fundraising?.fundraising_goal || 0));
-                  setBudgetInput(String(fundraising?.print_budget || 0));
-                  setEditingGoal(true);
-                }}
-                title="Edit goals"
-              >
-                <span className="material-icons-two-tone text-[18px] text-text-muted">edit</span>
-              </Button>
-            )}
-          </div>
-
-          {editingGoal ? (
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-medium text-text-muted">Fundraising Goal ($)</label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={goalInput}
-                  onChange={(e) => setGoalInput(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-text-muted">Print Budget ($)</label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={budgetInput}
-                  onChange={(e) => setBudgetInput(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    try {
-                      const res = await fetch("/api/fundraising", {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          fundraising_goal: parseFloat(goalInput) || 0,
-                          print_budget: parseFloat(budgetInput) || 0,
-                        }),
-                      });
-                      const json = await res.json();
-                      if (json.goal) setFundraising(json.goal);
-                    } catch { /* silent */ }
-                    setEditingGoal(false);
-                  }}
-                  className="flex-1"
-                >
-                  Save
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setEditingGoal(false)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-4">
-                <ProgressCircle
-                  value={fundraisingPct}
-                  radius={36}
-                  strokeWidth={6}
-                  variant="neutral"
-                >
-                  <span className="text-xs font-semibold text-text-primary">
-                    {fundraisingPct}%
-                  </span>
-                </ProgressCircle>
-                <div>
-                  <p className="text-3xl font-semibold text-text-primary">
-                    ${fundraising?.amount_raised || 0}
-                  </p>
-                  {(fundraising?.fundraising_goal || 0) > 0 && (
-                    <p className="text-sm text-text-muted mt-0.5">
-                      of ${fundraising?.fundraising_goal || 0}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {fundraisingHistory.length > 1 && (
-                <div className="mt-4">
-                  <SparkAreaChart
-                    data={fundraisingHistory}
-                    categories={["raised"]}
-                    index="month"
-                    colors={["blue"]}
-                    className="h-12 w-full"
-                  />
-                </div>
-              )}
-
-              <div className="mt-4 pt-4 border-t border-black/5">
-                <p className="text-sm text-text-muted">Print Budget</p>
-                <p className="text-2xl font-semibold text-text-primary mt-1">${fundraising?.print_budget || 0}</p>
-              </div>
-            </>
+          {layoutSource === "user" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowResetDialog(true)}
+              className="text-xs text-text-muted"
+              title="Reset to default layout"
+            >
+              <Icon name="refresh" size={14} className="mr-1" />
+              Reset layout
+            </Button>
           )}
-
-          <Button
-            variant="outline"
-            onClick={() => setShowReimbursementModal(true)}
-            className="mt-auto self-stretch"
-          >
-            Request Reimbursement
-          </Button>
-        </div>
-
-        {/* ═══ Recruitment Goal (Tremor KPI) ═══ */}
-        <div
-          className="rounded-lg border border-gray-200 shadow-xs p-6"
-          style={{ gridColumn: "7 / 13", gridRow: "8 / 11", backgroundColor: "var(--widget-bg-recruitment-goal)" }}
-        >
-          <h3 className="text-sm font-semibold text-text-primary mb-4">
-            Recruitment Goal
-          </h3>
-          <div className="flex gap-8 justify-center">
-            <div className="flex flex-col items-center">
-              <ProgressCircle
-                value={memberPct}
-                radius={36}
-                strokeWidth={6}
-                variant="default"
-              >
-                <span className="text-base font-semibold text-text-primary">{memberCount}</span>
-              </ProgressCircle>
-              <p className="text-sm font-medium text-text-primary mt-2">Members</p>
-              <p className="text-xs text-text-muted">of 18</p>
-            </div>
-            <div className="flex flex-col items-center">
-              <ProgressCircle
-                value={supporterPct}
-                radius={36}
-                strokeWidth={6}
-                variant="success"
-              >
-                <span className="text-base font-semibold text-text-primary">{supporterCount}</span>
-              </ProgressCircle>
-              <p className="text-sm font-medium text-text-primary mt-2">Supporters</p>
-              <p className="text-xs text-text-muted">of 25</p>
-            </div>
-          </div>
-        </div>
-
-        {/* ═══ Request Approval ═══ */}
-        <div
-          className="rounded-lg border border-gray-200 shadow-xs p-6 flex flex-col"
-          style={{ gridColumn: "7 / 13", gridRow: "11 / 13", backgroundColor: "var(--widget-bg-request-approval)" }}
-        >
-          <h3 className="text-sm font-semibold text-text-primary mb-1">
-            Request Approval
-          </h3>
-          <p className="text-sm text-text-muted">
-            Send an idea or asset for approval
-          </p>
-          <Button
-            variant="outline"
-            onClick={() => setShowApprovalModal(true)}
-            className="mt-auto self-stretch"
-          >
-            Start
-          </Button>
-        </div>
-
-        {/* ═══ Connected Systems (Tremor Status) ═══ */}
-        <div
-          className="rounded-lg border border-gray-200 shadow-xs p-6"
-          style={{ gridColumn: "1 / 7", gridRow: "14 / 18", backgroundColor: "var(--widget-bg-connected-systems)" }}
-        >
-          <h3 className="text-sm font-semibold text-text-primary mb-4">
-            Connected Systems
-          </h3>
-          <div className="space-y-3">
-            <SystemBadge name="Action Network" status="not_connected" />
-            <SystemBadge
-              name="NationBuilder"
-              status={nbStatus === "connected" ? "functional" : nbStatus === "error" ? "error" : "not_connected"}
-            />
-            <SystemBadge name="Mobilize" status="not_connected" />
-            <SystemBadge
-              name="Calendar"
-              status={calendarSourceCount > 0 || events.length > 0 ? "functional" : "not_connected"}
-              detail={calendarSourceCount > 0 ? `${calendarSourceCount} feed${calendarSourceCount > 1 ? "s" : ""}` : events.length > 0 ? "Connected" : undefined}
-            />
-          </div>
-        </div>
-
-        {/* ═══ Hours Volunteered (Tremor KPI) ═══ */}
-        <div
-          className="rounded-lg border border-gray-200 shadow-xs p-6 cursor-pointer hover:ring-2 hover:ring-gray-300 transition-all flex flex-col"
-          style={{ gridColumn: "7 / 13", gridRow: "13 / 18", backgroundColor: "var(--widget-bg-hours)" }}
-          onClick={() => setShowHoursDetail(true)}
-          title="Click to see details"
-        >
-          <h3 className="text-sm font-semibold text-text-primary mb-3">
-            Hours Volunteered
-          </h3>
-          <div className="flex items-baseline gap-2.5">
-            <span className="text-3xl font-semibold text-text-primary">{totalHours}</span>
-            <span className="text-sm text-text-muted">hrs</span>
-            {weekHours > 0 && (
-              <BadgeDelta value={hoursDelta} suffix=" this wk" />
-            )}
-          </div>
-
-          {hoursHistory.length > 1 && (
-            <div className="mt-4">
-              <SparkAreaChart
-                data={hoursHistory}
-                categories={["hours"]}
-                index="week"
-                colors={["emerald"]}
-                className="h-12 w-full"
-              />
-            </div>
-          )}
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => { e.stopPropagation(); setShowLogHoursModal(true); }}
-            className="mt-auto self-start text-green-600 hover:text-green-700 px-0"
-          >
-            + Log hours
-          </Button>
-        </div>
-
-        {/* ═══ Upcoming Events (Tremor List) ═══ */}
-        <div
-          className="rounded-lg border border-gray-200 shadow-xs p-6"
-          style={{ gridColumn: "1 / 7", gridRow: "18 / 24", backgroundColor: "var(--widget-bg-events)" }}
-        >
-          <h3 className="text-sm font-semibold text-text-primary mb-3">
-            Upcoming Events
-          </h3>
-          {eventsLoading ? (
-            <div className="text-center py-4">
-              <span className="material-icons-two-tone text-[28px] text-text-muted animate-spin">
-                autorenew
-              </span>
-              <p className="text-sm text-text-muted mt-2">Loading events...</p>
-            </div>
-          ) : events.length > 0 ? (
-            <div className="space-y-3">
-              {events.slice(0, 4).map((event) => {
-                const date = new Date(event.start);
-                const dayStr = date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-                const timeStr = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-                return (
-                  <div key={event.id} className="flex items-start gap-3">
-                    <div
-                      className="w-1 self-stretch rounded-full shrink-0"
-                      style={{ backgroundColor: event.sourceColor || "var(--accent-purple)" }}
-                    />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-text-primary leading-snug truncate">
-                        {event.title}
-                      </p>
-                      <p className="text-xs text-text-muted mt-0.5">
-                        {dayStr} · {timeStr}
-                      </p>
-                      {event.location && (
-                        <p className="text-xs text-text-muted truncate">
-                          {event.location}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-4">
-              <span className="material-icons-two-tone text-[28px] text-text-muted">
-                event
-              </span>
-              <p className="text-sm text-text-muted mt-2">
-                No upcoming events
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* ═══ Group Directory ═══ */}
-        <div
-          className="rounded-lg border border-gray-200 shadow-xs p-6"
-          style={{ gridColumn: "7 / 13", gridRow: "18 / 24" }}
-        >
-          <Link href="/members">
-            <h3 className="text-sm font-semibold text-text-primary mb-4 hover:underline cursor-pointer">
-              Group Directory
-            </h3>
-          </Link>
-          <div className="space-y-3">
-            {directoryMembers.length > 0
-              ? directoryMembers.map((person) => (
-                  <Link key={person.id} href={`/members/${person.id}`} className="flex items-center justify-between hover:bg-black/[0.03] -mx-2 px-2 py-1 rounded-lg transition-colors">
-                    <div className="flex items-center gap-3">
-                      {person.avatar_url ? (
-                        <img
-                          src={person.avatar_url}
-                          alt={person.full_name || ""}
-                          className="w-9 h-9 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div
-                          className={`w-9 h-9 rounded-full ${getAvatarColor(person.id)} flex items-center justify-center text-xs font-bold text-white`}
-                        >
-                          {getInitials(person.full_name)}
-                        </div>
-                      )}
-                      <span className="text-sm font-medium text-text-primary">
-                        {person.full_name || "Unknown"}
-                      </span>
-                    </div>
-                    <span className="text-xs text-text-muted">
-                      {getRoleLabel(person.role)}
-                    </span>
-                  </Link>
-                ))
-              : (
-                <p className="text-sm text-text-muted">Loading members...</p>
-              )}
-          </div>
         </div>
       </div>
 
-      {/* Signup Detail Modal */}
+      {/* Grid */}
+      {layoutLoading ? (
+        <div className="p-4 space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="rounded-lg border border-gray-200 bg-gray-50 animate-pulse"
+              style={{ height: `${80 + i * 20}px` }}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="px-2 animate-fade-in">
+          <ResponsiveGridLayout
+            layouts={{ lg: rglLayout }}
+            breakpoints={{ lg: 0 }}
+            cols={{ lg: 3 }}
+            rowHeight={50}
+            margin={[12, 12]}
+            containerPadding={[8, 12]}
+            compactType="vertical"
+            preventCollision={false}
+            draggableHandle=".widget-drag-handle"
+            isResizable={true}
+            isDraggable={true}
+            onDragStart={() => { hasUserInteracted.current = true; }}
+            onResizeStart={() => { hasUserInteracted.current = true; }}
+            onLayoutChange={handleLayoutChange}
+            useCSSTransforms={true}
+          >
+            {visibleLayout.map((item) => {
+              const widgetId = item.i as WidgetId;
+              return (
+                <div
+                  key={widgetId}
+                  className="group/widget rounded-lg border border-gray-200 shadow-xs overflow-hidden"
+                  style={{ backgroundColor: WIDGET_BG[widgetId] || "var(--card-bg)" }}
+                >
+                  {/* Drag handle */}
+                  <div className="widget-drag-handle flex items-center justify-between px-4 pt-2 cursor-grab active:cursor-grabbing">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-text-muted opacity-0 group-hover/widget:opacity-60 transition-opacity select-none">
+                      {WIDGET_LABELS[widgetId]}
+                    </span>
+                    <div className="opacity-0 group-hover/widget:opacity-40 hover:!opacity-100 transition-opacity">
+                      <Icon name="drag-handle" size={14} />
+                    </div>
+                  </div>
+                  {renderWidget(widgetId)}
+                </div>
+              );
+            })}
+          </ResponsiveGridLayout>
+        </div>
+      )}
+
+      {/* Reset Dialog */}
+      <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset to default layout?</DialogTitle>
+            <DialogDescription>
+              Your current arrangement will be lost. The dashboard will use the
+              organization default or system default layout.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowResetDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleReset}>Reset</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modals */}
       <NbSignupModal
         signup={selectedSignup}
-        assignment={selectedSignup ? getAssignment(selectedSignup.id) : null}
+        assignment={
+          selectedSignup
+            ? assignments.find((a) => a.nb_signup_id === selectedSignup.id) || null
+            : null
+        }
         members={allMembers}
         onClose={() => setSelectedSignup(null)}
         onAssigned={handleAssigned}
       />
-
-      {/* Create Approval Modal */}
       {showApprovalModal && (
         <CreateApprovalModal
           onClose={() => setShowApprovalModal(false)}
           onCreated={() => setShowApprovalModal(false)}
         />
       )}
-
-      {/* Log Hours Modal */}
       {showLogHoursModal && (
         <LogHoursModal
           onClose={() => setShowLogHoursModal(false)}
           onLogged={refreshHours}
         />
       )}
-
-      {/* Hours Detail Overlay */}
       {showHoursDetail && (
         <HoursDetailOverlay
           entries={hourEntries}
@@ -749,8 +570,6 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
           onLogHours={() => setShowLogHoursModal(true)}
         />
       )}
-
-      {/* Reimbursement Modal */}
       {showReimbursementModal && (
         <ReimbursementModal
           onClose={() => setShowReimbursementModal(false)}
@@ -760,41 +579,5 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
         />
       )}
     </aside>
-  );
-}
-
-function SystemBadge({
-  name,
-  status = "functional",
-  detail,
-}: {
-  name: string;
-  status?: "functional" | "issues" | "error" | "not_connected";
-  detail?: string;
-}) {
-  const dotColor =
-    status === "functional" ? "bg-green-400" :
-    status === "error" ? "bg-red-400" :
-    status === "issues" ? "bg-orange-400" : "bg-gray-300";
-  const badgeClass =
-    status === "functional" ? "text-green-700 bg-green-100" :
-    status === "error" ? "text-red-700 bg-red-100" :
-    status === "issues" ? "text-orange-700 bg-orange-100" :
-    "text-gray-500 bg-gray-100";
-  const badgeLabel =
-    status === "functional" ? (detail || "Functional") :
-    status === "error" ? "Error" :
-    status === "issues" ? "Issues Found" : "Not Connected";
-
-  return (
-    <div className="flex items-center justify-between py-1">
-      <div className="flex items-center gap-2.5">
-        <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
-        <span className="text-sm text-text-primary">{name}</span>
-      </div>
-      <span className={`text-xs font-medium px-2.5 py-1 rounded ${badgeClass}`}>
-        {badgeLabel}
-      </span>
-    </div>
   );
 }

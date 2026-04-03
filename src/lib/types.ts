@@ -176,6 +176,35 @@ export interface FundraisingGoal {
   updated_at: string;
 }
 
+/* ── Dashboard Layout ── */
+
+export interface LayoutItem {
+  i: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  minW?: number;
+  maxW?: number;
+  minH?: number;
+  maxH?: number;
+}
+
+/* ── Dashboard Widget Data ── */
+
+export interface FundraisingHistory {
+  month: string;
+  raised: number;
+  goal: number;
+}
+
+export interface HoursWeekBucket {
+  week: string;
+  hours: number;
+}
+
+/* ── Reimbursements ── */
+
 export interface ReimbursementRequest {
   id: string;
   group_id: string;
