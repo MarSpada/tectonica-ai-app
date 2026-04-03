@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { type Bot, categoryMeta } from "@/lib/bots";
+import { Icon } from "@/components/ui/icon";
+import type { IconName } from "@/lib/icon-map";
 
 interface ChatHeaderProps {
   bot: Bot;
@@ -17,16 +19,7 @@ export default function ChatHeader({ bot }: ChatHeaderProps) {
         href="/"
         className="p-1.5 rounded-lg hover:bg-black/5 transition-colors"
       >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
+        <Icon name="back" size={20} />
       </Link>
 
       {/* Bot icon */}
@@ -34,9 +27,7 @@ export default function ChatHeader({ bot }: ChatHeaderProps) {
         className="w-10 h-10 rounded-full flex items-center justify-center"
         style={{ backgroundColor: meta.accent }}
       >
-        <span className="material-icons-two-tone text-white text-[22px]">
-          {bot.icon}
-        </span>
+        <Icon name={bot.icon as IconName} size={22} />
       </div>
 
       {/* Bot info */}

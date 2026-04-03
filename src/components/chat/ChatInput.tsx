@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import { Icon } from "@/components/ui/icon";
 
 interface ChatInputProps {
   value: string;
@@ -54,7 +55,7 @@ export default function ChatInput({
           className="w-10 h-10 rounded-full flex items-center justify-center text-text-muted hover:bg-white/30 transition-colors"
           title="Voice input"
         >
-          <span className="material-icons-two-tone text-[20px]">mic</span>
+          <Icon name="microphone" size={20} className="opacity-60" />
         </button>
         {/* Send button — gradient purple circle */}
         <button

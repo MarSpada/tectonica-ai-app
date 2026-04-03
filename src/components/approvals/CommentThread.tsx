@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { ApprovalComment } from "@/lib/types";
 import { getAvatarColor, getInitials } from "@/lib/avatar";
 import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 
 function Avatar({ name, url }: { name: string; url?: string | null }) {
   if (url) {
@@ -91,7 +92,7 @@ export default function CommentThread({
                       rel="noopener noreferrer"
                       className="text-[10px] text-accent-purple hover:underline flex items-center gap-0.5"
                     >
-                      <span className="material-icons-two-tone text-[12px]">attach_file</span>
+                      <Icon name="attachment" size={12} />
                       {a.name}
                     </a>
                   ))}

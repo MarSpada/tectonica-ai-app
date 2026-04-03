@@ -10,6 +10,7 @@ import {
 } from "@/lib/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icon";
 
 interface MemberProfileProps {
   member: Member;
@@ -32,9 +33,7 @@ export default function MemberProfile({ member, bio }: MemberProfileProps) {
           href="/members"
           className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-primary transition-colors mb-4"
         >
-          <span className="material-icons-two-tone text-[18px]">
-            arrow_back
-          </span>
+          <Icon name="back" size={18} />
           Back to Directory
         </Link>
       </div>
@@ -81,17 +80,13 @@ export default function MemberProfile({ member, bio }: MemberProfileProps) {
             {/* Info rows */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <span className="material-icons-two-tone text-[20px] text-text-muted">
-                  mail
-                </span>
+                <Icon name="email-action" size={20} className="opacity-60" />
                 <span className="text-sm text-text-secondary">
                   {member.email}
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="material-icons-two-tone text-[20px] text-text-muted">
-                  calendar_today
-                </span>
+                <Icon name="calendar" size={20} className="opacity-60" />
                 <span className="text-sm text-text-secondary">
                   Joined {joinDate}
                 </span>

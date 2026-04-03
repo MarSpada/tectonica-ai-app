@@ -7,6 +7,7 @@ import ApprovalDetailView from "./ApprovalDetailView";
 import CreateApprovalModal from "./CreateApprovalModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icon";
 
 type FilterTab = "all" | ApprovalStatus;
 type ViewMode = "submitted" | "assigned";
@@ -138,7 +139,7 @@ export default function ApprovalsView({ currentUserId, currentUserRole }: Approv
         </Badge>
 
         <Button onClick={() => setShowCreate(true)}>
-          <span className="material-icons-two-tone text-[16px]">add</span>
+          <Icon name="add" size={16} />
           New Request
         </Button>
       </div>
@@ -150,9 +151,7 @@ export default function ApprovalsView({ currentUserId, currentUserRole }: Approv
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-border bg-card">
-          <span className="material-icons-two-tone text-5xl text-muted-foreground">
-            approval
-          </span>
+          <Icon name="check-circle" size={48} className="opacity-60" />
           <p className="text-sm font-medium text-foreground mt-3">
             {filter === "all"
               ? "No approval requests yet"

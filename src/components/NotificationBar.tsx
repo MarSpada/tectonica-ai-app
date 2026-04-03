@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getAvatarColor, getInitials } from "@/lib/avatar";
 import { formatSignupTime } from "@/lib/signup-utils";
 import type { AppNotification, NbSignup, SignupAssignment } from "@/lib/types";
+import { Icon } from "@/components/ui/icon";
 import {
   Dialog,
   DialogContent,
@@ -93,9 +94,7 @@ export default function NotificationBar() {
     <>
       <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="material-icons-two-tone text-[18px] text-amber-600 shrink-0">
-            notifications_active
-          </span>
+          <Icon name="notifications" size={18} className="shrink-0" />
           <p className="text-xs text-amber-800 truncate">
             You have{" "}
             {assignmentCount > 0 && (
@@ -130,9 +129,7 @@ export default function NotificationBar() {
           title="Dismiss"
           className="shrink-0 hover:bg-amber-100"
         >
-          <span className="material-icons-two-tone text-[16px] text-amber-600">
-            close
-          </span>
+          <Icon name="close" size={16} />
         </Button>
       </div>
 
@@ -152,9 +149,7 @@ export default function NotificationBar() {
               size="icon-sm"
               onClick={() => setShowLightbox(false)}
             >
-              <span className="material-icons-two-tone text-[18px] text-text-muted">
-                close
-              </span>
+              <Icon name="close" size={18} className="opacity-60" />
             </Button>
           </DialogHeader>
 

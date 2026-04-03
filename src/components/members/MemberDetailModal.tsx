@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icon";
 
 interface MemberDetailModalProps {
   member: Member | null;
@@ -66,15 +67,11 @@ export default function MemberDetailModal({
         {/* Info rows */}
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <span className="material-icons-two-tone text-[18px] text-text-muted">
-              mail
-            </span>
+            <Icon name="email-action" size={18} className="opacity-60" />
             <span className="text-sm text-text-secondary">{member.email}</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="material-icons-two-tone text-[18px] text-text-muted">
-              calendar_today
-            </span>
+            <Icon name="calendar" size={18} className="opacity-60" />
             <span className="text-sm text-text-secondary">
               Joined {joinDate}
             </span>

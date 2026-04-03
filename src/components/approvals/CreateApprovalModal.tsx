@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Icon } from "@/components/ui/icon";
 
 interface Reviewer {
   id: string;
@@ -260,9 +261,7 @@ export default function CreateApprovalModal({ onClose, onCreated }: CreateApprov
                     </p>
                   </div>
                   {reviewerId === r.id && (
-                    <span className="material-icons-two-tone text-[18px] text-accent-purple ml-auto">
-                      check_circle
-                    </span>
+                    <Icon name="check-circle" size={18} className="ml-auto" />
                   )}
                 </button>
               ))}
@@ -289,7 +288,7 @@ export default function CreateApprovalModal({ onClose, onCreated }: CreateApprov
               onClick={() => fileInputRef.current?.click()}
               className="w-full flex items-center justify-center gap-1.5 px-3 py-3 border-2 border-dashed border-black/10 rounded-lg text-xs text-text-muted hover:border-accent-purple hover:text-accent-purple transition-colors"
             >
-              <span className="material-icons-two-tone text-[18px]">upload_file</span>
+              <Icon name="upload" size={18} />
               Click to attach files (images, PDFs, docs — max 5MB each)
             </button>
 
@@ -300,9 +299,7 @@ export default function CreateApprovalModal({ onClose, onCreated }: CreateApprov
                     key={i}
                     className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg"
                   >
-                    <span className="material-icons-two-tone text-[16px] text-text-muted">
-                      {pf.type.startsWith("image/") ? "image" : "description"}
-                    </span>
+                    <Icon name={pf.type.startsWith("image/") ? "file-image" : "file-document"} size={16} className="opacity-60" />
                     <span className="text-xs text-text-primary truncate flex-1">{pf.name}</span>
                     <span className="text-[10px] text-text-muted shrink-0">
                       {(pf.size / 1024).toFixed(0)} KB
@@ -311,9 +308,7 @@ export default function CreateApprovalModal({ onClose, onCreated }: CreateApprov
                       onClick={() => removeFile(i)}
                       className="p-0.5 rounded hover:bg-black/10 transition-colors"
                     >
-                      <span className="material-icons-two-tone text-[14px] text-text-muted">
-                        close
-                      </span>
+                      <Icon name="close" size={14} className="opacity-60" />
                     </button>
                   </div>
                 ))}

@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Icon } from "@/components/ui/icon";
 
 interface NbSignupModalProps {
   signup: NbSignup | null;
@@ -110,9 +111,7 @@ export default function NbSignupModal({
         {urgent && (
           <div className="mx-6 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4">
             <div className="flex items-start gap-2">
-              <span className="material-icons-two-tone text-[18px] text-amber-600 mt-0.5">
-                warning
-              </span>
+              <Icon name="warning" size={18} className="mt-0.5" />
               <p className="text-xs text-amber-800 leading-relaxed">
                 Contact them in the next 24 hours or assign to another member
                 for better results.
@@ -127,9 +126,7 @@ export default function NbSignupModal({
         <div className="space-y-3 px-6 py-4">
           {signup.email && (
             <div className="flex items-center gap-3">
-              <span className="material-icons-two-tone text-[18px] text-muted-foreground">
-                mail
-              </span>
+              <Icon name="email-action" size={18} className="opacity-60" />
               <span className="text-sm text-secondary-foreground">
                 {signup.email}
               </span>
@@ -137,18 +134,14 @@ export default function NbSignupModal({
           )}
           {signup.phone ? (
             <div className="flex items-center gap-3">
-              <span className="material-icons-two-tone text-[18px] text-muted-foreground">
-                phone
-              </span>
+              <Icon name="phone-call" size={18} className="opacity-60" />
               <span className="text-sm text-secondary-foreground">
                 {signup.phone}
               </span>
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <span className="material-icons-two-tone text-[18px] text-muted-foreground">
-                phone
-              </span>
+              <Icon name="phone-call" size={18} className="opacity-60" />
               <span className="text-sm text-muted-foreground italic">
                 No phone available
               </span>
@@ -156,9 +149,7 @@ export default function NbSignupModal({
           )}
           {assignment && (
             <div className="flex items-center gap-3">
-              <span className="material-icons-two-tone text-[18px] text-muted-foreground">
-                person
-              </span>
+              <Icon name="members" size={18} className="opacity-60" />
               <span className="text-sm text-secondary-foreground">
                 Assigned to{" "}
                 <strong>{assignment.assignee_name}</strong>
@@ -177,7 +168,7 @@ export default function NbSignupModal({
                 className="flex-1"
                 render={<a href={`mailto:${signup.email}`} />}
               >
-                <span className="material-icons-two-tone text-[16px]">mail</span>
+                <Icon name="email-action" size={16} />
                 Contact
               </Button>
             )}
@@ -187,7 +178,7 @@ export default function NbSignupModal({
                 className="flex-1 text-green-700 border-green-300 hover:bg-green-50"
                 render={<a href={`tel:${signup.phone}`} />}
               >
-                <span className="material-icons-two-tone text-[16px]">call</span>
+                <Icon name="phone-call" size={16} />
                 Call
               </Button>
             ) : (
@@ -196,7 +187,7 @@ export default function NbSignupModal({
                 className="flex-1"
                 disabled
               >
-                <span className="material-icons-two-tone text-[16px]">call</span>
+                <Icon name="phone-call" size={16} />
                 Call
               </Button>
             )}
@@ -209,9 +200,7 @@ export default function NbSignupModal({
               onClick={() => setShowAssignDropdown(true)}
               className="w-full text-primary border-primary/30 hover:bg-primary/5"
             >
-              <span className="material-icons-two-tone text-[16px]">
-                person_add
-              </span>
+              <Icon name="person-add" size={16} />
               {assignment ? "Reassign to Another Person" : "Assign to a Person"}
             </Button>
           ) : (

@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icon";
 
 interface MemberDirectoryProps {
   members: Member[];
@@ -70,8 +71,8 @@ export default function MemberDirectory({ members }: MemberDirectoryProps) {
         <div className="flex flex-wrap items-center gap-3">
           {/* Search */}
           <div className="relative w-72">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 material-icons-two-tone text-[18px] text-muted-foreground pointer-events-none">
-              search
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+              <Icon name="search" size={18} className="opacity-60" />
             </span>
             <Input
               type="text"
@@ -104,7 +105,7 @@ export default function MemberDirectory({ members }: MemberDirectoryProps) {
           </Badge>
 
           <Button disabled>
-            <span className="material-icons-two-tone text-[16px]">person_add</span>
+            <Icon name="person-add" size={16} />
             Invite Member
           </Button>
         </div>
@@ -114,9 +115,7 @@ export default function MemberDirectory({ members }: MemberDirectoryProps) {
       <div className="flex-1 overflow-y-auto px-6 pb-6">
         {filteredMembers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-border bg-card">
-            <span className="material-icons-two-tone text-5xl text-muted-foreground">
-              group_off
-            </span>
+            <Icon name="empty-members" size={48} className="opacity-60" />
             <p className="text-sm font-medium text-foreground mt-3">No members found</p>
             <p className="text-xs text-muted-foreground mt-1">
               {search || roleFilter !== "all"

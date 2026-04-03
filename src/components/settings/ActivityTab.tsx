@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { HourEntry, ApprovalRequest, SignupAssignment, ReimbursementRequest } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icon";
 
 interface ActivityTabProps {
   userId: string;
@@ -146,7 +147,7 @@ export default function ActivityTab({ userId }: ActivityTabProps) {
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-border bg-card">
-        <span className="material-icons-two-tone text-5xl text-muted-foreground">history</span>
+        <Icon name="history" size={48} className="opacity-60" />
         <p className="text-sm font-medium text-foreground mt-3">No activity yet</p>
         <p className="text-xs text-muted-foreground mt-1">
           Your hours, approvals, and other activity will appear here.

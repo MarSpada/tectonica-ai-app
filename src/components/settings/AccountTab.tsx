@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Icon } from "@/components/ui/icon";
 
 interface AccountTabProps {
   email: string;
@@ -200,9 +201,7 @@ export default function AccountTab({ email }: AccountTabProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
-              <span className="material-icons-two-tone text-red-500 text-2xl">
-                warning
-              </span>
+              <Icon name="warning" size={24} />
               Delete Account
             </DialogTitle>
             <DialogDescription>

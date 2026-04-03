@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Icon } from "@/components/ui/icon";
 
 interface GroupProfileProps {
   name: string;
@@ -23,7 +24,7 @@ export default function GroupProfile({
           href="/"
           className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors mb-6"
         >
-          <span className="material-icons-two-tone text-[16px]">arrow_back</span>
+          <Icon name="back" size={16} />
           Back to dashboard
         </Link>
 
@@ -47,9 +48,7 @@ export default function GroupProfile({
             {/* Stats */}
             <div className="flex items-center gap-4 mt-4">
               <div className="flex items-center gap-1.5">
-                <span className="material-icons-two-tone text-[16px] text-text-muted">
-                  groups
-                </span>
+                <Icon name="members" size={16} className="opacity-60" />
                 <span className="text-sm text-text-secondary">
                   {memberCount} member{memberCount !== 1 ? "s" : ""}
                 </span>
@@ -80,9 +79,7 @@ export default function GroupProfile({
             href="/members"
             className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card-bg border border-card-stroke hover:border-accent-purple/30 transition-colors"
           >
-            <span className="material-icons-two-tone text-[20px] text-accent-purple">
-              groups
-            </span>
+            <Icon name="members" size={20} />
             <div>
               <p className="text-sm font-medium text-text-primary">Members</p>
               <p className="text-[11px] text-text-muted">View group directory</p>
@@ -92,9 +89,7 @@ export default function GroupProfile({
             href="/media"
             className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card-bg border border-card-stroke hover:border-accent-purple/30 transition-colors"
           >
-            <span className="material-icons-two-tone text-[20px] text-accent-purple">
-              perm_media
-            </span>
+            <Icon name="media" size={20} />
             <div>
               <p className="text-sm font-medium text-text-primary">Media</p>
               <p className="text-[11px] text-text-muted">Group media gallery</p>

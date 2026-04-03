@@ -6,12 +6,14 @@ import Link from "next/link";
 import { useUserProfile } from "@/lib/UserProfileContext";
 import { getAvatarColor, getInitials } from "@/lib/avatar";
 import { Input } from "@/components/ui/input";
+import { Icon } from "@/components/ui/icon";
+import type { IconName } from "@/lib/icon-map";
 import LeadersChat from "./LeadersChat";
 
-const recentChats = [
-  { name: "Graphics Creation", icon: "palette", botId: "graphics-creation" },
-  { name: "Canvassing Planner", icon: "directions_walk", botId: "canvassing-planner" },
-  { name: "Events Planning", icon: "event", botId: "events-planning" },
+const recentChats: { name: string; icon: IconName; botId: string }[] = [
+  { name: "Graphics Creation", icon: "bot-graphics", botId: "graphics-creation" },
+  { name: "Canvassing Planner", icon: "bot-canvassing", botId: "canvassing-planner" },
+  { name: "Events Planning", icon: "bot-events-planning", botId: "events-planning" },
 ];
 
 interface LeftSidebarProps {
@@ -35,10 +37,8 @@ export default function LeftSidebar({
   const avatarUrl = profile?.avatarUrl || null;
   const initials = getInitials(displayName);
 
-  const activeClass = isCollapsed
-    ? "bg-black/10 text-text-primary"
-    : "bg-sidebar-active text-white";
-  const inactiveClass = "text-text-primary hover:bg-black/5";
+  const activeClass = "bg-black/8 text-text-primary font-semibold";
+  const inactiveClass = "text-text-secondary hover:bg-black/5";
 
   return (
     <>
@@ -61,7 +61,7 @@ export default function LeftSidebar({
               pathname === "/coach" ? activeClass : inactiveClass
             }`}
           >
-            <span className="material-icons-two-tone text-[18px]">groups</span>
+            <Icon name="group-coach" size={22} />
             <span className="sidebar-label">Group Coach</span>
           </Link>
 
@@ -72,9 +72,7 @@ export default function LeftSidebar({
               pathname === "/media" ? activeClass : inactiveClass
             }`}
           >
-            <span className="material-icons-two-tone text-[18px]">
-              perm_media
-            </span>
+            <Icon name="group-media" size={22} />
             <span className="sidebar-label">Group Media</span>
           </Link>
 
@@ -85,7 +83,7 @@ export default function LeftSidebar({
               pathname === "/members" ? activeClass : inactiveClass
             }`}
           >
-            <span className="material-icons-two-tone text-[18px]">people</span>
+            <Icon name="members" size={22} />
             <span className="sidebar-label">Members</span>
           </Link>
 
@@ -97,9 +95,7 @@ export default function LeftSidebar({
                 pathname?.startsWith("/admin") ? activeClass : inactiveClass
               }`}
             >
-              <span className="material-icons-two-tone text-[18px]">
-                admin_panel_settings
-              </span>
+              <Icon name="admin" size={22} />
               <span className="sidebar-label">Admin</span>
             </Link>
           )}
@@ -111,7 +107,7 @@ export default function LeftSidebar({
               leadersChatOpen ? activeClass : inactiveClass
             }`}
           >
-            <span className="material-icons-two-tone text-[18px]">chat</span>
+            <Icon name="leaders-organizers" size={22} />
             <span className="sidebar-label">Leaders &amp; Organizers</span>
           </button>
 
@@ -138,9 +134,7 @@ export default function LeftSidebar({
                   href={`/chat/${chat.botId}`}
                   className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-text-secondary hover:bg-black/5 transition-colors"
                 >
-                  <span className="material-icons-two-tone text-[16px]">
-                    {chat.icon}
-                  </span>
+                  <Icon name={chat.icon} size={16} />
                   <span className="sidebar-label truncate">{chat.name}</span>
                 </Link>
               ))}
@@ -177,9 +171,7 @@ export default function LeftSidebar({
               title="Settings"
               className="sidebar-signout p-1 rounded hover:bg-black/5 transition-colors"
             >
-              <span className="material-icons-two-tone text-[18px] text-text-muted">
-                settings
-              </span>
+              <Icon name="settings" size={20} />
             </Link>
           </div>
         </div>

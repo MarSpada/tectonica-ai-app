@@ -12,6 +12,8 @@ import {
 } from "@/lib/bots";
 import BotCard from "./BotCard";
 import WelcomeHelper from "./WelcomeHelper";
+import { Icon } from "@/components/ui/icon";
+import type { IconName } from "@/lib/icon-map";
 
 interface BotGridProps {
   userName?: string;
@@ -19,11 +21,11 @@ interface BotGridProps {
   onWelcomeExpandChange?: (expanded: boolean) => void;
 }
 
-const categoryIcons: Record<BotCategory, string> = {
-  advisors: "chat_bubble_outline",
-  create: "palette",
-  tools: "build",
-  analyze: "insights",
+const categoryIcons: Record<BotCategory, IconName> = {
+  advisors: "cat-advisors",
+  create: "cat-create",
+  tools: "cat-tools",
+  analyze: "cat-analyze",
 };
 
 export default function BotGrid({
@@ -141,9 +143,7 @@ export default function BotGrid({
             >
               <span className="text-amber-400 text-base">★</span>
               <span className="flex-1 text-left">Your Favorite Helpers</span>
-              <span className={`material-icons-two-tone text-[20px] text-text-muted transition-transform duration-200 ${isFavOpen ? "rotate-180" : ""}`}>
-                expand_more
-              </span>
+              <Icon name="expand-down" size={20} className={`opacity-60 transition-transform duration-200 ${isFavOpen ? "" : "rotate-180"}`} />
             </button>
             {isFavOpen && (
               <div className="featured-grid-responsive grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3.5 mt-2 mb-3">
@@ -175,13 +175,9 @@ export default function BotGrid({
               className="cat-header w-full flex items-center gap-2 text-sm font-semibold text-text-secondary uppercase tracking-wider py-2.5 px-3 rounded-lg border-b border-black/5 hover:brightness-95 transition-all cursor-pointer"
               style={{ backgroundColor: `color-mix(in srgb, ${catBg} 25%, transparent)` }}
             >
-              <span className="material-icons-two-tone text-[18px] text-text-muted">
-                {categoryIcons[key]}
-              </span>
+              <Icon name={categoryIcons[key]} size={18} className="opacity-60" />
               <span className="flex-1 text-left">{label}</span>
-              <span className={`material-icons-two-tone text-[20px] text-text-muted transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}>
-                expand_more
-              </span>
+              <Icon name="expand-down" size={20} className={`opacity-60 transition-transform duration-200 ${isOpen ? "" : "rotate-180"}`} />
             </button>
             {isOpen && (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3.5 mt-2 mb-3">

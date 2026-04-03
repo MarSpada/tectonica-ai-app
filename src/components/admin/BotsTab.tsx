@@ -8,6 +8,8 @@ import BotEditor from "./BotEditor";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Icon } from "@/components/ui/icon";
+import type { IconName } from "@/lib/icon-map";
 
 interface BotsTabProps {
   orgId: string | null;
@@ -156,9 +158,7 @@ export default function BotsTab({ orgId }: BotsTabProps) {
                   className="w-10 h-10 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: catMeta?.bg }}
                 >
-                  <span className="material-icons-two-tone text-white text-[20px]">
-                    {bot.icon}
-                  </span>
+                  <Icon name={bot.icon as IconName} size={20} />
                 </div>
                 <div className="flex gap-1">
                   <Button
@@ -167,9 +167,7 @@ export default function BotsTab({ orgId }: BotsTabProps) {
                     onClick={() => setEditingBot(bot)}
                     title="Edit bot"
                   >
-                    <span className="material-icons-two-tone text-[16px] text-text-muted">
-                      edit
-                    </span>
+                    <Icon name="edit" size={16} className="opacity-60" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -178,9 +176,7 @@ export default function BotsTab({ orgId }: BotsTabProps) {
                     className="hover:bg-red-50"
                     title="Delete bot"
                   >
-                    <span className="material-icons-two-tone text-[16px] text-red-400">
-                      delete
-                    </span>
+                    <Icon name="delete" size={16} />
                   </Button>
                 </div>
               </div>

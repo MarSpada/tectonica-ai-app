@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="-0.75 -0.75 24 24" id="Reset-Clock--Streamline-Sharp-Neon">
+  <desc>
+    Reset Clock Streamline Icon: https://streamlinehq.com
+  </desc>
+  <g id="reset-clock--timer-countdown-clock">
+    <path id="Ellipse 9" stroke="#c71dff" d="M11.25 21.5625c-2.73504375 0 -5.3580749999999995 -1.08646875 -7.2920437499999995 -3.0204375S0.9374990624999999 13.985062500000002 0.9375 11.25c0 -2.73504375 1.0864875 -5.3580749999999995 3.02045625 -7.2920437499999995S8.514956250000001 0.9374990624999999 11.25 0.9375c2.7350625 0 5.35809375 1.0864875 7.2920625 3.0204656250000004C20.476031250000002 5.891934375 21.5625 8.514956250000001 21.5625 11.25c0 5.625 -3.984375 7.96875 -6.5625 10.3125" stroke-width="1.5"></path>
+    <path id="Ellipse 10" stroke="#c71dff" d="m18.75 21.5625 -3.75 0 0 -3.75" stroke-width="1.5"></path>
+    <path id="Vector 68" stroke="#000cfe" d="M11.25 4.6875v6.5625h4.6875" stroke-width="1.5"></path>
+  </g>
+</svg>

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { getAvatarColor, getInitials } from "@/lib/avatar";
 import type { GroupMessage } from "@/lib/types";
+import { Icon } from "@/components/ui/icon";
 
 interface GroupConversationOverlayProps {
   messages: GroupMessage[];
@@ -96,9 +97,7 @@ export default function GroupConversationOverlay({
           onClick={onClose}
           className="w-7 h-7 rounded-full hover:bg-black/5 flex items-center justify-center transition-colors"
         >
-          <span className="material-icons-two-tone text-[18px] text-text-muted">
-            close
-          </span>
+          <Icon name="close" size={18} className="opacity-60" />
         </button>
       </div>
 
@@ -122,9 +121,7 @@ export default function GroupConversationOverlay({
 
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center py-12">
-            <span className="material-icons-two-tone text-[48px] text-text-muted/40 mb-3">
-              chat_bubble_outline
-            </span>
+            <Icon name="chat-bubble" size={48} className="opacity-40 mb-3" />
             <p className="text-sm text-text-muted">Start the conversation!</p>
           </div>
         )}

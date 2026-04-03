@@ -6,6 +6,7 @@ import { getAvatarColor, getInitials } from "@/lib/avatar";
 import StatusBadge from "./StatusBadge";
 import CommentThread from "./CommentThread";
 import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 
 function Avatar({ name, url, size = 32 }: { name: string; url?: string | null; size?: number }) {
   if (url) {
@@ -160,9 +161,7 @@ export default function ApprovalDetailView({
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon-sm" onClick={onBack}>
-          <span className="material-icons-two-tone text-[20px] text-text-secondary">
-            arrow_back
-          </span>
+          <Icon name="back" size={20} />
         </Button>
         <div className="flex-1 min-w-0">
           <h2 className="text-lg font-bold text-text-primary truncate">{request.title}</h2>
@@ -185,7 +184,7 @@ export default function ApprovalDetailView({
             <p className="text-[10px] text-text-muted">Submitter</p>
           </div>
         </div>
-        <span className="material-icons-two-tone text-[18px] text-text-muted">arrow_forward</span>
+        <Icon name="arrow-forward" size={18} className="opacity-60" />
         <div className="flex items-center gap-2">
           <Avatar name={request.reviewer_name || "?"} url={request.reviewer_avatar} />
           <div>
@@ -234,9 +233,7 @@ export default function ApprovalDetailView({
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 rounded-lg border border-black/5 p-3 hover:shadow-md transition-shadow"
                 >
-                  <span className="material-icons-two-tone text-[24px] text-text-muted">
-                    {a.type === "application/pdf" ? "picture_as_pdf" : "description"}
-                  </span>
+                  <Icon name={a.type === "application/pdf" ? "file-pdf" : "file-document"} size={24} className="opacity-60" />
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-text-primary truncate">{a.name}</p>
                     <p className="text-[10px] text-text-muted">
@@ -309,14 +306,14 @@ export default function ApprovalDetailView({
           ) : (
             <div className="flex gap-2">
               <Button onClick={() => setShowActionInput("approve")}>
-                <span className="material-icons-two-tone text-[16px]">check_circle</span>
+                <Icon name="check-circle" size={16} />
                 Approve
               </Button>
               <Button
                 variant="destructive"
                 onClick={() => setShowActionInput("changes")}
               >
-                <span className="material-icons-two-tone text-[16px]">edit_note</span>
+                <Icon name="edit" size={16} />
                 Request Changes
               </Button>
             </div>

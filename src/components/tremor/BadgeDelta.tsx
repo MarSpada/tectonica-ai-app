@@ -4,6 +4,8 @@
  */
 import React from "react"
 import { cn } from "@/lib/utils"
+import { Icon } from "@/components/ui/icon"
+import type { IconName } from "@/lib/icon-map"
 
 type DeltaType = "increase" | "decrease" | "unchanged"
 
@@ -24,10 +26,10 @@ const deltaStyles: Record<DeltaType, string> = {
   unchanged: "bg-gray-100 text-gray-800",
 }
 
-const deltaIcons: Record<DeltaType, string> = {
-  increase: "arrow_upward",
-  decrease: "arrow_downward",
-  unchanged: "remove",
+const deltaIcons: Record<DeltaType, IconName> = {
+  increase: "arrow-up",
+  decrease: "arrow-down",
+  unchanged: "dash",
 }
 
 const BadgeDelta = React.forwardRef<HTMLSpanElement, BadgeDeltaProps>(
@@ -45,9 +47,7 @@ const BadgeDelta = React.forwardRef<HTMLSpanElement, BadgeDeltaProps>(
         )}
         {...props}
       >
-        <span className="material-icons-two-tone text-[14px]">
-          {deltaIcons[deltaType]}
-        </span>
+        <Icon name={deltaIcons[deltaType]} size={14} />
         {displayValue}{suffix}
       </span>
     )

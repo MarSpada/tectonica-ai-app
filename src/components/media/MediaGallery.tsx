@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icon";
+import type { IconName } from "@/lib/icon-map";
 
 type MediaType = "all" | "images" | "videos" | "documents";
 type ViewMode = "grid" | "list";
@@ -16,12 +18,11 @@ interface MediaItem {
   date: string;
 }
 
-// Material icon per file type — neutral placeholder for mock data
-const typeIcons: Record<string, string> = {
-  IMG: "image",
-  VID: "videocam",
-  DOC: "description",
-  PDF: "picture_as_pdf",
+const typeIcons: Record<string, IconName> = {
+  IMG: "file-image",
+  VID: "file-video",
+  DOC: "file-document",
+  PDF: "file-pdf",
 };
 
 const mockMedia: MediaItem[] = [
@@ -72,8 +73,8 @@ export default function MediaGallery() {
         <div className="flex flex-wrap items-center gap-3">
           {/* Search */}
           <div className="relative w-72">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 material-icons-two-tone text-[18px] text-muted-foreground pointer-events-none">
-              search
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+              <Icon name="search" size={18} className="opacity-60" />
             </span>
             <Input
               type="text"
@@ -109,7 +110,7 @@ export default function MediaGallery() {
                 viewMode === "grid" ? "bg-card shadow-sm" : "hover:bg-muted-foreground/10"
               }`}
             >
-              <span className="material-icons-two-tone text-[18px] text-secondary-foreground">grid_view</span>
+              <Icon name="view-grid" size={18} />
             </button>
             <button
               onClick={() => setViewMode("list")}
@@ -117,7 +118,7 @@ export default function MediaGallery() {
                 viewMode === "list" ? "bg-card shadow-sm" : "hover:bg-muted-foreground/10"
               }`}
             >
-              <span className="material-icons-two-tone text-[18px] text-secondary-foreground">view_list</span>
+              <Icon name="view-list" size={18} />
             </button>
           </div>
 
@@ -126,7 +127,7 @@ export default function MediaGallery() {
           </Badge>
 
           <Button>
-            <span className="material-icons-two-tone text-[16px]">upload</span>
+            <Icon name="upload" size={16} />
             Upload Media
           </Button>
         </div>
@@ -136,9 +137,7 @@ export default function MediaGallery() {
       <div className="flex-1 overflow-y-auto px-6 pb-4">
         {filteredMedia.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-border bg-card">
-            <span className="material-icons-two-tone text-5xl text-muted-foreground">
-              perm_media
-            </span>
+            <Icon name="group-media" size={48} className="opacity-40" />
             <p className="text-sm font-medium text-foreground mt-3">No media found</p>
             <p className="text-xs text-muted-foreground mt-1">
               Try adjusting your search or filters.
@@ -150,9 +149,7 @@ export default function MediaGallery() {
               <div key={item.id} className="cursor-pointer group">
                 {/* Thumbnail — neutral bg with centered file type icon */}
                 <div className="relative rounded-xl aspect-[4/3] flex items-center justify-center bg-muted border border-border">
-                  <span className="material-icons-two-tone text-[32px] text-muted-foreground">
-                    {typeIcons[item.type]}
-                  </span>
+                  <Icon name={typeIcons[item.type]} size={32} className="opacity-50" />
                   {/* Type badge — top right corner */}
                   <Badge variant="outline" className="absolute top-2 right-2 text-[10px] font-bold">
                     {item.type}
@@ -184,9 +181,7 @@ export default function MediaGallery() {
                   <tr key={item.id} className="border-b border-border last:border-0 hover:bg-muted/50 cursor-pointer">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
-                        <span className="material-icons-two-tone text-[18px] text-muted-foreground">
-                          {typeIcons[item.type]}
-                        </span>
+                        <Icon name={typeIcons[item.type]} size={18} className="opacity-60" />
                         <span className="text-sm font-medium text-foreground">{item.name}</span>
                       </div>
                     </td>
@@ -220,7 +215,7 @@ export default function MediaGallery() {
           </button>
         ))}
         <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-card text-secondary-foreground border border-border hover:bg-muted transition-colors">
-          <span className="material-icons-two-tone text-[16px]">chevron_right</span>
+          <Icon name="chevron-right" size={16} />
         </button>
       </div>
     </div>

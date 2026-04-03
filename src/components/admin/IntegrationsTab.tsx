@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Icon } from "@/components/ui/icon";
 
 interface CalendarSource {
   id: string;
@@ -112,7 +113,7 @@ export default function IntegrationsTab() {
             </p>
           </div>
           <Button onClick={() => setShowForm(true)} size="sm">
-            <span className="material-icons-two-tone text-[16px]">add</span>
+            <Icon name="add" size={16} />
             Add Calendar
           </Button>
         </div>
@@ -198,9 +199,7 @@ export default function IntegrationsTab() {
           </div>
         ) : sources.length === 0 ? (
           <div className="text-center py-8 bg-gray-50 rounded-xl">
-            <span className="material-icons-two-tone text-[40px] text-text-muted">
-              calendar_today
-            </span>
+            <Icon name="calendar" size={40} className="opacity-60" />
             <p className="text-sm text-text-muted mt-2">No calendar sources connected</p>
             <p className="text-xs text-text-muted mt-1">
               Add an iCal/ICS feed to show upcoming events in the dashboard
@@ -252,7 +251,7 @@ export default function IntegrationsTab() {
                   className="hover:bg-red-50 text-text-muted hover:text-red-500"
                   title="Remove"
                 >
-                  <span className="material-icons-two-tone text-[18px]">delete_outline</span>
+                  <Icon name="delete" size={18} />
                 </Button>
               </div>
             ))}
@@ -278,7 +277,7 @@ export default function IntegrationsTab() {
           </div>
           <div className="flex items-center justify-between bg-white border border-black/5 rounded-xl px-4 py-3">
             <div className="flex items-center gap-2.5">
-              <span className="material-icons-two-tone text-[20px] text-text-muted">hub</span>
+              <Icon name="bot-networks" size={20} className="opacity-60" />
               <div>
                 <span className="text-sm font-medium text-text-primary">Action Network</span>
                 <p className="text-[10px] text-text-muted">Coming soon</p>
@@ -290,7 +289,7 @@ export default function IntegrationsTab() {
           </div>
           <div className="flex items-center justify-between bg-white border border-black/5 rounded-xl px-4 py-3">
             <div className="flex items-center gap-2.5">
-              <span className="material-icons-two-tone text-[20px] text-text-muted">campaign</span>
+              <Icon name="bot-targeted-advocacy" size={20} className="opacity-60" />
               <div>
                 <span className="text-sm font-medium text-text-primary">Mobilize</span>
                 <p className="text-[10px] text-text-muted">Coming soon</p>

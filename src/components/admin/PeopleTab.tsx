@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Icon } from "@/components/ui/icon";
 import RoleChangeModal from "./RoleChangeModal";
 import GroupReassignModal from "./GroupReassignModal";
 
@@ -219,8 +220,8 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
       <div className="flex flex-wrap items-center gap-3">
         {/* Search */}
         <div className="relative w-72">
-          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 material-icons-two-tone text-[18px] text-muted-foreground pointer-events-none">
-            search
+          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+            <Icon name="search" size={18} className="opacity-60" />
           </span>
           <Input
             type="text"
@@ -273,9 +274,7 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
       {/* Members table */}
       {filteredMembers.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-border bg-card">
-          <span className="material-icons-two-tone text-5xl text-muted-foreground">
-            group_off
-          </span>
+          <Icon name="empty-members" size={48} className="opacity-40" />
           <p className="text-sm font-medium text-foreground mt-3">No members found</p>
           <p className="text-xs text-muted-foreground mt-1">
             {search || roleFilter !== "all"
@@ -334,7 +333,7 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
                                 onClick={() => handleSaveName(member.id)}
                                 title="Save"
                               >
-                                <span className="material-icons-two-tone text-[16px] text-green-500">check</span>
+                                <Icon name="confirm" size={16} />
                               </Button>
                               <Button
                                 variant="ghost"
@@ -342,7 +341,7 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
                                 onClick={() => setEditingNameId(null)}
                                 title="Cancel"
                               >
-                                <span className="material-icons-two-tone text-[16px] text-muted-foreground">close</span>
+                                <Icon name="cancel" size={16} className="opacity-60" />
                               </Button>
                             </div>
                           ) : (
@@ -360,7 +359,7 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
                                 title="Edit name"
                                 className="opacity-0 group-hover/name:opacity-100"
                               >
-                                <span className="material-icons-two-tone text-[14px] text-muted-foreground">edit</span>
+                                <Icon name="edit" size={14} className="opacity-60" />
                               </Button>
                             </div>
                           )}
@@ -390,9 +389,7 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
                           onClick={() => setRoleChangeTarget(member)}
                           title="Change role"
                         >
-                          <span className="material-icons-two-tone text-[16px] text-muted-foreground">
-                            manage_accounts
-                          </span>
+                          <Icon name="change-role" size={16} className="opacity-60" />
                         </Button>
                         {isSuperAdmin && (
                           <>
@@ -402,9 +399,7 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
                               onClick={() => setGroupReassignTarget(member)}
                               title="Reassign group"
                             >
-                              <span className="material-icons-two-tone text-[16px] text-muted-foreground">
-                                swap_horiz
-                              </span>
+                              <Icon name="reassign-group" size={16} className="opacity-60" />
                             </Button>
                             <Button
                               variant="ghost"
@@ -413,9 +408,7 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
                               title="Remove member"
                               className="hover:bg-destructive/10"
                             >
-                              <span className="material-icons-two-tone text-[16px] text-red-400">
-                                person_remove
-                              </span>
+                              <Icon name="remove-member" size={16} />
                             </Button>
                           </>
                         )}

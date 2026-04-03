@@ -5,6 +5,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 
 interface TopBarProps {
   onToggleSidebar?: () => void;
@@ -121,9 +122,7 @@ export default function TopBar({ onToggleSidebar }: TopBarProps) {
           className="relative p-1.5 rounded-md hover:bg-black/5 transition-colors"
           title="Approval Requests"
         >
-          <span className="material-icons-two-tone text-[22px] text-text-secondary">
-            notifications
-          </span>
+          <Icon name="notifications" size={22} className="opacity-70" />
           {approvalCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center text-[9px] font-bold text-white bg-pink-500 rounded-full">
               {approvalCount}

@@ -3,6 +3,7 @@
 import type { ApprovalRequest } from "@/lib/types";
 import { getAvatarColor, getInitials } from "@/lib/avatar";
 import StatusBadge from "./StatusBadge";
+import { Icon } from "@/components/ui/icon";
 
 function Avatar({ name, url, size = 24 }: { name: string; url?: string | null; size?: number }) {
   if (url) {
@@ -76,7 +77,7 @@ export default function ApprovalCard({ request, onClick }: ApprovalCardProps) {
         <div className="flex items-center gap-2 text-text-muted">
           {attachmentCount > 0 && (
             <span className="flex items-center gap-0.5 text-[10px]">
-              <span className="material-icons-two-tone text-[14px]">attach_file</span>
+              <Icon name="attachment" size={14} />
               {attachmentCount}
             </span>
           )}

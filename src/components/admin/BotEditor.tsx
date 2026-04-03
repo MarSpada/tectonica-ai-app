@@ -7,6 +7,8 @@ import type { AdminBot } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Icon } from "@/components/ui/icon";
+import { ICON_MAP, type IconName } from "@/lib/icon-map";
 
 interface BotEditorProps {
   bot: AdminBot | null; // null = creating new
@@ -25,7 +27,7 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
   const isNew = !bot;
   const [name, setName] = useState(bot?.name || "");
   const [slug, setSlug] = useState(bot?.slug || "");
-  const [icon, setIcon] = useState(bot?.icon || "smart_toy");
+  const [icon, setIcon] = useState(bot?.icon || "bot-welcome");
   const [category, setCategory] = useState<BotCategory>(bot?.category || "advisors");
   const [description, setDescription] = useState(bot?.description || "");
   const [systemPrompt, setSystemPrompt] = useState(bot?.system_prompt || "");
@@ -44,7 +46,7 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
       ...(bot?.id ? { id: bot.id } : {}),
       slug: slug.trim(),
       name: name.trim(),
-      icon: icon.trim() || "smart_toy",
+      icon: icon.trim() || "bot-welcome",
       category,
       description: description.trim(),
       system_prompt: systemPrompt.trim() || null,
@@ -56,9 +58,7 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
     <div className="max-w-4xl space-y-5">
       <div className="flex items-center gap-3 mb-2">
         <Button variant="ghost" size="icon-sm" onClick={onCancel}>
-          <span className="material-icons-two-tone text-[20px] text-text-muted">
-            arrow_back
-          </span>
+          <Icon name="back" size={20} className="opacity-60" />
         </Button>
         <h2 className="text-lg font-semibold text-text-primary">
           {isNew ? "Create Bot" : `Edit: ${bot.name}`}
@@ -108,21 +108,27 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-text-primary mb-1">
-              Icon (Material Icons)
+              Icon
             </label>
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-full bg-accent-purple/10 flex items-center justify-center flex-shrink-0">
-                <span className="material-icons-two-tone text-accent-purple text-[20px]">
-                  {icon || "smart_toy"}
-                </span>
+                {(icon in ICON_MAP) ? (
+                  <Icon name={icon as IconName} size={20} />
+                ) : (
+                  <Icon name="info" size={20} />
+                )}
               </div>
-              <Input
-                type="text"
+              <select
                 value={icon}
                 onChange={(e) => setIcon(e.target.value)}
-                placeholder="e.g. palette"
-                className="flex-1"
-              />
+                className="flex-1 px-3 py-2 text-sm rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-accent-purple/50"
+              >
+                {Object.keys(ICON_MAP)
+                  .filter((k) => k.startsWith("bot-"))
+                  .map((k) => (
+                    <option key={k} value={k}>{k}</option>
+                  ))}
+              </select>
             </div>
           </div>
 

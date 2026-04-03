@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Icon } from "@/components/ui/icon";
 
 interface GroupReassignMember {
   id: string;
@@ -86,7 +87,7 @@ export default function GroupReassignModal({
           </div>
         ) : groups.length === 0 ? (
           <div className="py-6 text-center">
-            <span className="material-icons-two-tone text-3xl text-muted-foreground">folder_off</span>
+            <Icon name="empty-folder" size={30} className="opacity-60" />
             <p className="text-sm text-muted-foreground mt-2">No groups available.</p>
           </div>
         ) : (

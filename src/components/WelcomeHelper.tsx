@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useUserProfile } from "@/lib/UserProfileContext";
 import { type Message } from "@/lib/types";
+import { Icon } from "@/components/ui/icon";
 
 interface WelcomeHelperProps {
   userName: string;
@@ -266,9 +267,7 @@ export default function WelcomeHelper({
       {/* Compact header */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-black/5 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <span className="material-icons-two-tone text-accent-purple text-[20px]">
-            waving_hand
-          </span>
+          <Icon name="bot-welcome" size={20} />
           <span className="text-sm font-semibold text-text-primary">
             Welcome Helper
           </span>
@@ -283,9 +282,7 @@ export default function WelcomeHelper({
           className="p-1.5 rounded-lg hover:bg-black/5 transition-colors"
           title="Minimize"
         >
-          <span className="material-icons-two-tone text-[18px] text-text-muted">
-            minimize
-          </span>
+          <Icon name="minimize" size={18} className="opacity-60" />
         </button>
       </div>
 
@@ -356,7 +353,7 @@ export default function WelcomeHelper({
           disabled={!input.trim() || isStreaming}
           className="px-4 py-2.5 rounded-xl bg-accent-purple text-white text-sm font-medium hover:bg-accent-purple/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <span className="material-icons-two-tone text-[18px]">send</span>
+          <Icon name="send" size={18} className="invert" />
         </button>
       </div>
     </div>

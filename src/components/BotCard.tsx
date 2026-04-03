@@ -2,6 +2,8 @@
 
 import { Bot, categoryMeta } from "@/lib/bots";
 import { Badge } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icon";
+import type { IconName } from "@/lib/icon-map";
 
 interface BotCardProps {
   bot: Bot;
@@ -65,9 +67,7 @@ export default function BotCard({
         className="w-[55%] aspect-square rounded-full flex items-center justify-center mb-2"
         style={{ backgroundColor: meta.accent }}
       >
-        <span className="material-icons-two-tone text-secondary-foreground text-[28px]">
-          {bot.icon}
-        </span>
+        <Icon name={bot.icon as IconName} size={28} />
       </div>
 
       {/* Bot name */}

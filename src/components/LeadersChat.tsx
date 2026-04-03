@@ -7,6 +7,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Icon } from "@/components/ui/icon";
 
 interface Contact {
   name: string;
@@ -93,7 +94,7 @@ export default function LeadersChat({ open, onClose, userName = "" }: LeadersCha
             onClick={onClose}
             className="w-7 h-7 rounded-full hover:bg-black/5 flex items-center justify-center transition-colors"
           >
-            <span className="material-icons-two-tone text-[18px] text-text-muted">close</span>
+            <Icon name="close" size={18} className="opacity-60" />
           </button>
         </SheetHeader>
 

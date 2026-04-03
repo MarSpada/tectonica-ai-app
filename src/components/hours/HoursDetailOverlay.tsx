@@ -2,6 +2,7 @@
 
 import { getAvatarColor, getInitials } from "@/lib/avatar";
 import type { HourEntry } from "@/lib/types";
+import { Icon } from "@/components/ui/icon";
 import {
   Dialog,
   DialogContent,
@@ -46,7 +47,7 @@ export default function HoursDetailOverlay({
             </p>
           </div>
           <Button variant="ghost" size="icon-sm" onClick={onClose}>
-            <span className="material-icons-two-tone text-[20px] text-text-muted">close</span>
+            <Icon name="close" size={20} className="opacity-60" />
           </Button>
         </DialogHeader>
 
@@ -54,9 +55,7 @@ export default function HoursDetailOverlay({
         <div className="flex-1 overflow-y-auto -mx-4 px-4">
           {entries.length === 0 ? (
             <div className="text-center py-8">
-              <span className="material-icons-two-tone text-[40px] text-text-muted">
-                schedule
-              </span>
+              <Icon name="history" size={40} className="opacity-60" />
               <p className="text-sm text-text-muted mt-2">No hours logged yet</p>
               <p className="text-xs text-text-muted mt-1">Be the first to track your volunteer time!</p>
             </div>

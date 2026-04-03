@@ -3,6 +3,7 @@
 import type { UserRole } from "@/lib/types";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Icon } from "@/components/ui/icon";
 import OrgTab from "./OrgTab";
 import PeopleTab from "./PeopleTab";
 import BotsTab from "./BotsTab";
@@ -27,9 +28,7 @@ export default function AdminView({ role, orgId, groupId }: AdminViewProps) {
         {/* Header */}
         <div className="px-6 pt-5 pb-0">
           <div className="flex items-center gap-3 mb-4">
-            <span className="material-icons-two-tone text-accent-purple text-[28px]">
-              admin_panel_settings
-            </span>
+            <Icon name="admin" size={28} />
             <h1 className="text-2xl font-bold text-foreground">Admin Panel</h1>
             {!isSuperAdmin && (
               <Badge variant="secondary" className="bg-purple-100 text-purple-700">

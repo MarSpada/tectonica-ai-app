@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Icon } from "@/components/ui/icon";
 
 interface ReimbursementModalProps {
   onClose: () => void;
@@ -210,9 +211,7 @@ export default function ReimbursementModal({ onClose, onCreated }: Reimbursement
               onClick={() => fileInputRef.current?.click()}
               className="w-full px-3 py-2 rounded-lg border border-dashed border-black/20 text-xs text-text-muted hover:border-accent-purple hover:text-accent-purple transition-colors text-center"
             >
-              <span className="material-icons-two-tone text-[16px] align-middle mr-1">
-                upload_file
-              </span>
+              <Icon name="upload" size={16} className="inline-block align-middle mr-1" />
               Attach JPG, PNG, or PDF (max 5MB)
             </button>
 
@@ -228,7 +227,7 @@ export default function ReimbursementModal({ onClose, onCreated }: Reimbursement
                       onClick={() => removeFile(i)}
                       className="text-red-400 hover:text-red-600 ml-2 shrink-0"
                     >
-                      <span className="material-icons-two-tone text-[14px]">close</span>
+                      <Icon name="close" size={14} />
                     </button>
                   </div>
                 ))}
