@@ -291,8 +291,8 @@ export default function RightSidebar({ groupMessages = [], onOpenConversation }:
 
         {/* ═══ Recruit More People ═══ */}
         <div
-          className="rounded-lg border border-gray-200 shadow-xs p-6 flex flex-col items-center justify-center text-center text-white"
-          style={{ gridColumn: "10 / 13", gridRow: "1 / 3", backgroundColor: "var(--accent-purple)" }}
+          className="rounded-lg border border-gray-200 shadow-xs p-6 flex flex-col items-center justify-center text-center text-text-primary"
+          style={{ gridColumn: "10 / 13", gridRow: "1 / 3", backgroundColor: "var(--widget-bg-recruit)" }}
         >
           <span className="material-icons-two-tone text-[40px] mb-2">
             person_add

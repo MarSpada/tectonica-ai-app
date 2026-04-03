@@ -67,6 +67,7 @@
   --widget-bg-conversations: #ffffff;
   --widget-bg-actions: #ffffff;
   --widget-bg-fundraising: #ffffff;
+  --widget-bg-recruit: #ffffff;
   --widget-bg-fundraising-accent: var(--accent-purple);
   --widget-bg-recruitment-goal: #ffffff;
   --widget-bg-request-approval: #ffffff;
@@ -145,6 +146,7 @@
   --color-widget-bg-conversations: var(--widget-bg-conversations);
   --color-widget-bg-actions: var(--widget-bg-actions);
   --color-widget-bg-fundraising: var(--widget-bg-fundraising);
+  --color-widget-bg-recruit: var(--widget-bg-recruit);
   --color-widget-bg-recruitment-goal: var(--widget-bg-recruitment-goal);
   --color-widget-bg-request-approval: var(--widget-bg-request-approval);
   --color-widget-bg-connected-systems: var(--widget-bg-connected-systems);

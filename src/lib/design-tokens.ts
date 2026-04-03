@@ -45,6 +45,7 @@ export const RADIUS_LG = "4px" as const;
 // ─── Widget Background Colors (Right Sidebar) ───────────────────
 // Neutral defaults — Session G applies brand colors via CSS var overrides.
 // Note: "Recruit More People" uses ACCENT_PURPLE — no separate token.
+export const WIDGET_BG_RECRUIT = "#ffffff" as const;
 export const WIDGET_BG_SIGNUPS = "#ffffff" as const;
 export const WIDGET_BG_CONVERSATIONS = "#ffffff" as const;
 export const WIDGET_BG_ACTIONS = "#ffffff" as const;
