@@ -278,6 +278,12 @@ export default function RightSidebar({
     saveLayout(mapped);
   }
 
+  // Force recompaction after resize — RGL sometimes doesn't
+  // recompact other widgets after a resize event
+  function handleResizeStop() {
+    setLayout((prev) => [...prev]);
+  }
+
   // Reset to default
   async function handleReset() {
     setShowResetDialog(false);
@@ -490,6 +496,7 @@ export default function RightSidebar({
             isDraggable={true}
             onDragStart={() => { hasUserInteracted.current = true; }}
             onResizeStart={() => { hasUserInteracted.current = true; }}
+            onResizeStop={handleResizeStop}
             onLayoutChange={handleLayoutChange}
             useCSSTransforms={true}
           >
