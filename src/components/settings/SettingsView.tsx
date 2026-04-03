@@ -50,7 +50,7 @@ export default function SettingsView({
   });
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden bg-content-bg">
       {/* Header */}
       <div className="px-6 pt-5 pb-0">
         <h1 className="text-2xl font-bold text-text-primary mb-4">

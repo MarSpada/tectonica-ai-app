@@ -52,23 +52,27 @@
 
   /* Layout */
   --sidebar-width: 180px;
-  --right-sidebar: clamp(340px, 42vw, 780px);
+  --right-sidebar: clamp(440px, 54vw, 1020px);
 
   /* Radii */
   --radius: 4px;
   --radius-sm: 2px;
   --radius-lg: 4px;
 
-  /* Widget backgrounds */
-  --widget-bg-signups: #fef3c7;
-  --widget-bg-conversations: #f5f3ff;
-  --widget-bg-actions: #f0e6ff;
-  --widget-bg-fundraising: #fff3e0;
-  --widget-bg-recruitment-goal: #e0f2fe;
-  --widget-bg-request-approval: #fdf2f8;
-  --widget-bg-connected-systems: #f8fafc;
-  --widget-bg-hours: #ecfdf5;
-  --widget-bg-events: #ede9fe;
+  /* Content surface (distinct from page chrome) */
+  --content-bg: var(--card-bg);
+
+  /* Widget backgrounds — neutral defaults (Session G applies brand colors) */
+  --widget-bg-signups: #ffffff;
+  --widget-bg-conversations: #ffffff;
+  --widget-bg-actions: #ffffff;
+  --widget-bg-fundraising: #ffffff;
+  --widget-bg-fundraising-accent: var(--accent-purple);
+  --widget-bg-recruitment-goal: #ffffff;
+  --widget-bg-request-approval: #ffffff;
+  --widget-bg-connected-systems: #ffffff;
+  --widget-bg-hours: #ffffff;
+  --widget-bg-events: #ffffff;
 
   /* Status colors */
   --status-online: #22C55E;
@@ -136,6 +140,7 @@
   --color-cat-tools-accent: var(--cat-tools-accent);
   --color-cat-analyze: var(--cat-analyze);
   --color-cat-analyze-accent: var(--cat-analyze-accent);
+  --color-content-bg: var(--content-bg);
   --color-widget-bg-signups: var(--widget-bg-signups);
   --color-widget-bg-conversations: var(--widget-bg-conversations);
   --color-widget-bg-actions: var(--widget-bg-actions);
@@ -148,6 +153,15 @@
   --color-status-online: var(--status-online);
   --color-status-away: var(--status-away);
   --color-status-offline: var(--status-offline);
+  /* Tremor typography scale */
+  --font-size-tremor-label: 0.75rem;
+  --line-height-tremor-label: 1rem;
+  --font-size-tremor-default: 0.875rem;
+  --line-height-tremor-default: 1.25rem;
+  --font-size-tremor-title: 1.125rem;
+  --line-height-tremor-title: 1.75rem;
+  --font-size-tremor-metric: 1.875rem;
+  --line-height-tremor-metric: 2.25rem;
   --font-heading: "Google Sans", "Inter", system-ui, sans-serif;
   --font-sans: "Google Sans", "Inter", system-ui, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);

@@ -16,7 +16,7 @@ export default function GroupProfile({
   orgName,
 }: GroupProfileProps) {
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto bg-content-bg">
       <div className="max-w-2xl mx-auto px-6 py-8">
         {/* Back link */}
         <Link

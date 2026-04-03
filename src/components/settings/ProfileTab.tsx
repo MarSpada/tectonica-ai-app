@@ -7,6 +7,7 @@ import { getAvatarColor, getInitials, getRoleLabel } from "@/lib/avatar";
 import { useUserProfile } from "@/lib/UserProfileContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 
 interface ProfileTabProps {
   userId: string;
@@ -160,29 +161,40 @@ export default function ProfileTab({ userId, profile }: ProfileTabProps) {
   }
 
   return (
-    <div className="bg-card-bg rounded-2xl border border-card-stroke p-6 space-y-6">
-      {/* Avatar */}
-      <div className="flex items-center gap-5">
+    <div className="bg-card-bg rounded-2xl border border-card-stroke p-8 space-y-0">
+      {/* ── Avatar Section ── */}
+      <div className="flex items-center gap-6">
         {avatarUrl ? (
           <img
             src={avatarUrl}
             alt={fullName || "Avatar"}
-            className="w-24 h-24 rounded-full object-cover flex-shrink-0"
+            className="w-28 h-28 rounded-full object-cover flex-shrink-0"
           />
         ) : (
           <div
-            className={`w-24 h-24 rounded-full ${getAvatarColor(userId)} flex items-center justify-center text-2xl font-bold text-white flex-shrink-0`}
+            className={`w-28 h-28 rounded-full ${getAvatarColor(userId)} flex items-center justify-center text-3xl font-bold text-white flex-shrink-0`}
           >
             {getInitials(fullName)}
           </div>
         )}
         <div className="space-y-2">
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-          >
-            {uploading ? "Uploading..." : "Upload Photo"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? "Uploading..." : "Upload Photo"}
+            </Button>
+            {avatarUrl && (
+              <Button
+                variant="outline"
+                onClick={handleAvatarRemove}
+                disabled={uploading}
+              >
+                Remove
+              </Button>
+            )}
+          </div>
           <input
             ref={fileInputRef}
             type="file"
@@ -190,25 +202,16 @@ export default function ProfileTab({ userId, profile }: ProfileTabProps) {
             onChange={handleAvatarUpload}
             className="hidden"
           />
-          {avatarUrl && (
-            <Button
-              variant="link"
-              onClick={handleAvatarRemove}
-              disabled={uploading}
-              className="text-xs text-red-500 p-0 h-auto"
-            >
-              Remove Photo
-            </Button>
-          )}
           <p className="text-[11px] text-text-muted">
             JPG, PNG or WebP. Max 2MB.
           </p>
         </div>
       </div>
 
-      {/* Form */}
+      <Separator className="my-6" />
+
+      {/* ── Editable Fields ── */}
       <div className="space-y-4">
-        {/* Display Name */}
         <div>
           <label className="block text-sm font-medium text-text-primary mb-1">
             Display Name
@@ -222,47 +225,15 @@ export default function ProfileTab({ userId, profile }: ProfileTabProps) {
           />
         </div>
 
-        {/* Role (read-only) */}
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">
-            Role
-          </label>
-          <Input
-            type="text"
-            value={getRoleLabel(profile.role)}
-            disabled
-          />
-        </div>
-
-        {/* Organization (read-only) */}
-        <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">
-            Organization
-          </label>
-          <Input
-            type="text"
-            value={profile.orgName}
-            disabled
-          />
-        </div>
-
-        {/* Group (read-only) */}
-        <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">
-            Group
-          </label>
-          <Input
-            type="text"
-            value={profile.groupName}
-            disabled
-          />
-        </div>
-
-        {/* Bio */}
-        <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">
-            Bio
-          </label>
+          <div className="flex items-baseline justify-between mb-1">
+            <label className="text-sm font-medium text-text-primary">
+              Bio
+            </label>
+            <span className="text-[11px] text-text-muted">
+              {bio.length} / 200
+            </span>
+          </div>
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
@@ -271,14 +242,42 @@ export default function ProfileTab({ userId, profile }: ProfileTabProps) {
             placeholder="Tell your group a bit about yourself"
             className="w-full px-3.5 py-2.5 rounded-lg border border-black/10 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-accent-purple/50 focus:border-accent-purple/50"
           />
-          <p className="text-[11px] text-text-muted text-right mt-0.5">
-            {bio.length} / 200
-          </p>
         </div>
       </div>
 
-      {/* Save */}
-      <div className="flex items-center gap-3">
+      <Separator className="my-6" />
+
+      {/* ── Read-Only Fields ── */}
+      <div className="space-y-3">
+        <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+          Account Info
+        </p>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs text-text-muted mb-1">Role</label>
+            <p className="text-sm font-medium text-text-primary bg-muted rounded-lg px-3 py-2">
+              {getRoleLabel(profile.role)}
+            </p>
+          </div>
+          <div>
+            <label className="block text-xs text-text-muted mb-1">Organization</label>
+            <p className="text-sm font-medium text-text-primary bg-muted rounded-lg px-3 py-2 truncate">
+              {profile.orgName}
+            </p>
+          </div>
+          <div>
+            <label className="block text-xs text-text-muted mb-1">Group</label>
+            <p className="text-sm font-medium text-text-primary bg-muted rounded-lg px-3 py-2 truncate">
+              {profile.groupName}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <Separator className="my-6" />
+
+      {/* ── Save + Toast ── */}
+      <div className="flex items-center gap-3 pt-2">
         <Button
           onClick={handleSave}
           disabled={!isDirty || saving}
@@ -286,7 +285,6 @@ export default function ProfileTab({ userId, profile }: ProfileTabProps) {
           {saving ? "Saving..." : "Save Changes"}
         </Button>
 
-        {/* Toast */}
         {toast && (
           <span
             className={`text-sm font-medium ${
@@ -298,8 +296,10 @@ export default function ProfileTab({ userId, profile }: ProfileTabProps) {
         )}
       </div>
 
-      {/* Sign Out */}
-      <div className="pt-4 border-t border-black/5">
+      <Separator className="my-6" />
+
+      {/* ── Sign Out ── */}
+      <div>
         <Button
           variant="destructive"
           onClick={async () => {

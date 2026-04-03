@@ -22,7 +22,7 @@ export default function AdminView({ role, orgId, groupId }: AdminViewProps) {
     : (["People"] as const);
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden bg-content-bg">
       <Tabs defaultValue={tabs[0]} className="flex-1 flex flex-col gap-0 overflow-hidden">
         {/* Header */}
         <div className="px-6 pt-5 pb-0">

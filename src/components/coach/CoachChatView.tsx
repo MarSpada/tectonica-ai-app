@@ -109,7 +109,7 @@ export default function CoachChatView({ bot, userName }: CoachChatViewProps) {
   }, [input, isStreaming, messages, bot.id]);
 
   return (
-    <div className="flex-1 flex overflow-hidden">
+    <div className="flex-1 flex overflow-hidden bg-content-bg">
       {/* Chat area */}
       <div className="flex-1 flex flex-col bg-bg">
         <ChatHeader bot={bot} />

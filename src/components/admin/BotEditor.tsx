@@ -6,6 +6,7 @@ import { categoryMeta } from "@/lib/bots";
 import type { AdminBot } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 
 interface BotEditorProps {
   bot: AdminBot | null; // null = creating new
@@ -52,7 +53,7 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
   }
 
   return (
-    <div className="max-w-2xl space-y-5">
+    <div className="max-w-4xl space-y-5">
       <div className="flex items-center gap-3 mb-2">
         <Button variant="ghost" size="icon-sm" onClick={onCancel}>
           <span className="material-icons-two-tone text-[20px] text-text-muted">
@@ -64,43 +65,46 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
         </h2>
       </div>
 
-      <div className="bg-card-bg rounded-xl border border-card-stroke p-5 space-y-4">
-        {/* Name */}
-        <div>
-          <label className="block text-xs font-semibold text-text-primary mb-1">
-            Name
-          </label>
-          <Input
-            type="text"
-            value={name}
-            onChange={(e) => handleNameChange(e.target.value)}
-            placeholder="e.g. Canvassing Planner"
-          />
+      <div className="bg-card-bg rounded-xl border border-card-stroke p-8 space-y-6">
+        {/* Identity */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-text-primary mb-1">
+              Name
+            </label>
+            <Input
+              type="text"
+              value={name}
+              onChange={(e) => handleNameChange(e.target.value)}
+              placeholder="e.g. Canvassing Planner"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-text-primary mb-1">
+              Slug
+            </label>
+            <Input
+              type="text"
+              value={slug}
+              onChange={(e) => {
+                setSlug(e.target.value);
+                setAutoSlug(false);
+              }}
+              placeholder="e.g. canvassing-planner"
+              disabled={!isNew}
+            />
+            {!isNew && (
+              <p className="text-[10px] text-text-muted mt-0.5">
+                Slug cannot be changed after creation.
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Slug */}
-        <div>
-          <label className="block text-xs font-semibold text-text-primary mb-1">
-            Slug
-          </label>
-          <Input
-            type="text"
-            value={slug}
-            onChange={(e) => {
-              setSlug(e.target.value);
-              setAutoSlug(false);
-            }}
-            placeholder="e.g. canvassing-planner"
-            disabled={!isNew}
-          />
-          {!isNew && (
-            <p className="text-[10px] text-text-muted mt-0.5">
-              Slug cannot be changed after creation.
-            </p>
-          )}
-        </div>
+        <Separator />
 
-        {/* Icon + Category row */}
+        {/* Appearance */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-text-primary mb-1">
@@ -140,19 +144,26 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
           </div>
         </div>
 
+        <Separator />
+
         {/* Description */}
         <div>
           <label className="block text-xs font-semibold text-text-primary mb-1">
             Description
           </label>
+          <p className="text-[10px] text-text-muted mb-1.5">
+            Brief text shown when hovering over the bot card.
+          </p>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Brief description shown on bot card hover..."
-            rows={2}
+            rows={3}
             className="w-full px-3 py-2 text-sm rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-accent-purple/50 resize-none"
           />
         </div>
+
+        <Separator />
 
         {/* System Prompt */}
         <div>
@@ -167,14 +178,14 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
             value={systemPrompt}
             onChange={(e) => setSystemPrompt(e.target.value)}
             placeholder="You are an AI assistant..."
-            rows={12}
+            rows={16}
             className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-accent-purple/50 resize-y"
           />
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-end gap-3 pt-2">
         <Button variant="ghost" onClick={onCancel}>
           Cancel
         </Button>

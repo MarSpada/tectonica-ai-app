@@ -35,7 +35,7 @@ export const CAT_ANALYZE_ACCENT = "#F0B88A" as const;
 
 // ─── Layout Dimensions ──────────────────────────────────────────
 export const SIDEBAR_WIDTH = "180px" as const;
-export const RIGHT_SIDEBAR = "clamp(340px, 42vw, 780px)" as const;
+export const RIGHT_SIDEBAR = "clamp(440px, 54vw, 1020px)" as const;
 
 // ─── Border Radii ───────────────────────────────────────────────
 export const RADIUS = "4px" as const;
@@ -43,16 +43,17 @@ export const RADIUS_SM = "2px" as const;
 export const RADIUS_LG = "4px" as const;
 
 // ─── Widget Background Colors (Right Sidebar) ───────────────────
+// Neutral defaults — Session G applies brand colors via CSS var overrides.
 // Note: "Recruit More People" uses ACCENT_PURPLE — no separate token.
-export const WIDGET_BG_SIGNUPS = "#fef3c7" as const;
-export const WIDGET_BG_CONVERSATIONS = "#f5f3ff" as const;
-export const WIDGET_BG_ACTIONS = "#f0e6ff" as const;
-export const WIDGET_BG_FUNDRAISING = "#fff3e0" as const;
-export const WIDGET_BG_RECRUITMENT_GOAL = "#e0f2fe" as const;
-export const WIDGET_BG_REQUEST_APPROVAL = "#fdf2f8" as const;
-export const WIDGET_BG_CONNECTED_SYSTEMS = "#f8fafc" as const;
-export const WIDGET_BG_HOURS = "#ecfdf5" as const;
-export const WIDGET_BG_EVENTS = "#ede9fe" as const;
+export const WIDGET_BG_SIGNUPS = "#ffffff" as const;
+export const WIDGET_BG_CONVERSATIONS = "#ffffff" as const;
+export const WIDGET_BG_ACTIONS = "#ffffff" as const;
+export const WIDGET_BG_FUNDRAISING = "#ffffff" as const;
+export const WIDGET_BG_RECRUITMENT_GOAL = "#ffffff" as const;
+export const WIDGET_BG_REQUEST_APPROVAL = "#ffffff" as const;
+export const WIDGET_BG_CONNECTED_SYSTEMS = "#ffffff" as const;
+export const WIDGET_BG_HOURS = "#ffffff" as const;
+export const WIDGET_BG_EVENTS = "#ffffff" as const;
 export const WIDGET_BG_DIRECTORY = "#ffffff" as const;
 
 // ─── Common Semantic Colors ─────────────────────────────────────

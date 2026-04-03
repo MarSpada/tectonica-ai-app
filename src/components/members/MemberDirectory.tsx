@@ -63,7 +63,7 @@ export default function MemberDirectory({ members }: MemberDirectoryProps) {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden bg-content-bg">
       {/* Header */}
       <div className="px-6 py-5">
         <div className="flex items-baseline justify-between mb-4">
