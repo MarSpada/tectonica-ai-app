@@ -20,18 +20,18 @@ export const TEXT_SECONDARY = "#4a4a6a" as const;
 export const TEXT_MUTED = "#8a8aaa" as const;
 
 // ─── Accents ─────────────────────────────────────────────────────
-export const ACCENT_PURPLE = "#7C3AED" as const;
-export const ACCENT_PURPLE_LIGHT = "#9B5CF6" as const;
+export const ACCENT_PURPLE = "#18181B" as const;
+export const ACCENT_PURPLE_LIGHT = "#3F3F46" as const;
 
-// ─── Category Pastel Colors (bot cards) ──────────────────────────
-export const CAT_ADVISORS = "#FFB5A7" as const;
-export const CAT_ADVISORS_ACCENT = "#E89485" as const;
-export const CAT_CREATE = "#A8D8EA" as const;
-export const CAT_CREATE_ACCENT = "#7FC4DB" as const;
-export const CAT_TOOLS = "#B5EAD7" as const;
-export const CAT_TOOLS_ACCENT = "#8DD4BC" as const;
-export const CAT_ANALYZE = "#FFDAC1" as const;
-export const CAT_ANALYZE_ACCENT = "#F0B88A" as const;
+// ─── Category Colors — Tremor neutral defaults (Session G applies brand colors) ──
+export const CAT_ADVISORS = "#F4F4F5" as const;
+export const CAT_ADVISORS_ACCENT = "#E4E4E7" as const;
+export const CAT_CREATE = "#F4F4F5" as const;
+export const CAT_CREATE_ACCENT = "#E4E4E7" as const;
+export const CAT_TOOLS = "#F4F4F5" as const;
+export const CAT_TOOLS_ACCENT = "#E4E4E7" as const;
+export const CAT_ANALYZE = "#F4F4F5" as const;
+export const CAT_ANALYZE_ACCENT = "#E4E4E7" as const;
 
 // ─── Layout Dimensions ──────────────────────────────────────────
 export const SIDEBAR_WIDTH = "180px" as const;
@@ -63,12 +63,12 @@ export const STATUS_AWAY = "#F59E0B" as const;
 export const STATUS_OFFLINE = "#9CA3AF" as const;
 
 // ─── Gradient ───────────────────────────────────────────────────
-export const GRADIENT_PURPLE = "linear-gradient(135deg, #7C3AED, #9B5CF6)" as const;
+export const GRADIENT_PURPLE = "linear-gradient(135deg, #18181B, #3F3F46)" as const;
 
 // ─── Chat Surfaces ──────────────────────────────────────────────
 export const CHAT_INPUT_BG = "rgba(244, 244, 245, .85)" as const;
 export const MSG_BOT_BG = "rgba(255, 255, 255, .7)" as const;
-export const MSG_USER_BG = "rgba(124, 58, 237, .1)" as const;
+export const MSG_USER_BG = "rgba(24, 24, 27, .1)" as const;
 
 // ─── Calendar Color Picker Options ──────────────────────────────
 export const CALENDAR_COLORS = [

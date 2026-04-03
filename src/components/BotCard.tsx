@@ -53,9 +53,9 @@ export default function BotCard({
           title={isFavorite ? "Remove from Your Helpers" : "Add to Your Helpers"}
         >
           {isFavorite ? (
-            <span className="text-amber-400">★</span>
+            <span className="text-foreground">★</span>
           ) : (
-            <span className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">☆</span>
+            <span className="text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity">☆</span>
           )}
         </button>
       )}
@@ -65,7 +65,7 @@ export default function BotCard({
         className="w-[55%] aspect-square rounded-full flex items-center justify-center mb-2"
         style={{ backgroundColor: meta.accent }}
       >
-        <span className="material-icons-two-tone text-white text-[28px]">
+        <span className="material-icons-two-tone text-secondary-foreground text-[28px]">
           {bot.icon}
         </span>
       </div>

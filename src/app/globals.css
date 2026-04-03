@@ -36,19 +36,19 @@
   --text-secondary: #4a4a6a;
   --text-muted: #8a8aaa;
 
-  /* Accents */
-  --accent-purple: #7C3AED;
-  --accent-purple-light: #9B5CF6;
+  /* Accents — Tremor neutral defaults (Session G applies brand colors) */
+  --accent-purple: #18181B;
+  --accent-purple-light: #3F3F46;
 
-  /* Category pastel colors */
-  --cat-advisors: #FFB5A7;
-  --cat-advisors-accent: #E89485;
-  --cat-create: #A8D8EA;
-  --cat-create-accent: #7FC4DB;
-  --cat-tools: #B5EAD7;
-  --cat-tools-accent: #8DD4BC;
-  --cat-analyze: #FFDAC1;
-  --cat-analyze-accent: #F0B88A;
+  /* Category colors — Tremor neutral defaults (Session G applies brand colors) */
+  --cat-advisors: #F4F4F5;
+  --cat-advisors-accent: #E4E4E7;
+  --cat-create: #F4F4F5;
+  --cat-create-accent: #E4E4E7;
+  --cat-tools: #F4F4F5;
+  --cat-tools-accent: #E4E4E7;
+  --cat-analyze: #F4F4F5;
+  --cat-analyze-accent: #E4E4E7;
 
   /* Layout */
   --sidebar-width: 180px;
@@ -81,12 +81,12 @@
   --status-offline: #9CA3AF;
 
   /* Gradient */
-  --gradient-purple: linear-gradient(135deg, #7C3AED, #9B5CF6);
+  --gradient-purple: linear-gradient(135deg, #18181B, #3F3F46);
 
   /* Chat surfaces */
   --chat-input-bg: rgba(244, 244, 245, .85);
   --msg-bot-bg: rgba(255, 255, 255, .7);
-  --msg-user-bg: rgba(124, 58, 237, .1);
+  --msg-user-bg: rgba(24, 24, 27, .1);
   /* ─── Shadcn/ui → Tectonica Design Token Mapping ─── */
   --background: var(--bg);
   --foreground: var(--text-primary);

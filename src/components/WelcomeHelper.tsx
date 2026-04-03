@@ -240,9 +240,12 @@ export default function WelcomeHelper({
           <button
             onClick={handleSend}
             disabled={!input.trim() || isStreaming}
-            className="px-4 py-2.5 rounded-xl bg-accent-purple text-white text-sm font-medium hover:bg-accent-purple/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ background: "var(--gradient-purple)" }}
           >
-            <span className="material-icons-two-tone text-[18px]">send</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+            </svg>
           </button>
         </div>
 
