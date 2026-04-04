@@ -12,9 +12,9 @@ export default function DirectoryWidget({ members }: DirectoryWidgetProps) {
   const directoryMembers = members.slice(0, 6);
 
   return (
-    <div className="h-full overflow-auto p-6">
+    <div className="h-full overflow-auto p-5">
       <Link href="/members">
-        <h3 className="text-sm font-semibold text-text-primary mb-4 hover:underline cursor-pointer">
+        <h3 className="font-bold mb-4 hover:underline cursor-pointer" style={{ fontSize: "var(--widget-title-size)", color: "var(--widget-text-color)" }}>
           Group Directory
         </h3>
       </Link>

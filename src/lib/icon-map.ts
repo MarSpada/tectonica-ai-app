@@ -48,7 +48,8 @@ export const ICON_MAP = {
   // ── UI Actions ──
   'search': `${ICON_BASE}/interface-essential/search-circle-alternate.svg`,
   'settings': `${ICON_BASE}/interface-essential/cog.svg`,
-  'notifications': `${ICON_BASE}/interface-essential/alarm-bell-ring.svg`,
+  'notifications': `${ICON_BASE}/interface-essential/alert-bell-notification-2.svg`,
+  'menu': `${ICON_BASE}/interface-essential/navigation-menu.svg`,
   'favorite': `${ICON_BASE}/interface-essential/tags-favorite.svg`,
   'send': `${ICON_BASE}/arrows-diagrams/arrow-button-right-1.svg`,
   'filter': `${ICON_BASE}/interface-essential/filter-1.svg`,

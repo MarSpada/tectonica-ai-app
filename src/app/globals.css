@@ -24,10 +24,10 @@
 
 :root {
   /* Page & layout — Tremor neutral defaults (Session G applies brand colors) */
-  --bg: #F4F4F5;
+  --bg: #F6F4FF;
   --card-bg: #ffffff;
   --card-stroke: rgba(0, 0, 0, 0.08);
-  --sidebar-bg: #FAFAFA;
+  --sidebar-bg: #F2F0FC;
   --sidebar-active: #18181B;
   --topbar-bg: #FFFFFF;
 
@@ -62,18 +62,56 @@
   /* Content surface (distinct from page chrome) */
   --content-bg: var(--card-bg);
 
-  /* Widget backgrounds — neutral defaults (Session G applies brand colors) */
-  --widget-bg-signups: #ffffff;
-  --widget-bg-conversations: #ffffff;
-  --widget-bg-actions: #ffffff;
-  --widget-bg-fundraising: #ffffff;
-  --widget-bg-recruit: #ffffff;
+  /* Widget backgrounds — Figma-defined pastel colors (Session G) */
+  --widget-bg-signups: #FFFFFF;
+  --widget-bg-conversations: #FFFFFF;
+  --widget-bg-actions: #FFFFFF;
+  --widget-bg-fundraising: #FFDADD;
+  --widget-bg-recruit: #FFFFFF;
   --widget-bg-fundraising-accent: var(--accent-purple);
-  --widget-bg-recruitment-goal: #ffffff;
-  --widget-bg-request-approval: #ffffff;
-  --widget-bg-connected-systems: #ffffff;
-  --widget-bg-hours: #ffffff;
-  --widget-bg-events: #ffffff;
+  --widget-bg-recruitment-goal: #E0DBF8;
+  --widget-bg-request-approval: #D7F5E6;
+  --widget-bg-connected-systems: #FFFFFF;
+  --widget-bg-hours: #D7F5E6;
+  --widget-bg-events: #FBE9D8;
+  --widget-bg-directory: #FFFFFF;
+
+  /* Widget typography — Figma specs (Session G) */
+  --widget-text-color: #333333;
+  --widget-text-muted: rgba(51, 51, 51, 0.5);
+  --widget-title-size: 18px;
+  --widget-title-weight: 700;
+  --widget-metric-lg: 31px;
+  --widget-metric-md: 24px;
+  --widget-metric-sm: 15px;
+  --widget-metric-weight: 600;
+  --widget-label-size: 15px;
+  --widget-list-primary-size: 15px;
+  --widget-list-primary-weight: 700;
+  --widget-list-secondary-size: 13px;
+  --widget-list-secondary-weight: 500;
+  --widget-btn-label-size: 15px;
+  --widget-btn-label-weight: 600;
+
+  /* Widget button accents — Figma (Session G) */
+  --widget-btn-fundraising: #FE6778;
+  --widget-btn-hours: #308C4F;
+  --widget-btn-approval: #308C4F;
+  --widget-btn-conversations: #422D8F;
+  --widget-list-item-bg: #F8F7FF;
+  --widget-btn-max-width: none;
+  --widget-btn-signups: #422D8F;
+
+  /* Widget chart/progress accents — Figma (Session G) */
+  --widget-chart-fundraising: #FE6778;
+  --widget-chart-fundraising-track: rgba(254, 103, 120, 0.2);
+  --widget-chart-members: #422D8F;
+  --widget-chart-members-track: rgba(66, 45, 143, 0.2);
+  --widget-chart-supporters: #159EC1;
+  --widget-chart-supporters-track: rgba(21, 158, 193, 0.2);
+  --widget-chart-hours: #308C4F;
+  --widget-events-accent: #C66A0C;
+  --widget-actions-accent: #422D8F;
 
   /* Status colors */
   --status-online: #22C55E;
@@ -142,6 +180,18 @@
   --color-cat-analyze: var(--cat-analyze);
   --color-cat-analyze-accent: var(--cat-analyze-accent);
   --color-content-bg: var(--content-bg);
+  --color-widget-text: var(--widget-text-color);
+  --color-widget-text-muted: var(--widget-text-muted);
+  --color-widget-btn-fundraising: var(--widget-btn-fundraising);
+  --color-widget-btn-hours: var(--widget-btn-hours);
+  --color-widget-btn-approval: var(--widget-btn-approval);
+  --color-widget-chart-fundraising: var(--widget-chart-fundraising);
+  --color-widget-chart-fundraising-track: var(--widget-chart-fundraising-track);
+  --color-widget-chart-members: var(--widget-chart-members);
+  --color-widget-chart-members-track: var(--widget-chart-members-track);
+  --color-widget-chart-supporters: var(--widget-chart-supporters);
+  --color-widget-chart-supporters-track: var(--widget-chart-supporters-track);
+  --color-widget-chart-hours: var(--widget-chart-hours);
   --color-widget-bg-signups: var(--widget-bg-signups);
   --color-widget-bg-conversations: var(--widget-bg-conversations);
   --color-widget-bg-actions: var(--widget-bg-actions);
@@ -152,6 +202,7 @@
   --color-widget-bg-connected-systems: var(--widget-bg-connected-systems);
   --color-widget-bg-hours: var(--widget-bg-hours);
   --color-widget-bg-events: var(--widget-bg-events);
+  --color-widget-bg-directory: var(--widget-bg-directory);
   --color-status-online: var(--status-online);
   --color-status-away: var(--status-away);
   --color-status-offline: var(--status-offline);
@@ -376,6 +427,16 @@ body {
     top: 56px;
     background: rgba(0, 0, 0, 0.3);
     z-index: 40;
+  }
+}
+
+/* Widget button sizing: full-width in 1-col, capped in 2+ col */
+.react-grid-item {
+  container-type: inline-size;
+}
+@container (min-width: 350px) {
+  .widget-cta-btn {
+    max-width: 230px;
   }
 }
 

@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import type { GroupMessage } from "@/lib/types";
 
 interface ConversationsWidgetProps {
@@ -10,12 +9,12 @@ interface ConversationsWidgetProps {
 
 export default function ConversationsWidget({ groupMessages, onOpenConversation }: ConversationsWidgetProps) {
   return (
-    <div className="h-full overflow-auto p-6 flex flex-col">
-      <h3 className="text-sm font-semibold text-text-primary mb-3">Group Conversations</h3>
+    <div className="h-full overflow-auto p-5 flex flex-col">
+      <h3 className="font-bold mb-3" style={{ fontSize: "var(--widget-title-size)", color: "var(--widget-text-color)" }}>Group Conversations</h3>
       <div className="space-y-2 flex-1">
         {groupMessages.length > 0 ? (
           groupMessages.slice(-3).map((msg) => (
-            <p key={msg.id} className="text-sm text-text-primary truncate">
+            <p key={msg.id} className="truncate" style={{ fontSize: "var(--widget-list-primary-size)", color: "var(--widget-text-color)" }}>
               <span className="font-semibold text-accent-purple">
                 @{msg.sender_name || "Unknown"}
               </span>{" "}
@@ -23,16 +22,16 @@ export default function ConversationsWidget({ groupMessages, onOpenConversation 
             </p>
           ))
         ) : (
-          <p className="text-sm text-text-muted">No messages yet</p>
+          <p style={{ fontSize: "var(--widget-list-primary-size)", color: "var(--widget-text-muted)" }}>No messages yet</p>
         )}
       </div>
-      <Button
-        variant="outline"
+      <button
         onClick={onOpenConversation}
-        className="mt-auto self-start"
+        className="widget-cta-btn mt-auto w-full rounded-sm text-white font-semibold cursor-pointer"
+        style={{ backgroundColor: "var(--widget-btn-conversations)", fontSize: "var(--widget-btn-label-size)", padding: "10px 0" }}
       >
         Open Conversation
-      </Button>
+      </button>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useState, useEffect } from "react";
 import { Icon } from "@/components/ui/icon";
 import type { CalendarEvent } from "@/lib/types";
 
@@ -8,10 +9,26 @@ interface EventsWidgetProps {
   eventsLoading: boolean;
 }
 
+const EVENT_ITEM_HEIGHT = 64; // approx height per event item
+const HEADER_HEIGHT = 40; // title + margin
+
 export default function EventsWidget({ events, eventsLoading }: EventsWidgetProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [visibleCount, setVisibleCount] = useState(3);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const obs = new ResizeObserver(([entry]) => {
+      const available = entry.contentRect.height - HEADER_HEIGHT;
+      setVisibleCount(Math.max(1, Math.floor(available / EVENT_ITEM_HEIGHT)));
+    });
+    obs.observe(containerRef.current);
+    return () => obs.disconnect();
+  }, []);
+
   return (
-    <div className="h-full overflow-auto p-6">
-      <h3 className="text-sm font-semibold text-text-primary mb-3">Upcoming Events</h3>
+    <div ref={containerRef} className="h-full overflow-hidden p-5">
+      <h3 className="font-bold mb-3" style={{ fontSize: "var(--widget-title-size)", color: "var(--widget-text-color)" }}>Upcoming Events</h3>
       {eventsLoading ? (
         <div className="text-center py-4">
           <Icon name="loading" size={28} className="animate-spin opacity-60" />
@@ -19,7 +36,7 @@ export default function EventsWidget({ events, eventsLoading }: EventsWidgetProp
         </div>
       ) : events.length > 0 ? (
         <div className="space-y-3">
-          {events.slice(0, 4).map((event) => {
+          {events.slice(0, visibleCount).map((event) => {
             const date = new Date(event.start);
             const dayStr = date.toLocaleDateString("en-US", {
               weekday: "short",
@@ -34,17 +51,17 @@ export default function EventsWidget({ events, eventsLoading }: EventsWidgetProp
               <div key={event.id} className="flex items-start gap-3">
                 <div
                   className="w-1 self-stretch rounded-full shrink-0"
-                  style={{ backgroundColor: event.sourceColor || "var(--accent-purple)" }}
+                  style={{ backgroundColor: "var(--widget-events-accent)" }}
                 />
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-text-primary leading-snug truncate">
+                  <p className="font-bold leading-snug truncate" style={{ fontSize: "var(--widget-list-primary-size)", color: "var(--widget-events-accent)" }}>
                     {event.title}
                   </p>
-                  <p className="text-xs text-text-muted mt-0.5">
+                  <p className="font-medium mt-0.5" style={{ fontSize: "var(--widget-list-secondary-size)", color: "var(--widget-text-muted)" }}>
                     {dayStr} &middot; {timeStr}
                   </p>
                   {event.location && (
-                    <p className="text-xs text-text-muted truncate">{event.location}</p>
+                    <p className="font-medium truncate" style={{ fontSize: "var(--widget-list-secondary-size)", color: "var(--widget-text-muted)" }}>{event.location}</p>
                   )}
                 </div>
               </div>

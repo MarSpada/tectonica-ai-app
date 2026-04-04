@@ -161,6 +161,8 @@ codebase and follow it — don't invent a new approach.
 
 - **Material Icons Two-Tone** (Google Fonts CDN) for bot card circles
 - Inline SVGs for UI elements (nav, buttons, actions)
+- Icon `color` prop uses CSS `mask-image` technique — do not switch to `fill` or `className` color utilities
+- Tremor `ProgressCircle` stroke colors are overridden via CSS custom properties (`--progress-color`, `--track-color`) — this is intentional, do not revert to Tremor defaults
 
 ---
 
@@ -624,6 +626,9 @@ Desktop-first design. Mobile is out of scope for now.
   is properly built out in a future feature session.
   The icon dropdown picker in BotEditor now uses
   Streamline icon names for new bots.
+- Bot card category colors and `--accent-purple` are still neutral — Figma designs pending before these can be applied.
+- `SparkAreaChart` still uses Tremor `"emerald"` default — needs custom color pass when bot card session is done.
+- Container query button breakpoint at `350px` may need tuning if grid column widths change.
 
 ---
 

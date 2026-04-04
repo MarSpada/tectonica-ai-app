@@ -70,6 +70,7 @@ const ProgressCircle = React.forwardRef<SVGSVGElement, ProgressCircleProps>(
         aria-valuenow={value}
         aria-valuemin={0}
         aria-valuemax={max}
+        style={props.style}
       >
         <svg
           ref={forwardedRef}
@@ -77,7 +78,6 @@ const ProgressCircle = React.forwardRef<SVGSVGElement, ProgressCircleProps>(
           height={radius * 2}
           viewBox={`0 0 ${radius * 2} ${radius * 2}`}
           className={cn("-rotate-90 transform", className)}
-          {...props}
         >
           <circle
             r={normalizedRadius}
@@ -88,6 +88,7 @@ const ProgressCircle = React.forwardRef<SVGSVGElement, ProgressCircleProps>(
             stroke=""
             strokeLinecap="round"
             className={cn("transition-colors ease-linear", styles.bg)}
+            style={props.style?.["--track-color" as keyof React.CSSProperties] ? { stroke: `var(--track-color)` } : undefined}
           />
           {safeValue >= 0 ? (
             <circle
@@ -105,6 +106,7 @@ const ProgressCircle = React.forwardRef<SVGSVGElement, ProgressCircleProps>(
                 styles.circle,
                 showAnimation && "transform-gpu transition-all duration-300 ease-in-out",
               )}
+              style={props.style?.["--progress-color" as keyof React.CSSProperties] ? { stroke: `var(--progress-color)` } : undefined}
             />
           ) : null}
         </svg>

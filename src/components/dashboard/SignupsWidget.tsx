@@ -18,8 +18,8 @@ export default function SignupsWidget({ signups, nbStatus, assignments, onSignup
   }
 
   return (
-    <div className="h-full overflow-auto p-6">
-      <h3 className="text-sm font-semibold text-text-primary mb-3">New Sign-Ups</h3>
+    <div className="h-full overflow-auto p-5 flex flex-col">
+      <h3 className="font-bold mb-3" style={{ fontSize: "var(--widget-title-size)", color: "var(--widget-text-color)" }}>New Sign-Ups</h3>
       <div className="space-y-2.5">
         {nbStatus === "loading" ? (
           <div className="flex items-center gap-2">
@@ -51,23 +51,24 @@ export default function SignupsWidget({ signups, nbStatus, assignments, onSignup
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-text-primary truncate">{s.name}</span>
+                      <span className="font-bold truncate" style={{ fontSize: "var(--widget-list-primary-size)", color: "var(--widget-text-color)" }}>{s.name}</span>
                       <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 shrink-0">
                         <img src="/nb-icon.png" alt="" className="w-4 h-4" />
                         via NB
                       </span>
                     </div>
                     {assignment && (
-                      <span className="text-xs text-text-muted block truncate">
+                      <span className="block truncate font-medium" style={{ fontSize: "var(--widget-list-secondary-size)", color: "var(--widget-text-muted)" }}>
                         Assigned to {assignment.assignee_name}
                       </span>
                     )}
                   </div>
                 </div>
                 <span
-                  className={`text-xs shrink-0 ml-2 ${
-                    time.urgent ? "font-semibold text-red-500" : "text-text-muted"
+                  className={`shrink-0 ml-2 font-medium ${
+                    time.urgent ? "font-semibold text-red-500" : ""
                   }`}
+                  style={{ fontSize: "var(--widget-list-secondary-size)", color: time.urgent ? undefined : "var(--widget-text-muted)" }}
                 >
                   {time.text}
                 </span>
@@ -78,11 +79,12 @@ export default function SignupsWidget({ signups, nbStatus, assignments, onSignup
           <p className="text-sm text-text-muted">No recent sign-ups</p>
         )}
       </div>
-      {signups.length > 0 && (
-        <p className="text-xs text-text-muted mt-3">
-          Click a sign-up to view details and assign to a team member.
-        </p>
-      )}
+      <button
+        className="widget-cta-btn w-full rounded-sm text-white font-semibold cursor-pointer mt-3"
+        style={{ backgroundColor: "var(--widget-btn-signups)", fontSize: "var(--widget-btn-label-size)", padding: "10px 0" }}
+      >
+        All new signups
+      </button>
     </div>
   );
 }

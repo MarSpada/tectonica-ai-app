@@ -37,8 +37,11 @@ export default function LeftSidebar({
   const avatarUrl = profile?.avatarUrl || null;
   const initials = getInitials(displayName);
 
-  const activeClass = "bg-black/8 text-text-primary font-semibold";
-  const inactiveClass = "text-text-secondary hover:bg-black/5";
+  const iconColor = (active: boolean) => active ? "#422D8F" : "rgba(66, 45, 143, 0.5)";
+  const navTextStyle = (active: boolean): React.CSSProperties => ({
+    fontSize: "13px",
+    color: active ? "#422D8F" : "rgba(66, 45, 143, 0.5)",
+  });
 
   return (
     <>
@@ -55,60 +58,45 @@ export default function LeftSidebar({
         {/* Navigation */}
         <nav className="flex-1 px-3 pt-4 space-y-1">
           {/* Group Coach Bot */}
-          <Link
-            href="/coach"
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              pathname === "/coach" ? activeClass : inactiveClass
-            }`}
-          >
-            <Icon name="group-coach" size={22} />
-            <span className="sidebar-label">Group Coach</span>
-          </Link>
-
-          {/* Group Media */}
-          <Link
-            href="/media"
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              pathname === "/media" ? activeClass : inactiveClass
-            }`}
-          >
-            <Icon name="group-media" size={22} />
-            <span className="sidebar-label">Group Media</span>
-          </Link>
-
-          {/* Members */}
-          <Link
-            href="/members"
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              pathname === "/members" ? activeClass : inactiveClass
-            }`}
-          >
-            <Icon name="members" size={22} />
-            <span className="sidebar-label">Members</span>
-          </Link>
+          {([
+            { href: "/coach", icon: "group-coach" as IconName, label: "Group Coach" },
+            { href: "/media", icon: "group-media" as IconName, label: "Group Media" },
+            { href: "/members", icon: "members" as IconName, label: "Members" },
+          ] as const).map(({ href, icon, label }) => {
+            const active = pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg font-semibold transition-colors hover:bg-black/5"
+              >
+                <Icon name={icon} size={22} color={iconColor(active)} />
+                <span className="sidebar-label" style={navTextStyle(active)}>{label}</span>
+              </Link>
+            );
+          })}
 
           {/* Admin (only for super_admin / group_admin) */}
-          {(profile?.role === "super_admin" || profile?.role === "group_admin") && (
-            <Link
-              href="/admin"
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                pathname?.startsWith("/admin") ? activeClass : inactiveClass
-              }`}
-            >
-              <Icon name="admin" size={22} />
-              <span className="sidebar-label">Admin</span>
-            </Link>
-          )}
+          {(profile?.role === "super_admin" || profile?.role === "group_admin") && (() => {
+            const active = pathname?.startsWith("/admin") ?? false;
+            return (
+              <Link
+                href="/admin"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg font-semibold transition-colors hover:bg-black/5"
+              >
+                <Icon name="admin" size={22} color={iconColor(active)} />
+                <span className="sidebar-label" style={navTextStyle(active)}>Admin</span>
+              </Link>
+            );
+          })()}
 
-          {/* Leaders & Organizers Chat */}
+          {/* Leaders Chat */}
           <button
             onClick={() => setLeadersChatOpen(true)}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              leadersChatOpen ? activeClass : inactiveClass
-            }`}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg font-semibold transition-colors hover:bg-black/5"
           >
-            <Icon name="leaders-organizers" size={22} />
-            <span className="sidebar-label">Leaders &amp; Organizers</span>
+            <Icon name="leaders-organizers" size={22} color={iconColor(leadersChatOpen)} />
+            <span className="sidebar-label" style={navTextStyle(leadersChatOpen)}>Leaders Chat</span>
           </button>
 
           {/* Bot Chats section */}
@@ -122,7 +110,7 @@ export default function LeftSidebar({
               <Input
                 type="text"
                 placeholder="Search chats..."
-                className="h-7 text-xs"
+                className="h-7 text-xs bg-white"
               />
             </div>
 
@@ -132,9 +120,9 @@ export default function LeftSidebar({
                 <Link
                   key={chat.name}
                   href={`/chat/${chat.botId}`}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-text-secondary hover:bg-black/5 transition-colors"
+                  className="w-full flex items-center px-3 py-1.5 rounded-md font-medium hover:bg-black/5 transition-colors"
+                  style={{ fontSize: "10px", color: "#422D8F" }}
                 >
-                  <Icon name={chat.icon} size={16} />
                   <span className="sidebar-label truncate">{chat.name}</span>
                 </Link>
               ))}

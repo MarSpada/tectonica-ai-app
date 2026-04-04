@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { ProgressCircle } from "@/components/tremor/ProgressCircle";
-import { SparkAreaChart } from "@/components/tremor/SparkChart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icon";
@@ -33,9 +32,9 @@ export default function FundraisingWidget({
       : 0;
 
   return (
-    <div className="h-full overflow-auto p-6 flex flex-col">
+    <div className="h-full overflow-auto p-5 flex flex-col">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-text-primary">Current Month Goal</h3>
+        <h3 className="font-bold" style={{ fontSize: "var(--widget-title-size)", color: "var(--widget-text-color)" }}>Current Month Goals</h3>
         {isAdmin && !editingGoal && (
           <Button
             variant="ghost"
@@ -107,49 +106,37 @@ export default function FundraisingWidget({
       ) : (
         <>
           <div className="flex items-center gap-4">
-            <ProgressCircle value={fundraisingPct} radius={36} strokeWidth={6} variant="neutral">
-              <span className="text-xs font-semibold text-text-primary">{fundraisingPct}%</span>
+            <ProgressCircle value={fundraisingPct} radius={36} strokeWidth={6} variant="neutral" style={{ "--progress-color": "var(--widget-chart-fundraising)", "--track-color": "var(--widget-chart-fundraising-track)" } as React.CSSProperties}>
+              <span className="font-semibold" style={{ fontSize: "var(--widget-metric-sm)", color: "var(--widget-text-color)" }}>{fundraisingPct}%</span>
             </ProgressCircle>
             <div>
-              <p className="text-3xl font-semibold text-text-primary">
-                ${fundraising?.amount_raised || 0}
+              <p className="font-semibold" style={{ fontSize: "var(--widget-metric-lg)", color: "var(--widget-text-color)" }}>
+                ${(fundraising?.amount_raised || 0).toLocaleString()}
               </p>
               {(fundraising?.fundraising_goal || 0) > 0 && (
-                <p className="text-sm text-text-muted mt-0.5">
-                  of ${fundraising?.fundraising_goal || 0}
+                <p className="font-semibold mt-0.5" style={{ fontSize: "var(--widget-metric-sm)", color: "var(--widget-text-muted)" }}>
+                  of ${(fundraising?.fundraising_goal || 0).toLocaleString()}
                 </p>
               )}
             </div>
           </div>
 
-          {fundraisingHistory.length > 1 && (
-            <div className="mt-4">
-              <SparkAreaChart
-                data={fundraisingHistory}
-                categories={["raised"]}
-                index="month"
-                colors={["blue"]}
-                className="h-12 w-full"
-              />
-            </div>
-          )}
-
           <div className="mt-4 pt-4 border-t border-black/5">
-            <p className="text-sm text-text-muted">Print Budget</p>
-            <p className="text-2xl font-semibold text-text-primary mt-1">
-              ${fundraising?.print_budget || 0}
+            <p className="font-semibold" style={{ fontSize: "var(--widget-label-size)", color: "var(--widget-text-color)" }}>Print Budget</p>
+            <p className="font-semibold mt-1" style={{ fontSize: "var(--widget-metric-md)", color: "var(--widget-text-color)" }}>
+              ${(fundraising?.print_budget || 0).toLocaleString()}
             </p>
           </div>
         </>
       )}
 
-      <Button
-        variant="outline"
+      <button
         onClick={onRequestReimbursement}
-        className="mt-auto self-stretch"
+        className="widget-cta-btn mt-auto w-full rounded-sm text-white font-semibold cursor-pointer"
+        style={{ backgroundColor: "var(--widget-btn-fundraising)", fontSize: "var(--widget-btn-label-size)", padding: "10px 0" }}
       >
-        Request Reimbursement
-      </Button>
+        Request reimbursement
+      </button>
     </div>
   );
 }

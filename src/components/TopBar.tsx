@@ -4,7 +4,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 
 interface TopBarProps {
@@ -78,58 +77,75 @@ export default function TopBar({ onToggleSidebar }: TopBarProps) {
   }, []);
 
   return (
-    <header className="flex items-center justify-between h-14 px-4 bg-topbar-bg">
+    <header className="flex items-center justify-between h-16 px-5 bg-topbar-bg border-b border-black/5">
       {/* Left section */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         {/* Sidebar collapse button */}
-        <Button variant="ghost" size="icon" onClick={onToggleSidebar}>
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M3 12h18M3 6h18M3 18h18" />
-          </svg>
-        </Button>
+        <button onClick={onToggleSidebar} className="p-1.5 rounded-md hover:bg-black/5 transition-colors cursor-pointer">
+          <Icon name="menu" size={22} className="opacity-70" />
+        </button>
 
         {/* Org icon */}
-        <div className="w-8 h-8 rounded-lg bg-orange-400 flex items-center justify-center text-white font-bold text-sm">
+        <div className="w-9 h-9 rounded-full bg-[#422D8F] flex items-center justify-center text-white font-bold text-sm">
           {orgName.charAt(0).toUpperCase()}
         </div>
 
         {/* Org name */}
-        <Link href="/" className="font-semibold text-text-primary hover:underline">
+        <Link href="/" className="font-semibold hover:underline" style={{ fontSize: "20px", color: "var(--widget-text-color)" }}>
           {orgName}
         </Link>
 
-        {/* Group pill */}
+        {/* Group pill — clickable */}
         <Link
           href="/group"
-          className="px-3 py-1 text-xs font-medium bg-white/50 rounded-full text-text-secondary hover:bg-white/70 transition-colors"
+          className="flex items-center gap-1.5 font-semibold px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
+          style={{ fontSize: "15px", color: "#422D8F", backgroundColor: "#F8F7FF", boxShadow: "inset 0 0 0 1px rgba(66, 45, 143, 0.05)" }}
         >
+          <span
+            className="inline-block shrink-0"
+            style={{
+              width: 16, height: 16,
+              backgroundColor: "#422D8F",
+              WebkitMaskImage: "url(/streamline-vectors-main/ultimate/bold/users/multiple-users-1.svg)",
+              WebkitMaskSize: "contain",
+              WebkitMaskRepeat: "no-repeat",
+              maskImage: "url(/streamline-vectors-main/ultimate/bold/users/multiple-users-1.svg)",
+              maskSize: "contain",
+              maskRepeat: "no-repeat",
+            }}
+          />
           {groupName}
         </Link>
-      </div>
 
-      {/* Right section — bell + logo */}
-      <div className="flex items-center gap-3">
         {/* Approvals notification bell */}
         <Link
           href="/settings?tab=approvals"
           className="relative p-1.5 rounded-md hover:bg-black/5 transition-colors"
           title="Approval Requests"
         >
-          <Icon name="notifications" size={22} className="opacity-70" />
+          <span
+            className="inline-block"
+            style={{
+              width: 20, height: 20,
+              backgroundColor: "#422D8F",
+              WebkitMaskImage: "url(/streamline-vectors-main/ultimate/bold/interface-essential/alert-bell-notification-2.svg)",
+              WebkitMaskSize: "contain",
+              WebkitMaskRepeat: "no-repeat",
+              maskImage: "url(/streamline-vectors-main/ultimate/bold/interface-essential/alert-bell-notification-2.svg)",
+              maskSize: "contain",
+              maskRepeat: "no-repeat",
+            }}
+          />
           {approvalCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center text-[9px] font-bold text-white bg-pink-500 rounded-full">
               {approvalCount}
             </span>
           )}
         </Link>
+      </div>
 
+      {/* Right section — logo */}
+      <div className="flex items-center gap-4">
         <img
           src="/logo-color.png"
           alt="Tectonica.AI"
