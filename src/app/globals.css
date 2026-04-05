@@ -40,15 +40,19 @@
   --accent-purple: #18181B;
   --accent-purple-light: #3F3F46;
 
-  /* Category colors — Tremor neutral defaults (Session G applies brand colors) */
-  --cat-advisors: #F4F4F5;
-  --cat-advisors-accent: #E4E4E7;
-  --cat-create: #F4F4F5;
-  --cat-create-accent: #E4E4E7;
-  --cat-tools: #F4F4F5;
-  --cat-tools-accent: #E4E4E7;
-  --cat-analyze: #F4F4F5;
-  --cat-analyze-accent: #E4E4E7;
+  /* Category colors — Figma bot card colors (Session G) */
+  --cat-advisors: #F2F0FC;
+  --cat-advisors-accent: #FFFFFF;
+  --cat-create: #FBE9D8;
+  --cat-create-accent: #FFFFFF;
+  --cat-tools: #FFDADD;
+  --cat-tools-accent: #FFFFFF;
+  --cat-analyze: #D7F5E6;
+  --cat-analyze-accent: #FFFFFF;
+  --cat-advisors-badge: #D6D0F0;
+  --cat-create-badge: #F0D4B8;
+  --cat-tools-badge: #F0B8BC;
+  --cat-analyze-badge: #ACDABF;
 
   /* Layout */
   --sidebar-width: 180px;
@@ -63,11 +67,11 @@
   --content-bg: var(--card-bg);
 
   /* Widget backgrounds — Figma-defined pastel colors (Session G) */
-  --widget-bg-signups: #FFFFFF;
+  --widget-bg-signups: #FBE9D8;
   --widget-bg-conversations: #FFFFFF;
   --widget-bg-actions: #FFFFFF;
   --widget-bg-fundraising: #FFDADD;
-  --widget-bg-recruit: #FFFFFF;
+  --widget-bg-recruit: #E0DBF8;
   --widget-bg-fundraising-accent: var(--accent-purple);
   --widget-bg-recruitment-goal: #E0DBF8;
   --widget-bg-request-approval: #D7F5E6;
@@ -76,22 +80,23 @@
   --widget-bg-events: #FBE9D8;
   --widget-bg-directory: #FFFFFF;
 
-  /* Widget typography — Figma specs (Session G) */
+  /* Widget typography — Figma specs (Session G), em-based for responsiveness */
   --widget-text-color: #333333;
   --widget-text-muted: rgba(51, 51, 51, 0.5);
-  --widget-title-size: 18px;
+  --widget-title-size: 1em;
   --widget-title-weight: 700;
-  --widget-metric-lg: 31px;
-  --widget-metric-md: 24px;
-  --widget-metric-sm: 15px;
+  --widget-metric-lg: 1.9375em;
+  --widget-metric-md: 1.5em;
+  --widget-metric-sm: 0.9375em;
   --widget-metric-weight: 600;
-  --widget-label-size: 15px;
-  --widget-list-primary-size: 15px;
+  --widget-label-size: 0.9375em;
+  --widget-list-primary-size: 0.75em;
   --widget-list-primary-weight: 700;
-  --widget-list-secondary-size: 13px;
+  --widget-list-secondary-size: 0.625em;
   --widget-list-secondary-weight: 500;
-  --widget-btn-label-size: 15px;
+  --widget-btn-label-size: 0.75em;
   --widget-btn-label-weight: 600;
+  --widget-btn-padding: 8px 0;
 
   /* Widget button accents — Figma (Session G) */
   --widget-btn-fundraising: #FE6778;
@@ -100,7 +105,7 @@
   --widget-btn-conversations: #422D8F;
   --widget-list-item-bg: #F8F7FF;
   --widget-btn-max-width: none;
-  --widget-btn-signups: #422D8F;
+  --widget-btn-signups: #C66A0C;
 
   /* Widget chart/progress accents — Figma (Session G) */
   --widget-chart-fundraising: #FE6778;

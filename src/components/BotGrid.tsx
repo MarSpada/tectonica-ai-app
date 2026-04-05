@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import {
-  bots,
+  bots as hardcodedBots,
   defaultFeaturedBotIds,
   categoryMeta,
   type Bot,
@@ -18,6 +18,7 @@ import type { IconName } from "@/lib/icon-map";
 interface BotGridProps {
   userName?: string;
   initialFavorites?: string[];
+  initialBots?: Bot[];
   onWelcomeExpandChange?: (expanded: boolean) => void;
 }
 
@@ -31,8 +32,11 @@ const categoryIcons: Record<BotCategory, IconName> = {
 export default function BotGrid({
   userName = "",
   initialFavorites,
+  initialBots,
   onWelcomeExpandChange,
 }: BotGridProps) {
+  // Use DB bots if provided, otherwise fall back to hardcoded
+  const bots = initialBots ?? hardcodedBots;
   const router = useRouter();
   const gridRef = useRef<HTMLDivElement>(null);
   const [favoriteBotIds, setFavoriteBotIds] = useState<string[]>(

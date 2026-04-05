@@ -473,7 +473,7 @@ export default function RightSidebar({
     <aside className="right-sidebar-responsive w-[var(--right-sidebar)] bg-bg border-l border-black/5 overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between p-4 pb-0">
-        <h2 className="text-2xl font-bold text-text-primary">Group Dashboard</h2>
+        <h2 className="font-bold text-text-primary" style={{ fontSize: "1.2em" }}>Group Dashboard</h2>
         <div className="flex items-center gap-1">
           {isEditMode ? (
             <Button variant="outline" size="sm" onClick={handleSave}>

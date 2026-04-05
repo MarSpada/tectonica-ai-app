@@ -133,7 +133,7 @@ export default function FundraisingWidget({
       <button
         onClick={onRequestReimbursement}
         className="widget-cta-btn mt-auto w-full rounded-sm text-white font-semibold cursor-pointer"
-        style={{ backgroundColor: "var(--widget-btn-fundraising)", fontSize: "var(--widget-btn-label-size)", padding: "10px 0" }}
+        style={{ backgroundColor: "var(--widget-btn-fundraising)", fontSize: "var(--widget-btn-label-size)", padding: "8px 0" }}
       >
         Request reimbursement
       </button>

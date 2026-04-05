@@ -28,7 +28,7 @@ export default function ConversationsWidget({ groupMessages, onOpenConversation 
       <button
         onClick={onOpenConversation}
         className="widget-cta-btn mt-auto w-full rounded-sm text-white font-semibold cursor-pointer"
-        style={{ backgroundColor: "var(--widget-btn-conversations)", fontSize: "var(--widget-btn-label-size)", padding: "10px 0" }}
+        style={{ backgroundColor: "var(--widget-btn-conversations)", fontSize: "var(--widget-btn-label-size)", padding: "8px 0" }}
       >
         Open Conversation
       </button>

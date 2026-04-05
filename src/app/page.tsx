@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getBots } from "@/lib/bot-resolver";
 import DashboardShell from "@/components/DashboardShell";
 
 export default async function Home() {
@@ -28,10 +29,14 @@ export default async function Home() {
     }
   }
 
+  // Fetch bots from DB (admin-editable names), fallback to hardcoded
+  const dbBots = await getBots();
+
   return (
     <DashboardShell
       userName={displayName}
       initialFavorites={initialFavorites}
+      initialBots={dbBots}
     />
   );
 }

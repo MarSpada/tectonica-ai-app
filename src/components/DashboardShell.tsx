@@ -10,11 +10,13 @@ import { useGroupMessages } from "@/hooks/useGroupMessages";
 interface DashboardShellProps {
   userName: string;
   initialFavorites?: string[];
+  initialBots?: import("@/lib/bots").Bot[];
 }
 
 export default function DashboardShell({
   userName,
   initialFavorites,
+  initialBots,
 }: DashboardShellProps) {
   const [conversationOpen, setConversationOpen] = useState(false);
   const [welcomeExpanded, setWelcomeExpanded] = useState(false);
@@ -26,6 +28,7 @@ export default function DashboardShell({
       <BotGrid
         userName={userName.split(" ")[0]}
         initialFavorites={initialFavorites}
+        initialBots={initialBots}
         onWelcomeExpandChange={setWelcomeExpanded}
       />
       {conversationOpen ? (

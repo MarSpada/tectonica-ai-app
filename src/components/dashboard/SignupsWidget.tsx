@@ -41,7 +41,8 @@ export default function SignupsWidget({ signups, nbStatus, assignments, onSignup
               <button
                 key={s.id}
                 onClick={() => onSignupClick(s)}
-                className="w-full flex items-center justify-between hover:bg-amber-100/50 rounded-lg px-2 -mx-2 py-1.5 transition-colors cursor-pointer text-left"
+                className="w-full flex items-center justify-between rounded-lg px-3 py-2 transition-colors cursor-pointer text-left hover:opacity-80"
+                style={{ backgroundColor: "var(--widget-list-item-bg)" }}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div
@@ -81,7 +82,7 @@ export default function SignupsWidget({ signups, nbStatus, assignments, onSignup
       </div>
       <button
         className="widget-cta-btn w-full rounded-sm text-white font-semibold cursor-pointer mt-3"
-        style={{ backgroundColor: "var(--widget-btn-signups)", fontSize: "var(--widget-btn-label-size)", padding: "10px 0" }}
+        style={{ backgroundColor: "var(--widget-btn-signups)", fontSize: "var(--widget-btn-label-size)", padding: "8px 0" }}
       >
         All new signups
       </button>

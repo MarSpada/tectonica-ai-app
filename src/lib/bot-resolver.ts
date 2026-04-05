@@ -15,13 +15,34 @@ export async function getBots(): Promise<Bot[]> {
       .order("name");
 
     if (dbBots && dbBots.length > 0) {
-      return dbBots.map((b) => ({
-        id: b.slug,
-        name: b.name,
-        icon: b.icon,
-        category: b.category as BotCategory,
-        description: b.description || "",
-      }));
+      // Merge: use DB names/descriptions but keep hardcoded icons as fallback
+      // (DB may store old Material Icons strings that don't match Streamline map)
+      const dbMap = new Map(dbBots.map((b) => [b.slug, b]));
+      const merged = hardcodedBots.map((hb) => {
+        const db = dbMap.get(hb.id);
+        if (!db) return hb;
+        return {
+          ...hb,
+          name: db.name || hb.name,
+          description: db.description || hb.description,
+          category: (db.category as BotCategory) || hb.category,
+          // Keep hardcoded icon unless DB icon looks like a Streamline name (contains "bot-")
+          icon: db.icon?.startsWith("bot-") ? db.icon : hb.icon,
+        };
+      });
+      // Add any DB-only bots not in the hardcoded list
+      for (const db of dbBots) {
+        if (!hardcodedBots.find((hb) => hb.id === db.slug)) {
+          merged.push({
+            id: db.slug,
+            name: db.name,
+            icon: db.icon,
+            category: db.category as BotCategory,
+            description: db.description || "",
+          });
+        }
+      }
+      return merged;
     }
   } catch {
     // Fallback to hardcoded

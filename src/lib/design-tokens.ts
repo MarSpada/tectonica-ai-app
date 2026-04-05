@@ -24,14 +24,14 @@ export const ACCENT_PURPLE = "#18181B" as const;
 export const ACCENT_PURPLE_LIGHT = "#3F3F46" as const;
 
 // ─── Category Colors — Tremor neutral defaults (Session G Phase 2 applies brand colors) ──
-export const CAT_ADVISORS = "#F4F4F5" as const;
-export const CAT_ADVISORS_ACCENT = "#E4E4E7" as const;
-export const CAT_CREATE = "#F4F4F5" as const;
-export const CAT_CREATE_ACCENT = "#E4E4E7" as const;
-export const CAT_TOOLS = "#F4F4F5" as const;
-export const CAT_TOOLS_ACCENT = "#E4E4E7" as const;
-export const CAT_ANALYZE = "#F4F4F5" as const;
-export const CAT_ANALYZE_ACCENT = "#E4E4E7" as const;
+export const CAT_ADVISORS = "#F2F0FC" as const;
+export const CAT_ADVISORS_ACCENT = "#FFFFFF" as const;
+export const CAT_CREATE = "#FBE9D8" as const;
+export const CAT_CREATE_ACCENT = "#FFFFFF" as const;
+export const CAT_TOOLS = "#FFDADD" as const;
+export const CAT_TOOLS_ACCENT = "#FFFFFF" as const;
+export const CAT_ANALYZE = "#D7F5E6" as const;
+export const CAT_ANALYZE_ACCENT = "#FFFFFF" as const;
 
 // ─── Layout Dimensions ──────────────────────────────────────────
 export const SIDEBAR_WIDTH = "180px" as const;
@@ -43,8 +43,8 @@ export const RADIUS_SM = "2px" as const;
 export const RADIUS_LG = "4px" as const;
 
 // ─── Widget Background Colors (Right Sidebar) — Figma-defined pastels ───
-export const WIDGET_BG_RECRUIT = "#FFFFFF" as const;
-export const WIDGET_BG_SIGNUPS = "#FFFFFF" as const;
+export const WIDGET_BG_RECRUIT = "#E0DBF8" as const;
+export const WIDGET_BG_SIGNUPS = "#FBE9D8" as const;
 export const WIDGET_BG_CONVERSATIONS = "#FFFFFF" as const;
 export const WIDGET_BG_ACTIONS = "#FFFFFF" as const;
 export const WIDGET_BG_FUNDRAISING = "#FFDADD" as const;
@@ -55,21 +55,21 @@ export const WIDGET_BG_HOURS = "#D7F5E6" as const;
 export const WIDGET_BG_EVENTS = "#FBE9D8" as const;
 export const WIDGET_BG_DIRECTORY = "#FFFFFF" as const;
 
-// ─── Widget Typography — Figma specs (Session G) ───────────────
+// ─── Widget Typography — Figma specs (Session G), em-based ─────
 export const WIDGET_TEXT_COLOR = "#333333" as const;
 export const WIDGET_TEXT_MUTED = "rgba(51, 51, 51, 0.5)" as const;
-export const WIDGET_TITLE_SIZE = "18px" as const;
+export const WIDGET_TITLE_SIZE = "1em" as const;
 export const WIDGET_TITLE_WEIGHT = "700" as const;
-export const WIDGET_METRIC_LG = "31px" as const;
-export const WIDGET_METRIC_MD = "24px" as const;
-export const WIDGET_METRIC_SM = "15px" as const;
+export const WIDGET_METRIC_LG = "1.9375em" as const;
+export const WIDGET_METRIC_MD = "1.5em" as const;
+export const WIDGET_METRIC_SM = "0.9375em" as const;
 export const WIDGET_METRIC_WEIGHT = "600" as const;
-export const WIDGET_LABEL_SIZE = "15px" as const;
-export const WIDGET_LIST_PRIMARY_SIZE = "15px" as const;
+export const WIDGET_LABEL_SIZE = "0.9375em" as const;
+export const WIDGET_LIST_PRIMARY_SIZE = "0.75em" as const;
 export const WIDGET_LIST_PRIMARY_WEIGHT = "700" as const;
-export const WIDGET_LIST_SECONDARY_SIZE = "13px" as const;
+export const WIDGET_LIST_SECONDARY_SIZE = "0.625em" as const;
 export const WIDGET_LIST_SECONDARY_WEIGHT = "500" as const;
-export const WIDGET_BTN_LABEL_SIZE = "15px" as const;
+export const WIDGET_BTN_LABEL_SIZE = "0.75em" as const;
 export const WIDGET_BTN_LABEL_WEIGHT = "600" as const;
 
 // ─── Widget Button Accents — Figma (Session G) ─────────────────

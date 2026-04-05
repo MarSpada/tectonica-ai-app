@@ -1,7 +1,6 @@
 "use client";
 
 import { Bot, categoryMeta } from "@/lib/bots";
-import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
 import type { IconName } from "@/lib/icon-map";
 
@@ -28,7 +27,7 @@ export default function BotCard({
       tabIndex={0}
       onClick={() => onSelect?.(bot)}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect?.(bot); } }}
-      className="group relative flex flex-col items-center justify-center rounded-xl p-3 cursor-pointer w-full"
+      className="group relative flex flex-col items-center justify-center rounded-xl p-3 pb-0 cursor-pointer w-full overflow-hidden"
       style={{
         backgroundColor: meta.bg,
         aspectRatio: "3 / 4",
@@ -71,14 +70,17 @@ export default function BotCard({
       </div>
 
       {/* Bot name */}
-      <span className="text-xs font-medium text-text-primary text-center leading-tight px-1">
+      <span className="font-semibold text-center leading-tight overflow-hidden" style={{ fontSize: "13px", color: "var(--widget-text-color)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const }}>
         {bot.name}
       </span>
 
-      {/* BOT pill */}
-      <Badge variant="secondary" className="mt-auto text-[10px] uppercase tracking-wider bg-white/40 text-text-secondary">
+      {/* Helper pill — flush to bottom, category-colored, 2px top radius / 0 bottom */}
+      <div
+        className="mt-auto w-full flex justify-center py-1"
+        style={{ backgroundColor: meta.badgeBg, borderRadius: "2px 2px 0 0", fontSize: "10px", color: "var(--widget-text-color)", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" as const }}
+      >
         Helper
-      </Badge>
+      </div>
 
       {/* Hover overlay — pastel bg at full opacity with black text */}
       <div

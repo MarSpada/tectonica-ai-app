@@ -10,27 +10,31 @@ export interface Bot {
 
 export const categoryMeta: Record<
   BotCategory,
-  { label: string; bg: string; accent: string }
+  { label: string; bg: string; accent: string; badgeBg: string }
 > = {
   advisors: {
     label: "Advisors",
     bg: "var(--cat-advisors)",
     accent: "var(--cat-advisors-accent)",
+    badgeBg: "var(--cat-advisors-badge)",
   },
   create: {
     label: "Create Things",
     bg: "var(--cat-create)",
     accent: "var(--cat-create-accent)",
+    badgeBg: "var(--cat-create-badge)",
   },
   tools: {
     label: "Use Organizing Tools",
     bg: "var(--cat-tools)",
     accent: "var(--cat-tools-accent)",
+    badgeBg: "var(--cat-tools-badge)",
   },
   analyze: {
     label: "Understand + Analyze",
     bg: "var(--cat-analyze)",
     accent: "var(--cat-analyze-accent)",
+    badgeBg: "var(--cat-analyze-badge)",
   },
 };
 
