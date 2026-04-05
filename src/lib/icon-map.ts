@@ -125,6 +125,8 @@ export const ICON_MAP = {
   'dash': `${ICON_BASE}/interface-essential/subtract-circle.svg`,
   'media': `${ICON_BASE}/images-photography/picture-stack-landscape.svg`,
   'expand-down': `${ICON_BASE}/arrows-diagrams/arrow-button-up.svg`,
+  'link': `${ICON_BASE}/internet-networks-servers/network-browser.svg`,
+  'trash': `${ICON_BASE}/interface-essential/bin-1.svg`,
 } as const;
 
 export type IconName = keyof typeof ICON_MAP;

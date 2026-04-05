@@ -426,6 +426,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `015_reimbursement_requests.sql` | reimbursement_requests table + RPCs (create, update_status, resubmit). Storage bucket for attachments. Adds 'reimbursement_request' to notification types |
 | `016_group_description.sql` | Adds description column to groups table |
 | `017_dashboard_layouts.sql` | dashboard_layouts_default (org-level) + dashboard_layouts_user (per-user) tables for React Grid Layout persistence. RLS: members read org default, super_admin writes; users manage own layout |
+| `018_media_items.sql` | Replaces old `media` stub with full `media_items` table (category, storage_path, url, title, description, mime_type, file_size, tags, status, visibility, soft delete, download_count, tsvector search). Adds `storage_used_bytes` to groups. RLS: group-scoped read (non-deleted only), role-gated insert (not supporters), owner+admin update. `soft_delete_media_item()` and `increment_storage_used()` SECURITY DEFINER RPCs for atomic operations that cross RLS boundaries. |
 
 ---
 
@@ -462,6 +463,10 @@ Desktop-first design. Mobile is out of scope for now.
 | `/api/reimbursements` | GET/POST | GET: list reimbursement requests for group. POST: create request (RPC + notification to super_admin) |
 | `/api/reimbursements/[id]/status` | POST | Approve or request changes on reimbursement (reviewer only) |
 | `/api/reimbursements/[id]/resubmit` | POST | Resubmit after changes requested (submitter only) |
+| `/api/media` | GET/POST | GET: list media items for user's group (category filter, full-text search, pagination). POST: upload file (quota check, MIME validation, 5MB limit, supporters blocked) |
+| `/api/media/[id]` | GET/DELETE | GET: single media item with signed URL (1hr TTL). DELETE: soft delete via RPC + storage file removal |
+| `/api/media/[id]/download` | GET | Increment download count + return signed URL (or external URL for links) |
+| `/api/media/links` | POST | Create link-type media item (url + title required, no file upload) |
 | `/api/dashboard/layout` | GET/POST/DELETE | GET: load user layout (user→org→system fallback). POST: save user layout. DELETE: reset user layout |
 | `/api/admin/dashboard/layout` | GET/POST/DELETE | GET: org default layout. POST: save org default (super_admin). DELETE: reset to system default (super_admin) |
 | `/auth/callback` | GET | OAuth/email confirmation callback — signs out after confirmation, redirects to login |
@@ -489,7 +494,10 @@ Desktop-first design. Mobile is out of scope for now.
 | `chat/RecentConversations.tsx` | Sidebar of recent bot chats |
 | `coach/CoachChatView.tsx` | Group Coach Bot with campaign stats sidebar |
 | `coach/CampaignStats.tsx` | Campaign goals, strategy notes, upcoming events sidebar |
-| `media/MediaGallery.tsx` | Media gallery with filters, grid/list view |
+| `media/MediaGallery.tsx` | Functional media gallery: API-driven list with category filters, full-text search, pagination, grid/list views, upload modal, detail sheet |
+| `media/UploadMediaModal.tsx` | Dialog with file upload and link tabs, MIME/size validation |
+| `media/MediaDetailSheet.tsx` | Sheet side panel: preview, metadata, download, delete with confirmation |
+| `media/StorageUsageBar.tsx` | Progress bar showing group storage usage vs quota |
 | `signups/NbSignupModal.tsx` | NB signup detail modal with contact/call/assign actions |
 | `members/MemberDirectory.tsx` | Group member list with roles and search |
 | `members/MemberDetailModal.tsx` | Member detail popup |
@@ -533,6 +541,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `lib/ical-parser.ts` | Lightweight ICS parser (no native deps) — handles DTSTART/DTEND with TZID, line unfolding, escaped chars |
 | `lib/avatar.ts` | Avatar utilities (upload, delete, generate URL) for Supabase Storage |
 | `lib/signup-utils.ts` | NationBuilder signup utilities (fetch, parse, enrich). Returns connection status (connected/error/not_configured) |
+| `lib/media-storage.ts` | **Only file that imports Supabase Storage for media.** Upload, signed URLs (1hr TTL), delete, quota check/increment. Swap storage providers by changing this file only. Includes bucket setup instructions in header comment. |
 | `lib/UserProfileContext.tsx` | React Context for user profile data (role, org, group, name, avatar) |
 | `lib/dashboard-widgets.ts` | Widget IDs, role-based visibility permissions, labels, size constraints, system default layout, and layout utility functions (getVisibleWidgets, filterLayoutToRole, mergeLayoutWithDefaults) |
 | `lib/supabase/server.ts` | Server-side Supabase client factory using cookies |
@@ -549,7 +558,7 @@ Desktop-first design. Mobile is out of scope for now.
 - Welcome helper bot chat on dashboard
 - Bot chat with GPT-4o streaming responses + conversation persistence
 - Group Coach Bot page with campaign stats sidebar
-- Media gallery (mock data, UI functional)
+- **Media Library** — functional file upload (5MB limit, MIME validation), link bookmarks, category filters, full-text search, grid/list views, signed URL downloads (1hr TTL), soft delete, download counter, group storage quota (250MB) with progress bar. Storage abstracted behind `lib/media-storage.ts` for provider portability. Soft delete and storage counter use SECURITY DEFINER RPCs for atomicity.
 - Member directory with RPC-based group member fetching + member detail pages
 - Profile settings (name, bio, avatar upload)
 - Real-time group messaging (Supabase Realtime)
@@ -579,7 +588,7 @@ Desktop-first design. Mobile is out of scope for now.
 ## What Still Needs Work (Prioritized)
 
 ### Priority — Next Features
-- Media gallery with real file upload (currently mock data)
+- Media Library: per-file visibility UI, thumbnail generation, virus scanning (hook placeholder exists in media-storage.ts)
 - Group Coach Bot with real campaign data (currently mock stats)
 - Graphics Creation bot with visual editor iframe integration
 - Leaders & Organizers real-time chat (UI exists, needs real-time backend)
@@ -633,6 +642,10 @@ Desktop-first design. Mobile is out of scope for now.
 - Bot card category colors applied: advisors `#F2F0FC`, create `#FBE9D8`, tools `#FFDADD`, analyze `#D7F5E6`. Helper pill uses per-category badge color.
 - Sidebar uses `#F2F0FC` bg with `#422D8F` purple nav icons/text (50% opacity when inactive). "Leaders & Organizers" renamed to "Leaders Chat".
 - TopBar: org name 20px semibold, group pill with `#F8F7FF` bg, bell icon next to group pill, all icons `#422D8F` purple.
+- **Media Library storage abstraction**: All Supabase Storage calls go through `lib/media-storage.ts` — never import storage elsewhere. Supabase Storage bucket "media" must be created manually (instructions in file header). Storage RLS policies are separate from table RLS.
+- **Media Library soft delete pattern**: Uses `soft_delete_media_item()` SECURITY DEFINER RPC because PostgreSQL evaluates ALL policies (including SELECT's `deleted_at is null`) against the new row state during UPDATE. Same pattern applies to any future soft-delete on RLS-protected tables.
+- **Media Library storage counter**: `increment_storage_used()` SECURITY DEFINER RPC for atomic increments. Decrement is handled inside `soft_delete_media_item()`. Storage usage bar reads from `groups.storage_used_bytes` server-side in `media/page.tsx`.
+- **Base UI hydration id mismatch** — pre-existing warning in browser console (`base-ui-_R_...` id differs between server and client render). Affects Input components in LeftSidebar and MediaGallery. Cosmetic only — page renders correctly. Flag for investigation in a future session.
 
 ---
 
