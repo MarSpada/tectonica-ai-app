@@ -427,6 +427,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `016_group_description.sql` | Adds description column to groups table |
 | `017_dashboard_layouts.sql` | dashboard_layouts_default (org-level) + dashboard_layouts_user (per-user) tables for React Grid Layout persistence. RLS: members read org default, super_admin writes; users manage own layout |
 | `018_media_items.sql` | Replaces old `media` stub with full `media_items` table (category, storage_path, url, title, description, mime_type, file_size, tags, status, visibility, soft delete, download_count, tsvector search). Adds `storage_used_bytes` to groups. RLS: group-scoped read (non-deleted only), role-gated insert (not supporters), owner+admin update. `soft_delete_media_item()` and `increment_storage_used()` SECURITY DEFINER RPCs for atomic operations that cross RLS boundaries. |
+| `019_group_goals.sql` | `group_goals` table (one row per group): money_goal, money_budget, money_raised_offline, members_goal, supporters_goal, updated_by. UNIQUE(group_id). RLS: members read, admins (super_admin + group_admin) insert/update via `is_admin()`. Centralizes goal targets that feed Fundraising and Recruitment Goal dashboard widgets. |
 
 ---
 
@@ -459,7 +460,8 @@ Desktop-first design. Mobile is out of scope for now.
 | `/api/approvals/[id]/resubmit` | POST | Resubmit after changes requested |
 | `/api/approvals/reviewers` | GET | List available reviewers (admins) |
 | `/auth/callback` | GET | OAuth/email confirmation callback — signs out after confirmation, redirects to login |
-| `/api/fundraising` | GET/PATCH | GET: current month's fundraising goal for user's group. PATCH: update goal/budget (admin only, upserts) |
+| `/api/fundraising` | GET/PATCH | GET: current month's fundraising data for user's group (LEGACY — targets now in group_goals). PATCH: update amount_raised (admin only, upserts) |
+| `/api/goals` | GET/PATCH | GET: fetch group goals for user's group. PATCH: upsert one or more goal fields (group_admin + super_admin only) |
 | `/api/reimbursements` | GET/POST | GET: list reimbursement requests for group. POST: create request (RPC + notification to super_admin) |
 | `/api/reimbursements/[id]/status` | POST | Approve or request changes on reimbursement (reviewer only) |
 | `/api/reimbursements/[id]/resubmit` | POST | Resubmit after changes requested (submitter only) |
@@ -502,8 +504,9 @@ Desktop-first design. Mobile is out of scope for now.
 | `members/MemberDirectory.tsx` | Group member list with roles and search |
 | `members/MemberDetailModal.tsx` | Member detail popup |
 | `members/MemberProfile.tsx` | Member profile card |
-| `admin/AdminView.tsx` | Main admin tab container with role guard |
+| `admin/AdminView.tsx` | Main admin tab container with role guard (5 tabs for super_admin, 2 for group_admin) |
 | `admin/OrgTab.tsx` | Organization settings (name, details) |
+| `admin/GoalsTab.tsx` | Admin-editable group goals: fundraising (money_goal, money_budget, money_raised_offline) and recruitment (members_goal, supporters_goal). Inline edit pattern matching OrgTab. |
 | `admin/PeopleTab.tsx` | Member management with role/group changes, inline name editing |
 | `admin/BotsTab.tsx` | Bot CRUD management |
 | `admin/BotEditor.tsx` | Bot form (slug, name, icon, category, description, system prompt) |
@@ -534,7 +537,7 @@ Desktop-first design. Mobile is out of scope for now.
 
 | File | Description |
 |---|---|
-| `lib/types.ts` | Type definitions: UserRole, Message, Conversation, Member, GroupMessage, NbSignup, SignupAssignment, AppNotification, ApprovalRequest, ApprovalComment, FundraisingGoal, ReimbursementRequest, etc. |
+| `lib/types.ts` | Type definitions: UserRole, Message, Conversation, Member, GroupMessage, NbSignup, SignupAssignment, AppNotification, ApprovalRequest, ApprovalComment, FundraisingGoal (LEGACY targets), GroupGoals, ReimbursementRequest, etc. |
 | `lib/bots.ts` | Hardcoded bot definitions: 24 bots with metadata (id, name, icon, category, description), categoryMeta colors, defaultFeaturedBotIds |
 | `lib/bots-prompts.ts` | Bot system prompts mapped by bot ID, falls back to generic prompt |
 | `lib/bot-resolver.ts` | getBots() (DB-first, fallback to hardcoded), getSystemPrompt() (DB-first, fallback to bots-prompts.ts) |
@@ -566,14 +569,16 @@ Desktop-first design. Mobile is out of scope for now.
 - Interactive NB signup assignments (click → modal → contact/call/assign)
 - Email notifications via Resend (signups, approvals, status changes)
 - In-app notification bar for signup assignments and approvals
-- **Super Admin Panel** — org settings, people management (roles, groups, inline name editing), DB-driven bot management, integrations
+- **Super Admin Panel** — org settings, people management (roles, groups, inline name editing), DB-driven bot management, goals management, integrations
 - **Approval workflow** — submit, review, approve/request changes, resubmit, comment threads
 - **Calendar integration** — system-agnostic iCal/ICS feeds (Google Calendar, Outlook, Mobilize), managed in admin Integrations tab
 - **Upcoming Events widget** — pulls from connected calendar feeds, shows next 30 days
 - **Volunteer hours tracking** — log hours, view detail overlay with entries by date, dashboard widget with real totals
 - **Dynamic top bar** — org name and group name fetched from DB, update when admin changes them
 - **Connected Systems widget** — dynamic: NB shows real status (Functional/Error/Not Connected), Calendar reflects live feed state, Action Network/Mobilize: Not Connected
-- **Fundraising goals** — per group/month, admin-editable inline in widget and in admin panel, real data from DB
+- **Fundraising goals** — targets (money_goal, money_budget) stored in `group_goals` table, admin-editable via Goals tab in Admin Panel. Monthly amount_raised tracked in `fundraising_goals`. Offline fundraising offset (`money_raised_offline`) added to displayed totals. FundraisingWidget reads targets from `group_goals`, no longer has inline edit.
+- **Recruitment goals** — members_goal and supporters_goal in `group_goals` table, admin-editable via Goals tab. RecruitmentGoalWidget uses dynamic DB values instead of hardcoded targets. Handles goal=0 gracefully (shows raw count, hides percentage).
+- **Admin Goals tab** — visible to both super_admin and group_admin. Two sections: Fundraising Goals (monthly target, print budget, offline offset) and Recruitment Goals (member/supporter targets). Inline edit pattern matching OrgTab.
 - **Reimbursement requests** — submit with amount/description/attachment, approval workflow (pending→approved/changes_requested→resubmit), notifications to super_admin
 - **Activity log** — unified chronological timeline in Settings > Activity tab showing hours, approvals, signups, reimbursements with type tags
 - **Notification bar** — handles multiple notification types simultaneously (signups, approvals, reimbursements), uses real signup_assignments count, clickable signup count opens lightbox
@@ -645,6 +650,9 @@ Desktop-first design. Mobile is out of scope for now.
 - **Media Library storage abstraction**: All Supabase Storage calls go through `lib/media-storage.ts` — never import storage elsewhere. Supabase Storage bucket "media" must be created manually (instructions in file header). Storage RLS policies are separate from table RLS.
 - **Media Library soft delete pattern**: Uses `soft_delete_media_item()` SECURITY DEFINER RPC because PostgreSQL evaluates ALL policies (including SELECT's `deleted_at is null`) against the new row state during UPDATE. Same pattern applies to any future soft-delete on RLS-protected tables.
 - **Media Library storage counter**: `increment_storage_used()` SECURITY DEFINER RPC for atomic increments. Decrement is handled inside `soft_delete_media_item()`. Storage usage bar reads from `groups.storage_used_bytes` server-side in `media/page.tsx`.
+- **Group goals first-run**: If no `group_goals` row exists for a group, widgets show zeros/raw counts. Admin must visit Goals tab and save once to create the row via upsert.
+- **LEGACY fundraising_goals columns**: `fundraising_goals.fundraising_goal` and `fundraising_goals.print_budget` are superseded by `group_goals.money_goal` and `group_goals.money_budget`. Not dropped — just no longer the display source. LEGACY comments mark all read sites. The `/api/fundraising` route still tracks `amount_raised` per month.
+- **Page titles**: Members and Group Media pages now have icon + h1 page titles matching Admin Panel pattern (`Icon` size={28} + `text-2xl font-bold`).
 - **Base UI hydration id mismatch** — pre-existing warning in browser console (`base-ui-_R_...` id differs between server and client render). Affects Input components in LeftSidebar and MediaGallery. Cosmetic only — page renders correctly. Flag for investigation in a future session.
 
 ---
