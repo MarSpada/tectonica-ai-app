@@ -621,14 +621,18 @@ Desktop-first design. Mobile is out of scope for now.
   production@tectonica.co (group_admin), mar.isabel.spada@gmail.com (member),
   tectonica-ai-test1@maildrop.cc (supporter, manually created in Supabase).
 - Database bot records still store old Material Icons
-  strings in the icon field. Only affects admin-created
-  bots via BotEditor. Needs migration when BotEditor
-  is properly built out in a future feature session.
-  The icon dropdown picker in BotEditor now uses
-  Streamline icon names for new bots.
-- Bot card category colors and `--accent-purple` are still neutral — Figma designs pending before these can be applied.
-- `SparkAreaChart` still uses Tremor `"emerald"` default — needs custom color pass when bot card session is done.
+  strings in the icon field. `getBots()` in `bot-resolver.ts`
+  now merges DB names/descriptions with hardcoded Streamline icons
+  as fallback (DB icon used only if it starts with "bot-").
+  Admin-edited bot names propagate to all users via server fetch
+  in `page.tsx` → `DashboardShell` → `BotGrid`.
+- `--accent-purple` is still neutral `#18181B` — needs brand color when decided.
+- `SparkAreaChart` still uses Tremor `"emerald"` default — needs custom color pass.
 - Container query button breakpoint at `350px` may need tuning if grid column widths change.
+- Widget typography uses em-based sizing for responsiveness. All values in `--widget-*` CSS variables.
+- Bot card category colors applied: advisors `#F2F0FC`, create `#FBE9D8`, tools `#FFDADD`, analyze `#D7F5E6`. Helper pill uses per-category badge color.
+- Sidebar uses `#F2F0FC` bg with `#422D8F` purple nav icons/text (50% opacity when inactive). "Leaders & Organizers" renamed to "Leaders Chat".
+- TopBar: org name 20px semibold, group pill with `#F8F7FF` bg, bell icon next to group pill, all icons `#422D8F` purple.
 
 ---
 
@@ -744,17 +748,23 @@ Goal: Replace all icon systems with the custom icon set in the public folder.
 Commit: "UI Session F: icon consolidation"
 
 ### UI Session G — Color theming
-Status: Depends on UI Session F
-Goal: Apply all brand color decisions in one pass. This is the only session that introduces color.
+Status: Complete (in progress — `--accent-purple` still neutral)
+Goal: Apply brand color decisions from Figma designs. Widget colors, typography, buttons, charts, topbar, sidebar, bot cards.
 
-All color decisions made here:
-- --bg (page background)
-- --card-bg (card surfaces)
-- --accent-purple (primary accent — rename if needed)
-- --cat-advisors, --cat-create, --cat-tools, --cat-analyze (bot category colors)
-- --widget-bg-* (one per dashboard widget)
-- Any other color tokens in design-tokens.ts
+Completed:
+- Dashboard bg `#F6F4FF`, widget backgrounds from Figma (pastels + white)
+- Widget typography: em-based sizing, 18px bold titles, 31/24/15px metrics, per-widget button accents
+- Widget buttons: per-widget colors (coral, green, purple, orange), container query sizing (fills 1-col, capped 2+ col)
+- Donut chart colors via CSS custom property overrides on ProgressCircle (members `#422D8F`, supporters `#159EC1`, fundraising `#FE6778`)
+- Connected Systems: brand logo icons
+- Events/Actions: dynamic item count via ResizeObserver
+- TopBar: org name 20px, group pill `#F8F7FF`, bell next to group, all icons `#422D8F`
+- Sidebar: `#F2F0FC` bg, `#422D8F` nav icons/text with 50% inactive, "Leaders Chat" rename
+- Bot cards: category colors (advisors `#F2F0FC`, create `#FBE9D8`, tools `#FFDADD`, analyze `#D7F5E6`), per-category Helper pill colors, name 13px semibold, Helper 10px
+- Bot names from DB: `getBots()` merges DB names with hardcoded Streamline icons
+- Icon component: `color` prop via CSS mask-image
 
-One session. One file. Complete visual transformation.
+Remaining:
+- `--accent-purple` still neutral `#18181B`
 
-Commit: "UI Session G: brand color theming"
+Commits: "UI Session G: widget color theming, topbar + sidebar redesign", "UI Session G continued: bot cards, font sizing, DB bot names, tweaks"
