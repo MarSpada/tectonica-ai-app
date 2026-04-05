@@ -83,15 +83,25 @@ codebase and follow it — don't invent a new approach.
 
 ### API routes
 - All routes return `{ error: string }` on failure with an appropriate HTTP status
-- All routes that require auth call `supabase.auth.getUser()` first and return 401 if no session
+- All routes use `NextResponse.json()` consistently (never bare `Response.json()`)
+- New routes should use `requireAuth()` from `lib/api-utils.ts` for auth + profile lookup. Existing routes are being migrated incrementally.
+- Use `fetchProfileMap()` from `lib/api-utils.ts` for batch profile enrichment (replaces inline collect-IDs → fetch → build-map pattern)
 - Role checks use the `profiles` table, not JWT claims directly
+- Role string comparisons use constants from `lib/constants/roles.ts` — never hardcode `"super_admin"` etc.
+- All `/api/admin/` routes have server-side role checks (`isSuperAdmin` or `isAdminRole`) — client-side guards in AdminView.tsx are not sufficient alone
 
 ### Types
 - All shared types live in `lib/types.ts` — never define types inline in components
 - Never use `any` — if the shape is unknown, define a type for it
 
+### Roles
+- All role string comparisons use constants from `lib/constants/roles.ts` — `ROLES.SUPER_ADMIN`, `ROLES.GROUP_ADMIN`, `ROLES.MEMBER`, `ROLES.SUPPORTER`
+- Use `isAdminRole(role)` for super_admin OR group_admin checks, `isSuperAdmin(role)` for super_admin-only checks
+- Use `VALID_ROLES` array for validation instead of inline arrays
+- Never hardcode role strings — import from `lib/constants/roles.ts`
+
 ### Components
-- User role/org/group data comes from `UserProfileContext` — never re-fetch it inside a component
+- User role/org/group data comes from `UserProfileContext` (includes orgName, groupName) — never re-fetch it inside a component
 - New components go in the most specific folder that makes sense (`admin/`, `chat/`, etc.)
 - No component should fetch data AND render UI — split into a data-fetching parent and a presentational child if needed
 
@@ -442,6 +452,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `018_media_items.sql` | Replaces old `media` stub with full `media_items` table (category, storage_path, url, title, description, mime_type, file_size, tags, status, visibility, soft delete, download_count, tsvector search). Adds `storage_used_bytes` to groups. RLS: group-scoped read (non-deleted only), role-gated insert (not supporters), owner+admin update. `soft_delete_media_item()` and `increment_storage_used()` SECURITY DEFINER RPCs for atomic operations that cross RLS boundaries. |
 | `019_group_goals.sql` | `group_goals` table (one row per group): money_goal, money_budget, money_raised_offline, members_goal, supporters_goal, updated_by. UNIQUE(group_id). RLS: members read, admins (super_admin + group_admin) insert/update via `is_admin()`. Centralizes goal targets that feed Fundraising and Recruitment Goal dashboard widgets. |
 | `020_actions.sql` | Full actions system: `actions` table (source, type, title, description, call_to_action, url, suggested_bot_slug, points_value, priority, assignment_scope, starts_at, ends_at, status, visibility), `action_assignments` (member + group targeting), `action_completions` (UNIQUE per member per action, snapshotted points), `member_points_ledger` (UNIQUE per completion, audit trail). `complete_action()` SECURITY DEFINER RPC for atomic completion + points. RLS on all 4 tables: group-scoped reads, admin-only writes, members see own completions/ledger only. Error code contract (P0002–P0005) documented in both migration and API route. |
+| `021_create_action_with_assignments.sql` | `create_action_with_assignments()` SECURITY DEFINER RPC: atomic action creation with optional targeted assignments. If either insert fails, both roll back. Replaces the two-step insert pattern in `/api/actions` POST. |
 
 ---
 
@@ -479,6 +490,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `/api/reimbursements` | GET/POST | GET: list reimbursement requests for group. POST: create request (RPC + notification to super_admin) |
 | `/api/reimbursements/[id]/status` | POST | Approve or request changes on reimbursement (reviewer only) |
 | `/api/reimbursements/[id]/resubmit` | POST | Resubmit after changes requested (submitter only) |
+| `/api/reimbursements/[id]/attachments` | POST | Upload file attachments (multipart form data) for a reimbursement request. Auth + ownership check + MIME/size validation. |
 | `/api/media` | GET/POST | GET: list media items for user's group (category filter, full-text search, pagination). POST: upload file (quota check, MIME validation, 5MB limit, supporters blocked) |
 | `/api/media/[id]` | GET/DELETE | GET: single media item with signed URL (1hr TTL). DELETE: soft delete via RPC + storage file removal |
 | `/api/media/[id]/download` | GET | Increment download count + return signed URL (or external URL for links) |
@@ -501,7 +513,8 @@ Desktop-first design. Mobile is out of scope for now.
 | `AppShell.tsx` | Main layout: TopBar + NotificationBar + LeftSidebar + content |
 | `TopBar.tsx` | Header with dynamic org/group names from DB + Tectonica.AI logo |
 | `LeftSidebar.tsx` | Navigation, bot chats list, user info footer |
-| `RightSidebar.tsx` | 12-column widget grid dashboard with live NB signups, events, hours, group chat |
+| `RightSidebar.tsx` | Dashboard sidebar: layout state, data fetching, edit/save/reset flows, modal management. Delegates widget rendering to WidgetGrid. |
+| `dashboard/WidgetGrid.tsx` | Widget rendering orchestration: ResponsiveGridLayout, renderWidget switch, visibility filtering, constraint application. Receives data as props from RightSidebar. |
 | `NotificationBar.tsx` | Amber bar for unread signup/approval notifications |
 | `BotGrid.tsx` | Featured carousel + categorized bot card grid with GSAP |
 | `BotCard.tsx` | Individual bot card with star/favorite, hover description |
@@ -569,7 +582,9 @@ Desktop-first design. Mobile is out of scope for now.
 | `lib/signup-utils.ts` | NationBuilder signup utilities (fetch, parse, enrich). Returns connection status (connected/error/not_configured) |
 | `lib/media-storage.ts` | **Only file that imports Supabase Storage for media.** Upload, signed URLs (1hr TTL), delete, quota check/increment. Swap storage providers by changing this file only. Includes bucket setup instructions in header comment. |
 | `lib/action-adapters/index.ts` | **Action source adapter scaffold.** Defines `ActionSourceAdapter` interface, `CanonicalAction` type, adapter registry. Future external sources (NB, Action Network, ActBlue, Sosha) each get a file here. No concrete adapters yet. |
-| `lib/UserProfileContext.tsx` | React Context for user profile data (role, org, group, name, avatar) |
+| `lib/UserProfileContext.tsx` | React Context for user profile data (role, orgName, groupName, name, avatar) — consumed by TopBar, LeftSidebar, RightSidebar, etc. |
+| `lib/constants/roles.ts` | Role constants (`ROLES`), validation array (`VALID_ROLES`), and helper functions (`isAdminRole`, `isSuperAdmin`). Single source of truth for role strings. |
+| `lib/api-utils.ts` | Shared API route utilities: `requireAuth()` (auth + profile lookup), `fetchProfileMap()` (batch profile enrichment). New routes should use these. |
 | `lib/dashboard-widgets.ts` | Widget IDs, role-based visibility permissions, labels, size constraints, system default layout, and layout utility functions (getVisibleWidgets, filterLayoutToRole, mergeLayoutWithDefaults) |
 | `lib/supabase/server.ts` | Server-side Supabase client factory using cookies |
 | `lib/supabase/client.ts` | Client-side Supabase client factory |
@@ -648,10 +663,13 @@ Desktop-first design. Mobile is out of scope for now.
 
 - **Branch strategy**: `v2` branch = redesigned app, `main` = original. Local
   checkout should always be on `v2`. Push to `v2` only.
-- Client components that call GET routes (RightSidebar, NotificationBar,
-  TopBar) now receive 401s when unauthenticated. Verify they handle
-  error responses gracefully and don't throw uncaught errors during
-  auth load race conditions.
+- **Middleware active**: `src/middleware.ts` handles session refresh on every navigation
+  and redirects unauthenticated users to `/login`. PKCE code safety net catches auth
+  codes landing on wrong routes. Authenticated users are redirected away from `/login`
+  and `/forgot-password`. The old `src/proxy.ts` was deleted (it was never wired up).
+- Client components that call GET routes (RightSidebar, NotificationBar)
+  receive 401s when unauthenticated. Middleware now handles redirects,
+  but verify error handling if modifying these components.
 - **Resend domain verification BLOCKER** — `tectonica.co` is "Not Started" in Resend.
   Partner must add DNS records in GoDaddy. Blocks: signup confirmation emails,
   password reset emails, and all transactional emails to non-owner addresses.
@@ -679,8 +697,8 @@ Desktop-first design. Mobile is out of scope for now.
 - Container query button breakpoint at `350px` may need tuning if grid column widths change.
 - Widget typography uses em-based sizing for responsiveness. All values in `--widget-*` CSS variables.
 - Bot card category colors applied: advisors `#F2F0FC`, create `#FBE9D8`, tools `#FFDADD`, analyze `#D7F5E6`. Helper pill uses per-category badge color.
-- Sidebar uses `#F2F0FC` bg with `#422D8F` purple nav icons/text (50% opacity when inactive). "Leaders & Organizers" renamed to "Leaders Chat".
-- TopBar: org name 20px semibold, group pill with `#F8F7FF` bg, bell icon next to group pill, all icons `#422D8F` purple.
+- Sidebar uses `#F2F0FC` bg with purple nav icons/text via `var(--sidebar-icon-color)` / `var(--sidebar-icon-color-muted)`. "Leaders & Organizers" renamed to "Leaders Chat".
+- TopBar: org name 20px semibold, group pill with `var(--topbar-pill-bg)` bg, bell icon next to group pill, all icons via `var(--widget-chart-members)`. TopBar uses UserProfileContext for org/group names (no direct Supabase queries).
 - **Media Library storage abstraction**: All Supabase Storage calls go through `lib/media-storage.ts` — never import storage elsewhere. Supabase Storage bucket "media" must be created manually (instructions in file header). Storage RLS policies are separate from table RLS.
 - **Media Library soft delete pattern**: Uses `soft_delete_media_item()` SECURITY DEFINER RPC because PostgreSQL evaluates ALL policies (including SELECT's `deleted_at is null`) against the new row state during UPDATE. Same pattern applies to any future soft-delete on RLS-protected tables.
 - **Media Library storage counter**: `increment_storage_used()` SECURITY DEFINER RPC for atomic increments. Decrement is handled inside `soft_delete_media_item()`. Storage usage bar reads from `groups.storage_used_bytes` server-side in `media/page.tsx`.
@@ -694,6 +712,11 @@ Desktop-first design. Mobile is out of scope for now.
 - **Sheet default width**: `sheet.tsx` base component updated to `data-[side=right]:sm:max-w-3xl` (768px) from the Shadcn default of `sm:max-w-sm`. All right-side sheets inherit this.
 - **Inner page layout standard**: All pages must follow: root `flex-1 flex flex-col overflow-hidden bg-content-bg`, title in `px-6 pt-5 pb-0`, toolbar in `px-6 py-5 space-y-4`, content in `flex-1 overflow-y-auto px-6 pb-6`. Use design system tokens (`text-foreground`, `bg-card`, `border-border`) not hardcoded colors.
 - **Base UI hydration id mismatch** — pre-existing warning in browser console (`base-ui-_R_...` id differs between server and client render). Affects Input components in LeftSidebar and MediaGallery. Cosmetic only — page renders correctly. Flag for investigation in a future session.
+- **ReimbursementModal** — no longer accesses Supabase client directly. Uses `/api/approvals/reviewers` for reviewer lookup, `/api/reimbursements` for creation, and `/api/reimbursements/[id]/attachments` for file uploads. All storage operations now server-side.
+- **Migration 021 applied** — `create_action_with_assignments` RPC is live. The actions POST endpoint uses this for atomic action + assignment creation.
+- **RightSidebar decomposition** — split into `RightSidebar.tsx` (529 lines: state, data fetching, layout management, modals) and `dashboard/WidgetGrid.tsx` (286 lines: grid rendering). All behavior preserved.
+- **requireAuth() migration status** — 3 routes use `requireAuth()` (actions, goals, reimbursements GET). 40 routes still use inline auth pattern. New routes should use `requireAuth()`. Incremental migration in future sessions.
+- **WelcomeHelper exhaustive-deps** — `src/components/WelcomeHelper.tsx:161` has eslint-disable for `react-hooks/exhaustive-deps`. Should be audited for stale closure bugs in a future session.
 
 ---
 
@@ -729,7 +752,7 @@ Priority order:
 2. Right sidebar widgets — rebuild using Tremor KPI Cards and Status Monitoring blocks:
    - Fundraising → Tremor KPI card + ProgressBar
    - Recruitment Goal → Tremor KPI + dual ProgressBar
-   - Hours Volunteered → Tremor KPI + BadgeDelta
+   - Hours Volunteered → Tremor KPI + SparkChart (BadgeDelta component was unused and deleted in code health session)
    - Connected Systems → Tremor Status block or Shadcn Badge (whichever is cleaner)
    - Upcoming Events → Tremor Card list
    - New Sign-Ups → keep custom, spacing cleanup only

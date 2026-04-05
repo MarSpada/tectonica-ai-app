@@ -9,6 +9,8 @@ interface UserProfile {
   fullName: string;
   avatarUrl: string | null;
   role?: UserRole;
+  orgName?: string;
+  groupName?: string;
 }
 
 interface UserProfileContextValue {

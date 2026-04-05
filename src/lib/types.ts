@@ -2,6 +2,25 @@ import type { BotCategory } from "./bots";
 
 export type UserRole = "super_admin" | "group_admin" | "member" | "supporter";
 
+/** Leaders & Organizers chat contact */
+export interface LeadersChatContact {
+  name: string;
+  initials: string;
+  color: string;
+  status: "online" | "away" | "offline";
+  role: string;
+}
+
+/** Leaders & Organizers chat message */
+export interface LeadersChatMessage {
+  id: string;
+  sender: string;
+  initials: string;
+  color: string;
+  text: string;
+  time: string;
+}
+
 export interface Message {
   role: "user" | "assistant";
   content: string;

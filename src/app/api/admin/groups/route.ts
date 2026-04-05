@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { isSuperAdmin } from "@/lib/constants/roles";
 
-async function getSuperAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
+async function getSuperAdminProfile(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
@@ -11,13 +12,13 @@ async function getSuperAdmin(supabase: Awaited<ReturnType<typeof createClient>>)
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "super_admin") return null;
+  if (!isSuperAdmin(profile?.role)) return null;
   return profile;
 }
 
 export async function GET() {
   const supabase = await createClient();
-  const profile = await getSuperAdmin(supabase);
+  const profile = await getSuperAdminProfile(supabase);
   if (!profile) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { data: groups } = await supabase
@@ -31,7 +32,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const supabase = await createClient();
-  const profile = await getSuperAdmin(supabase);
+  const profile = await getSuperAdminProfile(supabase);
   if (!profile) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { name } = await request.json();

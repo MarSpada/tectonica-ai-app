@@ -87,7 +87,7 @@ export default function SignupsWidget({ signups, nbStatus, assignments, onSignup
         <Link
           href="/signups"
           className="widget-cta-btn w-full rounded-sm text-white font-semibold cursor-pointer mt-3 block text-center"
-          style={{ backgroundColor: "#c66a0c", fontSize: "var(--widget-btn-label-size)", padding: "8px 0" }}
+          style={{ backgroundColor: "var(--widget-btn-signups)", fontSize: "var(--widget-btn-label-size)", padding: "8px 0" }}
         >
           See all the {signups.length} new signups
         </Link>

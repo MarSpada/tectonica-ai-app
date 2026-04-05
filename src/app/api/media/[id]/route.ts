@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { getSignedUrl, deleteFile } from "@/lib/media-storage";
+import { isAdminRole } from "@/lib/constants/roles";
 
 /* GET /api/media/[id] — get single media item with signed URL */
 export async function GET(
@@ -91,7 +92,7 @@ export async function DELETE(
   }
 
   const isOwner = item.uploaded_by === user.id;
-  const isAdmin = profile?.role === "group_admin" || profile?.role === "super_admin";
+  const isAdmin = isAdminRole(profile?.role);
   if (!isOwner && !isAdmin) {
     return NextResponse.json({ error: "Permission denied" }, { status: 403 });
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { isAdminRole } from "@/lib/constants/roles";
 import type { ApprovalRequest, ApprovalStatus } from "@/lib/types";
 import ApprovalCard from "./ApprovalCard";
 import ApprovalDetailView from "./ApprovalDetailView";
@@ -32,7 +33,7 @@ export default function ApprovalsView({ currentUserId, currentUserRole }: Approv
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
-  const isAdmin = currentUserRole === "super_admin" || currentUserRole === "group_admin";
+  const isAdmin = isAdminRole(currentUserRole);
 
   useEffect(() => {
     fetchRequests();

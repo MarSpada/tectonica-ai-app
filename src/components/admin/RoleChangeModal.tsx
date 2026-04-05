@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ROLES, VALID_ROLES, isSuperAdmin } from "@/lib/constants/roles";
 import type { UserRole } from "@/lib/types";
 import { getRoleLabel } from "@/lib/avatar";
 import {
@@ -36,9 +37,9 @@ export default function RoleChangeModal({
   const [saving, setSaving] = useState(false);
 
   const availableRoles: UserRole[] =
-    callerRole === "super_admin"
-      ? ["super_admin", "group_admin", "member", "supporter"]
-      : ["member", "supporter"];
+    isSuperAdmin(callerRole)
+      ? [...VALID_ROLES]
+      : [ROLES.MEMBER, ROLES.SUPPORTER];
 
   async function handleConfirm() {
     if (selectedRole === member.role) {

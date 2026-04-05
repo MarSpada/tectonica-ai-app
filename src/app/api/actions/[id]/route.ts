@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { isAdminRole } from "@/lib/constants/roles";
 
 /* GET /api/actions/[id] — single action detail */
 export async function GET(
@@ -22,7 +23,7 @@ export async function GET(
     return NextResponse.json({ error: "No group assigned" }, { status: 400 });
   }
 
-  const isAdmin = profile.role === "super_admin" || profile.role === "group_admin";
+  const isAdmin = isAdminRole(profile.role);
 
   const { data: action, error } = await supabase
     .from("actions")
@@ -136,7 +137,7 @@ export async function PATCH(
   if (!profile?.group_id) {
     return NextResponse.json({ error: "No group assigned" }, { status: 400 });
   }
-  if (profile.role !== "super_admin" && profile.role !== "group_admin") {
+  if (!isAdminRole(profile.role)) {
     return NextResponse.json({ error: "Only admins can update actions" }, { status: 403 });
   }
 
@@ -201,7 +202,7 @@ export async function DELETE(
   if (!profile?.group_id) {
     return NextResponse.json({ error: "No group assigned" }, { status: 400 });
   }
-  if (profile.role !== "super_admin" && profile.role !== "group_admin") {
+  if (!isAdminRole(profile.role)) {
     return NextResponse.json({ error: "Only admins can archive actions" }, { status: 403 });
   }
 

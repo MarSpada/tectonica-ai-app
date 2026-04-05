@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { ROLES, isAdminRole, isSuperAdmin } from "@/lib/constants/roles";
 
 export async function GET() {
   const supabase = await createClient();
@@ -12,11 +13,11 @@ export async function GET() {
     .eq("id", user.id)
     .single();
 
-  if (!profile || (profile.role !== "super_admin" && profile.role !== "group_admin")) {
+  if (!profile || !isAdminRole(profile.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (profile.role === "super_admin") {
+  if (profile.role === ROLES.SUPER_ADMIN) {
     // Get all org members via RPC
     const { data, error } = await supabase.rpc("get_org_members");
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

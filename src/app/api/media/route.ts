@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { ROLES } from "@/lib/constants/roles";
 import {
   ALLOWED_MIME_TYPES,
   MAX_FILE_SIZE,
@@ -103,7 +104,7 @@ export async function POST(req: Request) {
   if (!profile?.group_id) {
     return NextResponse.json({ error: "No group assigned" }, { status: 400 });
   }
-  if (profile.role === "supporter") {
+  if (profile.role === ROLES.SUPPORTER) {
     return NextResponse.json({ error: "Supporters cannot upload media" }, { status: 403 });
   }
 

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { fetchProfileMap } from "@/lib/api-utils";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -34,17 +35,7 @@ export async function GET(req: Request) {
     userIds.add(r.reviewer_id);
   }
 
-  let profileMap: Record<string, { full_name: string | null; avatar_url: string | null }> = {};
-  if (userIds.size > 0) {
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, full_name, avatar_url")
-      .in("id", [...userIds]);
-
-    for (const p of profiles || []) {
-      profileMap[p.id] = { full_name: p.full_name, avatar_url: p.avatar_url };
-    }
-  }
+  const profileMap = await fetchProfileMap(supabase, userIds);
 
   const enriched = (requests || []).map((r) => ({
     ...r,

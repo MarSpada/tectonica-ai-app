@@ -41,9 +41,30 @@ export default async function RootLayout({
     if (user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, avatar_url, role")
+        .select("full_name, avatar_url, role, org_id, group_id")
         .eq("id", user.id)
         .single();
+
+      let orgName: string | undefined;
+      let groupName: string | undefined;
+
+      if (profile?.org_id) {
+        const { data: org } = await supabase
+          .from("organizations")
+          .select("name")
+          .eq("id", profile.org_id)
+          .single();
+        orgName = org?.name || undefined;
+      }
+
+      if (profile?.group_id) {
+        const { data: group } = await supabase
+          .from("groups")
+          .select("name")
+          .eq("id", profile.group_id)
+          .single();
+        groupName = group?.name || undefined;
+      }
 
       initialProfile = {
         userId: user.id,
@@ -54,6 +75,8 @@ export default async function RootLayout({
           "User",
         avatarUrl: profile?.avatar_url || null,
         role: (profile?.role as UserRole) || "member",
+        orgName,
+        groupName,
       };
     }
   } catch {

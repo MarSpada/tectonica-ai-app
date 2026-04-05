@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { isSuperAdmin } from "@/lib/constants/roles";
 
 // GET — list all calendar sources for the admin's org
 export async function GET() {
@@ -16,7 +17,7 @@ export async function GET() {
       .eq("id", user.id)
       .single();
 
-    if (!profile?.org_id || profile.role !== "super_admin") {
+    if (!profile?.org_id || !isSuperAdmin(profile.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
       .eq("id", user.id)
       .single();
 
-    if (!profile?.org_id || profile.role !== "super_admin") {
+    if (!profile?.org_id || !isSuperAdmin(profile.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

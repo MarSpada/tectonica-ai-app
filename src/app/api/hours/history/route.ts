@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 interface WeekBucket {
@@ -13,7 +14,7 @@ export async function GET() {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -22,7 +23,7 @@ export async function GET() {
       .single();
 
     if (!profile?.group_id) {
-      return Response.json({ weeks: [] });
+      return NextResponse.json({ weeks: [] });
     }
 
     // Get entries from the last 8 weeks
@@ -57,10 +58,10 @@ export async function GET() {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([week, hours]) => ({ week, hours: Math.round(hours * 10) / 10 }));
 
-    return Response.json({ weeks });
+    return NextResponse.json({ weeks });
   } catch (err) {
     console.error("Hours history fetch failed:", err);
-    return Response.json({ error: "Failed to fetch hours history" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch hours history" }, { status: 500 });
   }
 }
 

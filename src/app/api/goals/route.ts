@@ -1,19 +1,15 @@
-import { createClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
+import { isAdminRole } from "@/lib/constants/roles";
+import { requireAuth } from "@/lib/api-utils";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { profile, supabase } = auth;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("group_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.group_id) {
-      return Response.json({ goals: null });
+    if (!profile.group_id) {
+      return NextResponse.json({ goals: null });
     }
 
     const { data: goals } = await supabase
@@ -22,31 +18,25 @@ export async function GET() {
       .eq("group_id", profile.group_id)
       .single();
 
-    return Response.json({ goals: goals || null });
+    return NextResponse.json({ goals: goals || null });
   } catch (err) {
     console.error("Goals fetch failed:", err);
-    return Response.json({ error: "Failed to fetch goals" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch goals" }, { status: 500 });
   }
 }
 
 export async function PATCH(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, profile, supabase } = auth;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("group_id, role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile || !["super_admin", "group_admin"].includes(profile.role)) {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
+    if (!isAdminRole(profile.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     if (!profile.group_id) {
-      return Response.json({ error: "No group assigned" }, { status: 400 });
+      return NextResponse.json({ error: "No group assigned" }, { status: 400 });
     }
 
     const body = await request.json();
@@ -72,12 +62,12 @@ export async function PATCH(request: Request) {
 
     if (error) {
       console.error("Goals upsert error:", error);
-      return Response.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ goals: data });
+    return NextResponse.json({ goals: data });
   } catch (err) {
     console.error("Goals update failed:", err);
-    return Response.json({ error: "Failed to update goals" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to update goals" }, { status: 500 });
   }
 }

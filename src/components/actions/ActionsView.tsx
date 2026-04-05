@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { isAdminRole } from "@/lib/constants/roles";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
@@ -37,7 +38,7 @@ const STATUS_FILTERS: { value: ActionStatus | ""; label: string; adminOnly?: boo
 const ITEMS_PER_PAGE = 20;
 
 export default function ActionsView({ userRole }: ActionsViewProps) {
-  const isAdmin = userRole === "super_admin" || userRole === "group_admin";
+  const isAdmin = isAdminRole(userRole);
 
   const [scope, setScope] = useState<ScopeFilter>("all");
   const [typeFilter, setTypeFilter] = useState<"" | ActionType>("");

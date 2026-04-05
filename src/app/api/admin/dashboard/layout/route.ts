@@ -1,4 +1,6 @@
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isSuperAdmin } from "@/lib/constants/roles";
 
 export async function GET() {
   try {
@@ -6,7 +8,7 @@ export async function GET() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -14,8 +16,8 @@ export async function GET() {
       .eq("id", user.id)
       .single();
 
-    if (!profile?.org_id || profile.role !== "super_admin") {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
+    if (!profile?.org_id || !isSuperAdmin(profile.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { data: orgLayout } = await supabase
@@ -24,12 +26,12 @@ export async function GET() {
       .eq("org_id", profile.org_id)
       .single();
 
-    return Response.json({
+    return NextResponse.json({
       layout: orgLayout?.layout || null,
       updated_at: orgLayout?.updated_at || null,
     });
   } catch {
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -39,7 +41,7 @@ export async function POST(request: Request) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -47,13 +49,13 @@ export async function POST(request: Request) {
       .eq("id", user.id)
       .single();
 
-    if (!profile?.org_id || profile.role !== "super_admin") {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
+    if (!profile?.org_id || !isSuperAdmin(profile.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = await request.json();
     if (!Array.isArray(body.layout)) {
-      return Response.json({ error: "layout must be an array" }, { status: 400 });
+      return NextResponse.json({ error: "layout must be an array" }, { status: 400 });
     }
 
     const { error } = await supabase
@@ -68,11 +70,11 @@ export async function POST(request: Request) {
         { onConflict: "org_id" }
       );
 
-    if (error) return Response.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    return Response.json({ success: true });
+    return NextResponse.json({ success: true });
   } catch {
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -82,7 +84,7 @@ export async function DELETE() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -90,8 +92,8 @@ export async function DELETE() {
       .eq("id", user.id)
       .single();
 
-    if (!profile?.org_id || profile.role !== "super_admin") {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
+    if (!profile?.org_id || !isSuperAdmin(profile.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     await supabase
@@ -99,8 +101,8 @@ export async function DELETE() {
       .delete()
       .eq("org_id", profile.org_id);
 
-    return Response.json({ success: true });
+    return NextResponse.json({ success: true });
   } catch {
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

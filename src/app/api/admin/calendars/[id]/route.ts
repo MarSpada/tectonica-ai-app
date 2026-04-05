@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { isSuperAdmin } from "@/lib/constants/roles";
 
 // PATCH — update a calendar source (toggle enabled, rename, etc.)
 export async function PATCH(
@@ -20,7 +21,7 @@ export async function PATCH(
       .eq("id", user.id)
       .single();
 
-    if (!profile?.org_id || profile.role !== "super_admin") {
+    if (!profile?.org_id || !isSuperAdmin(profile.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -65,7 +66,7 @@ export async function DELETE(
       .eq("id", user.id)
       .single();
 
-    if (!profile?.org_id || profile.role !== "super_admin") {
+    if (!profile?.org_id || !isSuperAdmin(profile.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

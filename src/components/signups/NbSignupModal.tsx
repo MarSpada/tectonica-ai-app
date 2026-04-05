@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ROLES } from "@/lib/constants/roles";
 import { getAvatarColor, getInitials } from "@/lib/avatar";
 import { formatSignupTime, isUrgent } from "@/lib/signup-utils";
 import type { NbSignup, Member, SignupAssignment } from "@/lib/types";
@@ -38,7 +39,7 @@ export default function NbSignupModal({
   const time = formatSignupTime(signup.created_at);
   const urgent = isUrgent(signup.created_at);
   const assignableMembers = members.filter(
-    (m) => ["super_admin", "group_admin", "member"].includes(m.role)
+    (m) => m.role !== ROLES.SUPPORTER
   );
 
   async function handleAssign(memberId: string) {

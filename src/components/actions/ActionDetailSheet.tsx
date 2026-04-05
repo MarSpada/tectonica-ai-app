@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { isAdminRole } from "@/lib/constants/roles";
 import {
   Sheet,
   SheetContent,
@@ -59,7 +60,7 @@ export default function ActionDetailSheet({
   onClose,
   onUpdated,
 }: ActionDetailSheetProps) {
-  const isAdmin = userRole === "super_admin" || userRole === "group_admin";
+  const isAdmin = isAdminRole(userRole);
 
   const [action, setAction] = useState<Action | null>(null);
   const [completions, setCompletions] = useState<ActionCompletion[]>([]);

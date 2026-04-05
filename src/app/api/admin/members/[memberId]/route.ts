@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAdminRole, isSuperAdmin } from "@/lib/constants/roles";
 
 // PATCH — update member profile (name, etc.)
 export async function PATCH(
@@ -18,7 +19,7 @@ export async function PATCH(
     .eq("id", user.id)
     .single();
 
-  if (!profile || !["super_admin", "group_admin"].includes(profile.role)) {
+  if (!profile || !isAdminRole(profile.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -61,7 +62,7 @@ export async function DELETE(
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "super_admin") {
+  if (!isSuperAdmin(profile?.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

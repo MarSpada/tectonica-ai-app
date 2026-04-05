@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 // LEGACY — fundraising_goal in fundraising_goals is superseded by money_goal in group_goals.
 // This route still returns historical data for chart display. The goal field in the
 // response reflects the legacy per-month value, not the current group_goals target.
@@ -11,7 +12,7 @@ export async function GET() {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -20,7 +21,7 @@ export async function GET() {
       .single();
 
     if (!profile?.group_id) {
-      return Response.json({ history: [] });
+      return NextResponse.json({ history: [] });
     }
 
     const { data: rows } = await supabase
@@ -37,9 +38,9 @@ export async function GET() {
       goal: Number(r.fundraising_goal),
     }));
 
-    return Response.json({ history });
+    return NextResponse.json({ history });
   } catch (err) {
     console.error("Fundraising history fetch failed:", err);
-    return Response.json({ error: "Failed to fetch fundraising history" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch fundraising history" }, { status: 500 });
   }
 }

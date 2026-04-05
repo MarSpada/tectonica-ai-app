@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { ROLES } from "@/lib/constants/roles";
 import {
   Dialog,
   DialogContent,
@@ -76,37 +76,24 @@ export default function ReimbursementModal({ onClose, onCreated }: Reimbursement
     setSubmitting(true);
 
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      // Step 1: Find super_admin reviewer via API
+      const reviewersRes = await fetch("/api/approvals/reviewers");
+      const reviewersJson = await reviewersRes.json();
+      if (!reviewersRes.ok) throw new Error(reviewersJson.error || "Failed to fetch reviewers");
 
-      // Find the super_admin reviewer for this group
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("group_id")
-        .eq("id", user.id)
-        .single();
+      const superAdmin = reviewersJson.reviewers?.find(
+        (r: { role: string }) => r.role === ROLES.SUPER_ADMIN
+      );
+      if (!superAdmin) throw new Error("No super admin found for your group");
 
-      if (!profile?.group_id) throw new Error("No group assigned");
-
-      const { data: admins } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("group_id", profile.group_id)
-        .eq("role", "super_admin")
-        .limit(1);
-
-      if (!admins?.[0]) throw new Error("No super admin found for your group");
-      const reviewerId = admins[0].id;
-
-      // Step 1: Create the request (no attachments yet)
+      // Step 2: Create the reimbursement request via API
       const res = await fetch("/api/reimbursements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: numAmount,
           description: description.trim(),
-          reviewerId,
+          reviewerId: superAdmin.id,
           attachments: [],
         }),
       });
@@ -115,32 +102,21 @@ export default function ReimbursementModal({ onClose, onCreated }: Reimbursement
       if (!res.ok) throw new Error(json.error || "Failed to create request");
       const requestId = json.requestId;
 
-      // Step 2: Upload files to storage
+      // Step 3: Upload files via API
       if (files.length > 0 && requestId) {
-        const uploaded: { url: string; name: string; type: string }[] = [];
-
+        const formData = new FormData();
         for (const f of files) {
-          const ext = f.name.split(".").pop() || "bin";
-          const storagePath = `${user.id}/${requestId}/${crypto.randomUUID()}.${ext}`;
-
-          const { error: uploadErr } = await supabase.storage
-            .from("reimbursements")
-            .upload(storagePath, f.file, { contentType: f.type });
-
-          if (!uploadErr) {
-            const { data: urlData } = supabase.storage
-              .from("reimbursements")
-              .getPublicUrl(storagePath);
-            uploaded.push({ url: urlData.publicUrl, name: f.name, type: f.type });
-          }
+          formData.append("file", f.file);
         }
 
-        // Step 3: Update request with attachment URLs
-        if (uploaded.length > 0) {
-          await supabase
-            .from("reimbursement_requests")
-            .update({ attachments: uploaded })
-            .eq("id", requestId);
+        const uploadRes = await fetch(`/api/reimbursements/${requestId}/attachments`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!uploadRes.ok) {
+          const uploadJson = await uploadRes.json();
+          console.error("Attachment upload failed:", uploadJson.error);
         }
       }
 

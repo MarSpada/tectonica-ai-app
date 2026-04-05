@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import type { LeadersChatContact, LeadersChatMessage } from "@/lib/types";
 import {
   Sheet,
   SheetContent,
@@ -9,24 +10,7 @@ import {
 } from "@/components/ui/sheet";
 import { Icon } from "@/components/ui/icon";
 
-interface Contact {
-  name: string;
-  initials: string;
-  color: string;
-  status: "online" | "away" | "offline";
-  role: string;
-}
-
-interface Message {
-  id: string;
-  sender: string;
-  initials: string;
-  color: string;
-  text: string;
-  time: string;
-}
-
-const contacts: Contact[] = [];
+const contacts: LeadersChatContact[] = [];
 
 const statusColors: Record<string, string> = {
   online: "var(--status-online)",
@@ -40,7 +24,7 @@ const statusLabels: Record<string, string> = {
   offline: "Offline",
 };
 
-const initialMessages: Message[] = [];
+const initialMessages: LeadersChatMessage[] = [];
 
 interface LeadersChatProps {
   open: boolean;
@@ -49,7 +33,7 @@ interface LeadersChatProps {
 }
 
 export default function LeadersChat({ open, onClose, userName = "" }: LeadersChatProps) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [messages, setMessages] = useState<LeadersChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [activeTab, setActiveTab] = useState<"chat" | "contacts">("chat");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -62,7 +46,7 @@ export default function LeadersChat({ open, onClose, userName = "" }: LeadersCha
 
   function handleSend() {
     if (!input.trim()) return;
-    const newMsg: Message = {
+    const newMsg: LeadersChatMessage = {
       id: Date.now().toString(),
       sender: userName,
       initials: userName.slice(0, 2).toUpperCase(),

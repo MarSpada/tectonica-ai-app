@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { Resend } from "resend";
 
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
     } = body;
 
     if (!nbSignupId || !nbSignupName || !assignToUserId) {
-      return Response.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     const supabase = await createClient();
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
 
     if (error) {
       console.error("Assignment RPC error:", error);
-      return Response.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     // Look up the assignee's email for Resend
@@ -78,9 +79,9 @@ export async function POST(req: Request) {
       }
     }
 
-    return Response.json({ assignmentId, assigneeName: assignee?.full_name });
+    return NextResponse.json({ assignmentId, assigneeName: assignee?.full_name });
   } catch (err) {
     console.error("Assignment failed:", err);
-    return Response.json({ error: "Assignment failed" }, { status: 500 });
+    return NextResponse.json({ error: "Assignment failed" }, { status: 500 });
   }
 }

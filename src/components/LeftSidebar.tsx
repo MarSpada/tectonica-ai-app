@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isAdminRole } from "@/lib/constants/roles";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useUserProfile } from "@/lib/UserProfileContext";
@@ -37,10 +38,10 @@ export default function LeftSidebar({
   const avatarUrl = profile?.avatarUrl || null;
   const initials = getInitials(displayName);
 
-  const iconColor = (active: boolean) => active ? "#422D8F" : "rgba(66, 45, 143, 0.5)";
+  const iconColor = (active: boolean) => active ? "var(--sidebar-icon-color)" : "var(--sidebar-icon-color-muted)";
   const navTextStyle = (active: boolean): React.CSSProperties => ({
     fontSize: "13px",
-    color: active ? "#422D8F" : "rgba(66, 45, 143, 0.5)",
+    color: active ? "var(--sidebar-icon-color)" : "var(--sidebar-icon-color-muted)",
   });
 
   return (
@@ -77,7 +78,7 @@ export default function LeftSidebar({
           })}
 
           {/* Admin (only for super_admin / group_admin) */}
-          {(profile?.role === "super_admin" || profile?.role === "group_admin") && (() => {
+          {isAdminRole(profile?.role) && (() => {
             const active = pathname?.startsWith("/admin") ?? false;
             return (
               <Link
@@ -121,7 +122,7 @@ export default function LeftSidebar({
                   key={chat.name}
                   href={`/chat/${chat.botId}`}
                   className="w-full flex items-center px-3 py-1.5 rounded-md font-medium hover:bg-black/5 transition-colors"
-                  style={{ fontSize: "10px", color: "#422D8F" }}
+                  style={{ fontSize: "10px", color: "var(--sidebar-icon-color)" }}
                 >
                   <span className="sidebar-label truncate">{chat.name}</span>
                 </Link>

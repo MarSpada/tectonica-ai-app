@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { isAdminRole } from "@/lib/constants/roles";
 
 export async function GET() {
   const supabase = await createClient();
@@ -18,7 +19,7 @@ export async function GET() {
     .filter(
       (m: { id: string; role: string }) =>
         m.id !== user.id &&
-        (m.role === "super_admin" || m.role === "group_admin")
+        isAdminRole(m.role)
     )
     .map((m: { id: string; full_name: string; avatar_url: string | null; role: string; email: string }) => ({
       id: m.id,

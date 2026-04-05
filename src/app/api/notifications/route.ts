@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
@@ -8,7 +9,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { data } = await supabase
@@ -19,9 +20,9 @@ export async function GET() {
       .order("created_at", { ascending: false })
       .limit(10);
 
-    return Response.json({ notifications: data ?? [] });
+    return NextResponse.json({ notifications: data ?? [] });
   } catch (err) {
     console.error("Notifications fetch failed:", err);
-    return Response.json({ error: "Failed to fetch notifications" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch notifications" }, { status: 500 });
   }
 }

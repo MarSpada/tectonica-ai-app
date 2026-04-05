@@ -131,7 +131,8 @@ The following must be configured manually in the Supabase dashboard:
 
 ### Known fragile points
 
-- **Auth race conditions**: Client components calling GET routes (RightSidebar, NotificationBar, TopBar) receive 401s when unauthenticated during initial load. Verify error handling if modifying these components.
+- **Middleware active**: `src/middleware.ts` handles session refresh on every navigation and redirects unauthenticated users to `/login`. Auth race conditions are mitigated but client components (RightSidebar, NotificationBar) should still handle 401s gracefully.
+- **Migration 021 applied**: `create_action_with_assignments` RPC is live. Used by actions POST for atomic action + assignment creation.
 - **Supabase auth rate limiting**: Heavy HMR reloads during development can trigger rate limits. Wait it out if login starts failing.
 - **Group goals first-run**: If no `group_goals` row exists for a group, dashboard widgets show zeros. An admin must visit the Goals tab and save once to create the row.
 - **Base UI hydration mismatch**: A pre-existing console warning (`base-ui-_R_...` id mismatch) affects Input components in LeftSidebar and MediaGallery. Cosmetic only — rendering is correct.
@@ -210,7 +211,10 @@ src/
     ├── bots.ts             # Bot definitions (24 bots, categories, metadata)
     ├── bots-prompts.ts     # Bot system prompts by ID
     ├── bot-resolver.ts     # DB-first bot resolution with hardcoded fallback
+    ├── constants/
+    │   └── roles.ts        # Role constants (ROLES, VALID_ROLES), helpers (isAdminRole, isSuperAdmin)
     ├── action-adapters/    # Action source adapter scaffold (future: NB, Action Network, ActBlue, Sosha)
+    ├── api-utils.ts        # Shared API route utilities: requireAuth(), fetchProfileMap()
     ├── media-storage.ts    # Storage abstraction (only file that imports Supabase Storage for media)
     ├── signup-utils.ts     # NationBuilder API utilities
     ├── dashboard-widgets.ts # Widget IDs, permissions, constraints, layouts
@@ -218,10 +222,10 @@ src/
     ├── ical-parser.ts      # Lightweight ICS feed parser
     ├── icon-map.ts         # Streamline icon path mapping
     ├── design-tokens.ts    # Design token definitions
-    ├── UserProfileContext.tsx # React Context for user profile data
+    ├── UserProfileContext.tsx # React Context for user profile data (role, orgName, groupName, name, avatar)
     └── utils.ts            # General utilities
 supabase/
-└── migrations/             # 20 SQL migration files (001–020), run manually in Supabase SQL Editor
+└── migrations/             # 21 SQL migration files (001–021), run manually in Supabase SQL Editor
 ```
 
 ### Key architectural patterns
@@ -231,10 +235,15 @@ supabase/
 - Client components use `createClient()` from `lib/supabase/client.ts`
 - These are never mixed — server client never imported in a client component, and vice versa
 
+**Middleware**
+- `src/middleware.ts` refreshes Supabase auth sessions on every navigation, redirects unauthenticated users to `/login`, and redirects authenticated users away from login pages
+
 **API route structure**
 - All routes require auth (`supabase.auth.getUser()`) and return 401 if no session
-- All error responses use `{ error: string }` shape with appropriate HTTP status
-- Role checks use the `profiles` table, not JWT claims
+- New routes should use `requireAuth()` from `lib/api-utils.ts` (3 routes migrated, 40 still on inline pattern — incremental migration)
+- All error responses use `NextResponse.json({ error: string })` with appropriate HTTP status
+- Role checks use `lib/constants/roles.ts` constants — never hardcode role strings
+- All `/api/admin/` routes have server-side role checks (`isSuperAdmin` or `isAdminRole`)
 
 **Storage abstraction**
 - All Supabase Storage calls for media go through `lib/media-storage.ts` — nowhere else

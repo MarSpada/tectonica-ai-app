@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
@@ -27,9 +28,9 @@ export async function POST(req: Request) {
         .in("id", notificationIds);
     }
 
-    return Response.json({ ok: true });
+    return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Mark notifications read failed:", err);
-    return Response.json({ error: "Failed" }, { status: 500 });
+    return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }

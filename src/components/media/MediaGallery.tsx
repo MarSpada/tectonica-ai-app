@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { ROLES, isAdminRole } from "@/lib/constants/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -68,8 +69,8 @@ export default function MediaGallery({
   const [showUpload, setShowUpload] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const canUpload = userRole !== "supporter";
-  const canDelete = userRole === "super_admin" || userRole === "group_admin";
+  const canUpload = userRole !== ROLES.SUPPORTER;
+  const canDelete = isAdminRole(userRole);
 
   // Debounce search input
   useEffect(() => {

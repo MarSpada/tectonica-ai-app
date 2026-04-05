@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { isSuperAdmin } from "@/lib/constants/roles";
 
 async function getAdminProfile(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: { user } } = await supabase.auth.getUser();
@@ -11,7 +12,7 @@ async function getAdminProfile(supabase: Awaited<ReturnType<typeof createClient>
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "super_admin") return null;
+  if (!isSuperAdmin(profile?.role)) return null;
   return profile;
 }
 

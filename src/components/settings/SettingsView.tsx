@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ROLES } from "@/lib/constants/roles";
 import { useSearchParams } from "next/navigation";
-import type { ProfileData } from "@/lib/types";
+import type { ProfileData, UserRole } from "@/lib/types";
 import ProfileTab from "./ProfileTab";
 import AccountTab from "./AccountTab";
 import ActivityTab from "./ActivityTab";
@@ -13,7 +14,7 @@ interface SettingsViewProps {
   userId: string;
   email: string;
   profile: ProfileData;
-  userRole?: string;
+  userRole?: UserRole;
 }
 
 const TAB_CONFIG = [
@@ -45,7 +46,7 @@ export default function SettingsView({
 
   // Filter tabs: hide Approvals for supporters
   const visibleTabs = TAB_CONFIG.filter((t) => {
-    if (t.value === "approvals" && userRole === "supporter") return false;
+    if (t.value === "approvals" && userRole === ROLES.SUPPORTER) return false;
     return true;
   });
 
@@ -90,7 +91,7 @@ export default function SettingsView({
             </div>
           </TabsContent>
           <TabsContent value="approvals">
-            <ApprovalsView currentUserId={userId} currentUserRole={userRole || "member"} />
+            <ApprovalsView currentUserId={userId} currentUserRole={userRole || ROLES.MEMBER} />
           </TabsContent>
         </div>
       </Tabs>

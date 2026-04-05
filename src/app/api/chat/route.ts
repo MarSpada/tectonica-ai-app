@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getBots, getSystemPrompt } from "@/lib/bot-resolver";
 
@@ -8,7 +9,7 @@ export async function POST(req: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { botId, messages, conversationId } = await req.json();
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
   const allBots = await getBots();
   const bot = allBots.find((b) => b.id === botId);
   if (!bot) {
-    return Response.json({ error: "Bot not found" }, { status: 404 });
+    return NextResponse.json({ error: "Bot not found" }, { status: 404 });
   }
 
   // Get system prompt (DB-first, falls back to hardcoded)

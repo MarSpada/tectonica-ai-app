@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ROLES, VALID_ROLES } from "@/lib/constants/roles";
 import Link from "next/link";
 import type { Member } from "@/lib/types";
 import {
@@ -21,10 +22,10 @@ interface MemberDirectoryProps {
 type RoleFilter = "all" | "leaders" | "members" | "supporters";
 
 const roleFilterMap: Record<RoleFilter, string[]> = {
-  all: ["super_admin", "group_admin", "member", "supporter"],
-  leaders: ["super_admin", "group_admin"],
-  members: ["member"],
-  supporters: ["supporter"],
+  all: [...VALID_ROLES],
+  leaders: [ROLES.SUPER_ADMIN, ROLES.GROUP_ADMIN],
+  members: [ROLES.MEMBER],
+  supporters: [ROLES.SUPPORTER],
 };
 
 const filterLabels: { key: RoleFilter; label: string }[] = [

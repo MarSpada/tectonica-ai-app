@@ -1,5 +1,7 @@
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchRecentSignups } from "@/lib/signup-utils";
+import { ROLES } from "@/lib/constants/roles";
 
 export async function GET() {
   try {
@@ -10,7 +12,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const result = await fetchRecentSignups(50);
@@ -18,7 +20,7 @@ export async function GET() {
 
     // If NB is not configured or erroring, return early with status
     if (nbStatus !== "connected") {
-      return Response.json({ signups: [], assignments: [], status: nbStatus });
+      return NextResponse.json({ signups: [], assignments: [], status: nbStatus });
     }
 
     // Fetch existing assignments for these signups
@@ -63,7 +65,7 @@ export async function GET() {
           .from("profiles")
           .select("id, full_name")
           .eq("group_id", profile.group_id)
-          .eq("role", "super_admin")
+          .eq("role", ROLES.SUPER_ADMIN)
           .limit(1);
 
         if (admins?.[0]) {
@@ -92,9 +94,9 @@ export async function GET() {
       }
     }
 
-    return Response.json({ signups, assignments, status: "connected" });
+    return NextResponse.json({ signups, assignments, status: "connected" });
   } catch (err) {
     console.error("NationBuilder fetch failed:", err);
-    return Response.json({ signups: [], assignments: [], status: "error" }, { status: 200 });
+    return NextResponse.json({ signups: [], assignments: [], status: "error" }, { status: 200 });
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import type { UserRole } from "@/lib/types";
+import { ROLES } from "@/lib/constants/roles";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
@@ -17,7 +18,7 @@ interface AdminViewProps {
 }
 
 export default function AdminView({ role, orgId, groupId }: AdminViewProps) {
-  const isSuperAdmin = role === "super_admin";
+  const isSuperAdmin = role === ROLES.SUPER_ADMIN;
 
   const tabs = isSuperAdmin
     ? (["Organization", "People", "Goals", "Bots", "Integrations"] as const)

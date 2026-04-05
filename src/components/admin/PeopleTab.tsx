@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { ROLES } from "@/lib/constants/roles";
 import type { UserRole } from "@/lib/types";
 import {
   getAvatarColor,
@@ -51,7 +52,7 @@ interface PeopleTabProps {
 type RoleFilter = "all" | "super_admin" | "group_admin" | "member" | "supporter";
 
 export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
-  const isSuperAdmin = role === "super_admin";
+  const isSuperAdmin = role === ROLES.SUPER_ADMIN;
   const [members, setMembers] = useState<AdminMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -161,10 +162,10 @@ export default function PeopleTab({ role, orgId, groupId }: PeopleTabProps) {
 
   const roleFilterOptions: { key: RoleFilter; label: string }[] = [
     { key: "all", label: "All" },
-    { key: "super_admin", label: "Super Admin" },
-    { key: "group_admin", label: "Group Admin" },
-    { key: "member", label: "Member" },
-    { key: "supporter", label: "Supporter" },
+    { key: ROLES.SUPER_ADMIN, label: "Super Admin" },
+    { key: ROLES.GROUP_ADMIN, label: "Group Admin" },
+    { key: ROLES.MEMBER, label: "Member" },
+    { key: ROLES.SUPPORTER, label: "Supporter" },
   ];
 
   if (loading) {

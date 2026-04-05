@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
@@ -8,7 +9,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { data } = await supabase
@@ -17,12 +18,12 @@ export async function GET() {
       .eq("user_id", user.id)
       .order("position", { ascending: true });
 
-    return Response.json({
+    return NextResponse.json({
       favorites: data?.map((f) => f.bot_slug) ?? [],
     });
   } catch (err) {
     console.error("Favorites fetch failed:", err);
-    return Response.json({ error: "Failed to fetch favorites" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch favorites" }, { status: 500 });
   }
 }
 
@@ -90,10 +91,10 @@ export async function POST(req: Request) {
       .eq("user_id", user.id)
       .order("position", { ascending: true });
 
-    return Response.json({
+    return NextResponse.json({
       favorites: data?.map((f) => f.bot_slug) ?? [],
     });
   } catch {
-    return Response.json({ error: "Failed to update favorites" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to update favorites" }, { status: 500 });
   }
 }

@@ -1,21 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Responsive, WidthProvider } from "react-grid-layout/legacy";
-import "react-grid-layout/css/styles.css";
-import "react-resizable/css/styles.css";
-import type { Layout as RGLLayout } from "react-grid-layout/legacy";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { ROLES, isSuperAdmin as isSuperAdminRole } from "@/lib/constants/roles";
 import { useUserProfile } from "@/lib/UserProfileContext";
 import {
-  WIDGET_CONSTRAINTS,
-  WIDGET_LABELS,
   SYSTEM_DEFAULT_LAYOUT,
-  getVisibleWidgets,
   filterLayoutToRole,
 } from "@/lib/dashboard-widgets";
-import type { WidgetId } from "@/lib/dashboard-widgets";
 import type {
   Action,
   Member,
@@ -48,34 +41,7 @@ import ReimbursementModal from "./ReimbursementModal";
 import LogHoursModal from "./hours/LogHoursModal";
 import HoursDetailOverlay from "./hours/HoursDetailOverlay";
 import ActionDetailSheet from "./actions/ActionDetailSheet";
-
-import SignupsWidget from "./dashboard/SignupsWidget";
-import RecruitWidget from "./dashboard/RecruitWidget";
-import ConversationsWidget from "./dashboard/ConversationsWidget";
-import ActionsWidget from "./dashboard/ActionsWidget";
-import FundraisingWidget from "./dashboard/FundraisingWidget";
-import RecruitmentGoalWidget from "./dashboard/RecruitmentGoalWidget";
-import RequestApprovalWidget from "./dashboard/RequestApprovalWidget";
-import ConnectedSystemsWidget from "./dashboard/ConnectedSystemsWidget";
-import HoursWidget from "./dashboard/HoursWidget";
-import EventsWidget from "./dashboard/EventsWidget";
-import DirectoryWidget from "./dashboard/DirectoryWidget";
-
-const ResponsiveGridLayout = WidthProvider(Responsive);
-
-const WIDGET_BG: Record<WidgetId, string> = {
-  signups: "var(--widget-bg-signups)",
-  recruit: "var(--widget-bg-recruit)",
-  conversations: "var(--widget-bg-conversations)",
-  actions: "var(--widget-bg-actions)",
-  fundraising: "var(--widget-bg-fundraising)",
-  recruitment_goal: "var(--widget-bg-recruitment-goal)",
-  request_approval: "var(--widget-bg-request-approval)",
-  connected_systems: "var(--widget-bg-connected-systems)",
-  hours_volunteered: "var(--widget-bg-hours)",
-  upcoming_events: "var(--widget-bg-events)",
-  group_directory: "var(--widget-bg-directory, #fff)",
-};
+import WidgetGrid from "./dashboard/WidgetGrid";
 
 interface RightSidebarProps {
   groupMessages?: GroupMessage[];
@@ -87,8 +53,8 @@ export default function RightSidebar({
   onOpenConversation,
 }: RightSidebarProps) {
   const { profile } = useUserProfile();
-  const role = (profile?.role || "member") as UserRole;
-  const isSuperAdmin = role === "super_admin";
+  const role = (profile?.role || ROLES.MEMBER) as UserRole;
+  const isSuperAdmin = isSuperAdminRole(role);
 
   // Layout state
   const [layout, setLayout] = useState<LayoutItem[]>([]);
@@ -128,10 +94,8 @@ export default function RightSidebar({
   const [actions, setActions] = useState<Action[]>([]);
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
 
-  const memberCount = allMembers.filter((m) =>
-    ["super_admin", "group_admin", "member"].includes(m.role)
-  ).length;
-  const supporterCount = allMembers.filter((m) => m.role === "supporter").length;
+  const memberCount = allMembers.filter((m) => m.role !== ROLES.SUPPORTER).length;
+  const supporterCount = allMembers.filter((m) => m.role === ROLES.SUPPORTER).length;
 
   // Fetch layout
   useEffect(() => {
@@ -287,18 +251,6 @@ export default function RightSidebar({
     };
   }, []);
 
-  // Track layout changes from RGL (no auto-save — only on explicit Save)
-  function handleLayoutChange(newLayout: RGLLayout) {
-    const mapped: LayoutItem[] = newLayout.map((item) => ({
-      i: item.i,
-      x: item.x,
-      y: item.y,
-      w: item.w,
-      h: item.h,
-    }));
-    setLayout(mapped);
-  }
-
   // Force recompaction after resize
   function handleResizeStop() {
     setLayout((prev) => [...prev]);
@@ -401,99 +353,6 @@ export default function RightSidebar({
     }
   }
 
-  // Visible widgets for current role
-  const visibleWidgetIds = new Set(getVisibleWidgets(role));
-
-  // Filter layout to only visible widgets
-  const visibleLayout = layout.filter((item) => visibleWidgetIds.has(item.i as WidgetId));
-
-  // Build RGL layout with constraints
-  const rglLayout = visibleLayout.map((item) => {
-    const constraints = WIDGET_CONSTRAINTS[item.i as WidgetId];
-    return {
-      ...item,
-      ...(constraints && {
-        minW: constraints.minW,
-        maxW: constraints.maxW,
-        minH: constraints.minH,
-        maxH: constraints.maxH,
-      }),
-    };
-  });
-
-  // Render widget by ID
-  function renderWidget(widgetId: WidgetId) {
-    switch (widgetId) {
-      case "signups":
-        return (
-          <SignupsWidget
-            signups={signups}
-            nbStatus={nbStatus}
-            assignments={assignments}
-            onSignupClick={setSelectedSignup}
-          />
-        );
-      case "recruit":
-        return <RecruitWidget />;
-      case "conversations":
-        return (
-          <ConversationsWidget
-            groupMessages={groupMessages}
-            onOpenConversation={onOpenConversation}
-          />
-        );
-      case "actions":
-        return <ActionsWidget actions={actions} onActionClick={setSelectedActionId} />;
-      case "fundraising":
-        return (
-          <FundraisingWidget
-            fundraising={fundraising}
-            groupGoals={groupGoals}
-            fundraisingHistory={fundraisingHistory}
-            onRequestReimbursement={() => setShowReimbursementModal(true)}
-          />
-        );
-      case "recruitment_goal":
-        return (
-          <RecruitmentGoalWidget
-            memberCount={memberCount}
-            supporterCount={supporterCount}
-            membersGoal={groupGoals?.members_goal || 0}
-            supportersGoal={groupGoals?.supporters_goal || 0}
-          />
-        );
-      case "request_approval":
-        return (
-          <RequestApprovalWidget onStartApproval={() => setShowApprovalModal(true)} />
-        );
-      case "connected_systems":
-        return (
-          <ConnectedSystemsWidget
-            nbStatus={nbStatus}
-            calendarSourceCount={calendarSourceCount}
-            eventsCount={events.length}
-          />
-        );
-      case "hours_volunteered":
-        return (
-          <HoursWidget
-            totalHours={totalHours}
-            weekHours={weekHours}
-            prevWeekHours={prevWeekHours}
-            hoursHistory={hoursHistory}
-            onLogHours={() => setShowLogHoursModal(true)}
-            onShowDetail={() => setShowHoursDetail(true)}
-          />
-        );
-      case "upcoming_events":
-        return <EventsWidget events={events} eventsLoading={eventsLoading} />;
-      case "group_directory":
-        return <DirectoryWidget members={allMembers} />;
-      default:
-        return null;
-    }
-  }
-
   return (
     <aside className="right-sidebar-responsive w-[var(--right-sidebar)] bg-bg border-l border-black/5 overflow-y-auto">
       {/* Header */}
@@ -525,63 +384,40 @@ export default function RightSidebar({
         </div>
       </div>
 
-      {/* Grid */}
-      {layoutLoading ? (
-        <div className="p-4 space-y-3">
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className="rounded-lg border border-gray-200 bg-gray-50 animate-pulse"
-              style={{ height: `${80 + i * 20}px` }}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="px-2 animate-fade-in">
-          <ResponsiveGridLayout
-            layouts={{ lg: rglLayout }}
-            breakpoints={{ lg: 0 }}
-            cols={{ lg: 3 }}
-            rowHeight={50}
-            margin={[12, 12]}
-            containerPadding={[8, 12]}
-            compactType="vertical"
-            preventCollision={false}
-            draggableHandle=".widget-drag-handle"
-            isResizable={isEditMode}
-            isDraggable={isEditMode}
-            onResizeStop={handleResizeStop}
-            onLayoutChange={handleLayoutChange}
-            useCSSTransforms={true}
-          >
-            {visibleLayout.map((item) => {
-              const widgetId = item.i as WidgetId;
-              return (
-                <div
-                  key={widgetId}
-                  className={`rounded-lg overflow-hidden ${
-                    isEditMode
-                      ? "border-2 border-dashed border-border shadow-xs"
-                      : ""
-                  }`}
-                  style={{ backgroundColor: WIDGET_BG[widgetId] || "var(--card-bg)" }}
-                >
-                  {/* Drag handle — only in edit mode */}
-                  {isEditMode && (
-                    <div className="widget-drag-handle flex items-center justify-between px-4 pt-2 cursor-grab active:cursor-grabbing">
-                      <span className="text-[10px] font-medium uppercase tracking-wider text-text-muted opacity-60 select-none">
-                        {WIDGET_LABELS[widgetId]}
-                      </span>
-                      <Icon name="drag-handle" size={14} className="opacity-40" />
-                    </div>
-                  )}
-                  {renderWidget(widgetId)}
-                </div>
-              );
-            })}
-          </ResponsiveGridLayout>
-        </div>
-      )}
+      {/* Widget Grid */}
+      <WidgetGrid
+        layout={layout}
+        role={role}
+        isEditMode={isEditMode}
+        layoutLoading={layoutLoading}
+        onLayoutChange={setLayout}
+        onResizeStop={handleResizeStop}
+        signups={signups}
+        nbStatus={nbStatus}
+        assignments={assignments}
+        groupMessages={groupMessages}
+        actions={actions}
+        allMembers={allMembers}
+        memberCount={memberCount}
+        supporterCount={supporterCount}
+        events={events}
+        eventsLoading={eventsLoading}
+        calendarSourceCount={calendarSourceCount}
+        totalHours={totalHours}
+        weekHours={weekHours}
+        prevWeekHours={prevWeekHours}
+        hoursHistory={hoursHistory}
+        fundraising={fundraising}
+        groupGoals={groupGoals}
+        fundraisingHistory={fundraisingHistory}
+        onSignupClick={setSelectedSignup}
+        onOpenConversation={onOpenConversation}
+        onActionClick={setSelectedActionId}
+        onStartApproval={() => setShowApprovalModal(true)}
+        onLogHours={() => setShowLogHoursModal(true)}
+        onShowHoursDetail={() => setShowHoursDetail(true)}
+        onRequestReimbursement={() => setShowReimbursementModal(true)}
+      />
 
       {/* Reset Dialog */}
       <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>

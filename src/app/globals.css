@@ -29,7 +29,10 @@
   --card-stroke: rgba(0, 0, 0, 0.08);
   --sidebar-bg: #F2F0FC;
   --sidebar-active: #18181B;
+  --sidebar-icon-color: #422D8F;
+  --sidebar-icon-color-muted: rgba(66, 45, 143, 0.5);
   --topbar-bg: #FFFFFF;
+  --topbar-pill-bg: #F8F7FF;
 
   /* Text */
   --text-primary: #1a1a2e;

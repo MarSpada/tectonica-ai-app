@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { ROLES } from "@/lib/constants/roles";
 
 /* POST /api/media/links — create a link-type media item */
 export async function POST(req: Request) {
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
   if (!profile?.group_id) {
     return NextResponse.json({ error: "No group assigned" }, { status: 400 });
   }
-  if (profile.role === "supporter") {
+  if (profile.role === ROLES.SUPPORTER) {
     return NextResponse.json({ error: "Supporters cannot add media" }, { status: 403 });
   }
 

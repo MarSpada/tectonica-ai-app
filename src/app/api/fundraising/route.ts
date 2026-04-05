@@ -1,13 +1,15 @@
+import { NextResponse } from "next/server";
 // LEGACY — fundraising_goal and print_budget in fundraising_goals are superseded by
 // money_goal and money_budget in group_goals. This route still tracks amount_raised
 // per month. Widgets read targets from /api/goals instead.
 import { createClient } from "@/lib/supabase/server";
+import { isAdminRole } from "@/lib/constants/roles";
 
 export async function GET() {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     // Get user's group
     const { data: profile } = await supabase
@@ -17,7 +19,7 @@ export async function GET() {
       .single();
 
     if (!profile?.group_id) {
-      return Response.json({ goal: null });
+      return NextResponse.json({ goal: null });
     }
 
     // Get current month (first of month)
@@ -32,18 +34,18 @@ export async function GET() {
       .eq("month", currentMonth)
       .single();
 
-    return Response.json({
+    return NextResponse.json({
       goal: goal || {
         fundraising_goal: 0,
         amount_raised: 0,
         print_budget: 0,
         month: currentMonth,
       },
-      isAdmin: ["super_admin", "group_admin"].includes(profile.role),
+      isAdmin: isAdminRole(profile.role),
     });
   } catch (err) {
     console.error("Fundraising fetch failed:", err);
-    return Response.json({ error: "Failed to fetch fundraising data" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch fundraising data" }, { status: 500 });
   }
 }
 
@@ -51,7 +53,7 @@ export async function PATCH(request: Request) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     // Check admin role
     const { data: profile } = await supabase
@@ -60,8 +62,8 @@ export async function PATCH(request: Request) {
       .eq("id", user.id)
       .single();
 
-    if (!profile || !["super_admin", "group_admin"].includes(profile.role)) {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
+    if (!profile || !isAdminRole(profile.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = await request.json();
@@ -89,12 +91,12 @@ export async function PATCH(request: Request) {
 
     if (error) {
       console.error("Fundraising upsert error:", error);
-      return Response.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ goal: data });
+    return NextResponse.json({ goal: data });
   } catch (err) {
     console.error("Fundraising update failed:", err);
-    return Response.json({ error: "Failed to update fundraising data" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to update fundraising data" }, { status: 500 });
   }
 }

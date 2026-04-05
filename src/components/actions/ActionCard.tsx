@@ -1,5 +1,6 @@
 "use client";
 
+import { isAdminRole } from "@/lib/constants/roles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -50,7 +51,7 @@ export default function ActionCard({
   onEdit,
   onArchive,
 }: ActionCardProps) {
-  const isAdmin = userRole === "super_admin" || userRole === "group_admin";
+  const isAdmin = isAdminRole(userRole);
   const isCompleted = action.is_completed_by_me;
 
   return (
