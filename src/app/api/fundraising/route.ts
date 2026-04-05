@@ -1,3 +1,6 @@
+// LEGACY — fundraising_goal and print_budget in fundraising_goals are superseded by
+// money_goal and money_budget in group_goals. This route still tracks amount_raised
+// per month. Widgets read targets from /api/goals instead.
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {

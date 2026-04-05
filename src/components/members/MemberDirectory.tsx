@@ -65,6 +65,14 @@ export default function MemberDirectory({ members }: MemberDirectoryProps) {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-content-bg">
+      {/* Page title */}
+      <div className="px-6 pt-5 pb-0">
+        <div className="flex items-center gap-3 mb-4">
+          <Icon name="members" size={28} />
+          <h1 className="text-2xl font-bold text-foreground">Members</h1>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="px-6 py-5 space-y-4">
         {/* Toolbar: search + filters + count */}

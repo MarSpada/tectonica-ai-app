@@ -8,6 +8,7 @@ import OrgTab from "./OrgTab";
 import PeopleTab from "./PeopleTab";
 import BotsTab from "./BotsTab";
 import IntegrationsTab from "./IntegrationsTab";
+import GoalsTab from "./GoalsTab";
 
 interface AdminViewProps {
   role: UserRole;
@@ -19,8 +20,8 @@ export default function AdminView({ role, orgId, groupId }: AdminViewProps) {
   const isSuperAdmin = role === "super_admin";
 
   const tabs = isSuperAdmin
-    ? (["Organization", "People", "Bots", "Integrations"] as const)
-    : (["People"] as const);
+    ? (["Organization", "People", "Goals", "Bots", "Integrations"] as const)
+    : (["People", "Goals"] as const);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-content-bg">
@@ -55,6 +56,9 @@ export default function AdminView({ role, orgId, groupId }: AdminViewProps) {
           )}
           <TabsContent value="People">
             <PeopleTab role={role} orgId={orgId} groupId={groupId} />
+          </TabsContent>
+          <TabsContent value="Goals">
+            <GoalsTab groupId={groupId} />
           </TabsContent>
           {isSuperAdmin && (
             <TabsContent value="Bots">

@@ -165,6 +165,9 @@ export interface ApprovalComment {
   author_avatar?: string | null;
 }
 
+// LEGACY — fundraising_goal and print_budget here are from the per-month fundraising_goals table.
+// Source of truth for targets moved to GroupGoals (money_goal, money_budget).
+// This type still tracks amount_raised per month.
 export interface FundraisingGoal {
   id: string;
   group_id: string;
@@ -174,6 +177,51 @@ export interface FundraisingGoal {
   print_budget: number;
   created_at: string;
   updated_at: string;
+}
+
+/* ── Group Goals ── */
+
+export interface GroupGoals {
+  id: string;
+  group_id: string;
+  money_goal: number;
+  money_budget: number;
+  money_raised_offline: number;
+  members_goal: number;
+  supporters_goal: number;
+  updated_at: string;
+  updated_by: string | null;
+}
+
+/* ── Media Library ── */
+
+export type MediaCategory = "image" | "video" | "document" | "link";
+export type MediaItemStatus = "pending" | "ready" | "failed";
+export type MediaVisibility = "group" | "admins_only" | "specific_members";
+
+export interface MediaItem {
+  id: string;
+  group_id: string;
+  uploaded_by: string;
+  category: MediaCategory;
+  file_name: string;
+  storage_path: string | null;
+  url: string | null;
+  title: string | null;
+  description: string | null;
+  mime_type: string | null;
+  file_size: number | null;
+  thumbnail_path: string | null;
+  status: MediaItemStatus;
+  visibility: MediaVisibility;
+  tags: string[];
+  download_count: number;
+  deleted_at: string | null;
+  created_at: string;
+  // Joined fields from API
+  uploader_name?: string;
+  uploader_avatar?: string | null;
+  signed_url?: string;
 }
 
 /* ── Dashboard Layout ── */

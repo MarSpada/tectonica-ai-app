@@ -1,4 +1,7 @@
 -- Fundraising goals per group per month
+-- LEGACY — fundraising_goal and print_budget columns are superseded by
+-- money_goal and money_budget in group_goals (migration 019). This table
+-- still tracks amount_raised per month.
 -- Run this in Supabase SQL Editor (Dashboard → SQL Editor → New Query)
 
 CREATE TABLE public.fundraising_goals (

@@ -1,3 +1,6 @@
+// LEGACY — fundraising_goal in fundraising_goals is superseded by money_goal in group_goals.
+// This route still returns historical data for chart display. The goal field in the
+// response reflects the legacy per-month value, not the current group_goals target.
 import { createClient } from "@/lib/supabase/server";
 
 /**

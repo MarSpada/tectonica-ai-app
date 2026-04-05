@@ -27,6 +27,7 @@ import type {
   FundraisingHistory,
   HoursWeekBucket,
   LayoutItem,
+  GroupGoals,
 } from "@/lib/types";
 import type { UserRole } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -118,7 +119,7 @@ export default function RightSidebar({
   const [showLogHoursModal, setShowLogHoursModal] = useState(false);
   const [showHoursDetail, setShowHoursDetail] = useState(false);
   const [fundraising, setFundraising] = useState<FundraisingGoal | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [groupGoals, setGroupGoals] = useState<GroupGoals | null>(null);
   const [showReimbursementModal, setShowReimbursementModal] = useState(false);
   const [fundraisingHistory, setFundraisingHistory] = useState<FundraisingHistory[]>([]);
   const [hoursHistory, setHoursHistory] = useState<HoursWeekBucket[]>([]);
@@ -207,9 +208,17 @@ export default function RightSidebar({
         const res = await fetch("/api/fundraising");
         const json = await res.json();
         if (json.goal) setFundraising(json.goal);
-        if (json.isAdmin) setIsAdmin(json.isAdmin);
       } catch {
         // Fundraising unavailable
+      }
+    }
+    async function fetchGoals() {
+      try {
+        const res = await fetch("/api/goals");
+        const json = await res.json();
+        if (json.goals) setGroupGoals(json.goals);
+      } catch {
+        // Goals unavailable
       }
     }
     async function fetchFundraisingHistory() {
@@ -243,6 +252,7 @@ export default function RightSidebar({
     fetchFundraising();
     fetchFundraisingHistory();
     fetchHoursHistory();
+    fetchGoals();
   }, []);
 
   // Auto-save on unmount if in edit mode
@@ -424,9 +434,8 @@ export default function RightSidebar({
         return (
           <FundraisingWidget
             fundraising={fundraising}
+            groupGoals={groupGoals}
             fundraisingHistory={fundraisingHistory}
-            isAdmin={isAdmin}
-            onFundraisingUpdate={setFundraising}
             onRequestReimbursement={() => setShowReimbursementModal(true)}
           />
         );
@@ -435,6 +444,8 @@ export default function RightSidebar({
           <RecruitmentGoalWidget
             memberCount={memberCount}
             supporterCount={supporterCount}
+            membersGoal={groupGoals?.members_goal || 0}
+            supportersGoal={groupGoals?.supporters_goal || 0}
           />
         );
       case "request_approval":
