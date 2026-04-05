@@ -259,6 +259,71 @@ export default function IntegrationsTab() {
         )}
       </div>
 
+      {/* Action Sources */}
+      <div className="border-t border-black/5 pt-6">
+        <div className="mb-4">
+          <h3 className="text-sm font-bold text-text-primary">Action Sources</h3>
+          <p className="text-xs text-text-muted mt-0.5">
+            Connect external platforms to automatically import actions for your group members.
+            Each source uses an adapter that converts external data into actions.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between bg-white border border-black/5 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-3">
+              <img src="/nb-icon.png" alt="" className="w-5 h-5" />
+              <div>
+                <span className="text-sm font-medium text-text-primary">NationBuilder Actions</span>
+                <p className="text-[10px] text-text-muted">Import petitions, calls to action, and volunteer opportunities</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-[10px]">Not Connected</Badge>
+              <Button variant="outline" size="sm" disabled className="text-xs">Configure</Button>
+            </div>
+          </div>
+          <div className="flex items-center justify-between bg-white border border-black/5 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              <Icon name="bot-networks" size={20} className="opacity-60" />
+              <div>
+                <span className="text-sm font-medium text-text-primary">Action Network</span>
+                <p className="text-[10px] text-text-muted">Import petitions, events, fundraising pages, and advocacy campaigns</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-[10px]">Not Connected</Badge>
+              <Button variant="outline" size="sm" disabled className="text-xs">Configure</Button>
+            </div>
+          </div>
+          <div className="flex items-center justify-between bg-white border border-black/5 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              <Icon name="bot-group-fundraising" size={20} className="opacity-60" />
+              <div>
+                <span className="text-sm font-medium text-text-primary">ActBlue</span>
+                <p className="text-[10px] text-text-muted">Import donation drives and fundraising actions</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-[10px]">Not Connected</Badge>
+              <Button variant="outline" size="sm" disabled className="text-xs">Configure</Button>
+            </div>
+          </div>
+          <div className="flex items-center justify-between bg-white border border-black/5 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              <Icon name="share" size={20} className="opacity-60" />
+              <div>
+                <span className="text-sm font-medium text-text-primary">Sosha</span>
+                <p className="text-[10px] text-text-muted">Import social sharing campaigns and engagement actions</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-[10px]">Not Connected</Badge>
+              <Button variant="outline" size="sm" disabled className="text-xs">Configure</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Info about other integrations */}
       <div className="border-t border-black/5 pt-6">
         <h3 className="text-sm font-bold text-text-primary mb-2">Other Integrations</h3>

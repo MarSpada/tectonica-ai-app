@@ -96,7 +96,7 @@ export default function MediaDetailSheet({
 
   return (
     <Sheet open={!!mediaId} onOpenChange={() => onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+      <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto p-6">
         <SheetHeader>
           <SheetTitle className="text-base">Media Details</SheetTitle>
         </SheetHeader>

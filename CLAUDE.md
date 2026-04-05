@@ -314,7 +314,20 @@ Main bot grid + right sidebar dashboard. Body has no special class.
 - Shows roles and avatars
 - Member detail view (`/members/[id]`)
 
-### 10. Settings Page (`/settings`)
+### 10. Actions Page (`/actions`)
+- Full actions list with filters: scope (All Actions / Assigned to Me), type, status (Active / Completed / Archived — last admin-only)
+- Action cards: title, type badge, source badge, points, deadline, assignment scope, completion status, admin controls (edit/archive)
+- Create Action button (admin only) → Sheet with full form (type, points, scope, bot suggestion, dates, visibility)
+- Click action card → Detail Sheet with CTA button, completion notes, "Mark as Complete" (disabled until CTA clicked for external actions), self-assign, admin completion list
+- Entry point: "All Actions" button in Group Actions dashboard widget (not in left sidebar nav)
+
+### 11. Signups Page (`/signups`)
+- Full NationBuilder signups table with search by name/email/phone
+- Columns: Name, Email/Phone, Signed Up (with urgency), Status, Assigned To
+- Click row → NbSignupModal for contact/call/assign
+- Entry point: "See all the (##) new signups" button in SignupsWidget
+
+### 12. Settings Page (`/settings`)
 - Profile tab: edit name, bio, avatar upload (Supabase Storage)
 - Account tab: account settings
 
@@ -428,6 +441,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `017_dashboard_layouts.sql` | dashboard_layouts_default (org-level) + dashboard_layouts_user (per-user) tables for React Grid Layout persistence. RLS: members read org default, super_admin writes; users manage own layout |
 | `018_media_items.sql` | Replaces old `media` stub with full `media_items` table (category, storage_path, url, title, description, mime_type, file_size, tags, status, visibility, soft delete, download_count, tsvector search). Adds `storage_used_bytes` to groups. RLS: group-scoped read (non-deleted only), role-gated insert (not supporters), owner+admin update. `soft_delete_media_item()` and `increment_storage_used()` SECURITY DEFINER RPCs for atomic operations that cross RLS boundaries. |
 | `019_group_goals.sql` | `group_goals` table (one row per group): money_goal, money_budget, money_raised_offline, members_goal, supporters_goal, updated_by. UNIQUE(group_id). RLS: members read, admins (super_admin + group_admin) insert/update via `is_admin()`. Centralizes goal targets that feed Fundraising and Recruitment Goal dashboard widgets. |
+| `020_actions.sql` | Full actions system: `actions` table (source, type, title, description, call_to_action, url, suggested_bot_slug, points_value, priority, assignment_scope, starts_at, ends_at, status, visibility), `action_assignments` (member + group targeting), `action_completions` (UNIQUE per member per action, snapshotted points), `member_points_ledger` (UNIQUE per completion, audit trail). `complete_action()` SECURITY DEFINER RPC for atomic completion + points. RLS on all 4 tables: group-scoped reads, admin-only writes, members see own completions/ledger only. Error code contract (P0002–P0005) documented in both migration and API route. |
 
 ---
 
@@ -471,6 +485,10 @@ Desktop-first design. Mobile is out of scope for now.
 | `/api/media/links` | POST | Create link-type media item (url + title required, no file upload) |
 | `/api/dashboard/layout` | GET/POST/DELETE | GET: load user layout (user→org→system fallback). POST: save user layout. DELETE: reset user layout |
 | `/api/admin/dashboard/layout` | GET/POST/DELETE | GET: org default layout. POST: save org default (super_admin). DELETE: reset to system default (super_admin) |
+| `/api/actions` | GET/POST | GET: list active actions for user's group (filters: scope, status, type, pagination). POST: create internal action (admin only, validates bot slug). |
+| `/api/actions/[id]` | GET/PATCH/DELETE | GET: single action detail with completions (admin sees all). PATCH: update action (admin only). DELETE: soft archive via status='archived' (preserves history). |
+| `/api/actions/[id]/complete` | POST | Mark action complete via `complete_action` RPC. Atomic completion + points ledger. Maps RPC errcodes to HTTP (404/400/403/409). |
+| `/api/actions/[id]/self-assign` | POST | Self-assign to action (validates assignment_scope='self_assign', 403 otherwise). |
 | `/auth/callback` | GET | OAuth/email confirmation callback — signs out after confirmation, redirects to login |
 | `/auth/reset-callback` | GET | Password reset callback — exchanges PKCE code, redirects to /reset-password |
 
@@ -501,6 +519,11 @@ Desktop-first design. Mobile is out of scope for now.
 | `media/MediaDetailSheet.tsx` | Sheet side panel: preview, metadata, download, delete with confirmation |
 | `media/StorageUsageBar.tsx` | Progress bar showing group storage usage vs quota |
 | `signups/NbSignupModal.tsx` | NB signup detail modal with contact/call/assign actions |
+| `signups/SignupsView.tsx` | Full signups table page: search, status badges, assignment info, click-to-modal |
+| `actions/ActionsView.tsx` | Full actions page: scope/type/status filters, action card grid, create/edit/detail sheets |
+| `actions/ActionCard.tsx` | Action card: type badge, source badge, points, deadline, scope, admin controls |
+| `actions/CreateEditActionSheet.tsx` | Sheet form: title, description, type, CTA, URL, points, scope, bot suggestion, dates, visibility |
+| `actions/ActionDetailSheet.tsx` | Sheet detail: CTA button (opens new tab if external), completion gating, notes, self-assign, admin completion list |
 | `members/MemberDirectory.tsx` | Group member list with roles and search |
 | `members/MemberDetailModal.tsx` | Member detail popup |
 | `members/MemberProfile.tsx` | Member profile card |
@@ -537,7 +560,7 @@ Desktop-first design. Mobile is out of scope for now.
 
 | File | Description |
 |---|---|
-| `lib/types.ts` | Type definitions: UserRole, Message, Conversation, Member, GroupMessage, NbSignup, SignupAssignment, AppNotification, ApprovalRequest, ApprovalComment, FundraisingGoal (LEGACY targets), GroupGoals, ReimbursementRequest, etc. |
+| `lib/types.ts` | Type definitions: UserRole, Message, Conversation, Member, GroupMessage, NbSignup, SignupAssignment, AppNotification, ApprovalRequest, ApprovalComment, FundraisingGoal (LEGACY targets), GroupGoals, ReimbursementRequest, Action, ActionAssignment, ActionCompletion, MemberPointsLedger, etc. |
 | `lib/bots.ts` | Hardcoded bot definitions: 24 bots with metadata (id, name, icon, category, description), categoryMeta colors, defaultFeaturedBotIds |
 | `lib/bots-prompts.ts` | Bot system prompts mapped by bot ID, falls back to generic prompt |
 | `lib/bot-resolver.ts` | getBots() (DB-first, fallback to hardcoded), getSystemPrompt() (DB-first, fallback to bots-prompts.ts) |
@@ -545,6 +568,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `lib/avatar.ts` | Avatar utilities (upload, delete, generate URL) for Supabase Storage |
 | `lib/signup-utils.ts` | NationBuilder signup utilities (fetch, parse, enrich). Returns connection status (connected/error/not_configured) |
 | `lib/media-storage.ts` | **Only file that imports Supabase Storage for media.** Upload, signed URLs (1hr TTL), delete, quota check/increment. Swap storage providers by changing this file only. Includes bucket setup instructions in header comment. |
+| `lib/action-adapters/index.ts` | **Action source adapter scaffold.** Defines `ActionSourceAdapter` interface, `CanonicalAction` type, adapter registry. Future external sources (NB, Action Network, ActBlue, Sosha) each get a file here. No concrete adapters yet. |
 | `lib/UserProfileContext.tsx` | React Context for user profile data (role, org, group, name, avatar) |
 | `lib/dashboard-widgets.ts` | Widget IDs, role-based visibility permissions, labels, size constraints, system default layout, and layout utility functions (getVisibleWidgets, filterLayoutToRole, mergeLayoutWithDefaults) |
 | `lib/supabase/server.ts` | Server-side Supabase client factory using cookies |
@@ -587,6 +611,9 @@ Desktop-first design. Mobile is out of scope for now.
 - **Sidebar role display** — shows dynamic user role instead of hardcoded "Settings"
 - **Default signup role** — new users default to 'supporter' (lowest privilege)
 - **Configurable dashboard grid** — React Grid Layout (3-column snap grid with vertical compaction), edit mode toggle, role-aware save (super admin gets "Save for me" vs "Save as org default" dialog), reset to default for non-super-admin, per-widget size constraints from WIDGET_CONSTRAINTS, role-based widget visibility, sonner toasts for feedback, CSS fade-in animation
+- **Actions system** — full CRUD for internal actions (petition, donation, event_rsvp, letter, phone_bank, canvass, social_share, custom). Admin creates actions with points, deadlines, assignment scope (all/targeted/self_assign), optional bot suggestions, visibility control. Members complete actions via detail sheet — external actions must be clicked before completion unlocks. Atomic completion + points ledger via `complete_action` SECURITY DEFINER RPC with group boundary validation. Source adapter scaffold in `lib/action-adapters/` ready for NB/Action Network/ActBlue/Sosha ingestion. Actions widget on dashboard shows top 3 with click-to-detail. Full page at `/actions` with scope/type/status filters.
+- **Signups page** — `/signups` full table view of NationBuilder signups with search, status badges, assignment info. Entry point: "See all (##)" button in SignupsWidget. SignupsWidget now shows max 2 items with count-based CTA button (#c66a0c).
+- **Integrations tab — Action Sources** — scaffold section in admin Integrations showing NationBuilder Actions, Action Network, ActBlue, Sosha with "Not Connected" status and disabled Configure buttons.
 - GSAP entrance animations throughout (except right sidebar — uses CSS fade-in)
 - Deployed on Railway with auto-deploy from `v2` branch
 
@@ -599,8 +626,15 @@ Desktop-first design. Mobile is out of scope for now.
 - Leaders & Organizers real-time chat (UI exists, needs real-time backend)
 - Group Admin features (invitations, recruiter IDs, /join flow)
 
+### Priority — Actions System (built, needs extension)
+- External source adapters: NationBuilder actions, Action Network, ActBlue, Sosha (scaffold in `lib/action-adapters/`, no implementations yet)
+- Targeted assignment member picker (UI scaffold exists in CreateEditActionSheet, needs wiring)
+- API-verified completion method (enum value exists in schema, unused)
+- Leaderboards / points display (ledger exists, needs UI)
+- Points total materialized view or denormalized column (noted in migration)
+
 ### Priority — Integrations
-- Action Network API connection
+- Action Network API connection (action source adapter + signup ingestion)
 - Mobilize API connection
 - Image generation for Graphics Creation bot
 - Custom SMTP for Supabase Auth — Resend SMTP is configured in Supabase but `tectonica.co` domain is unverified in Resend. Partner needs to add DNS records in GoDaddy.
@@ -653,6 +687,12 @@ Desktop-first design. Mobile is out of scope for now.
 - **Group goals first-run**: If no `group_goals` row exists for a group, widgets show zeros/raw counts. Admin must visit Goals tab and save once to create the row via upsert.
 - **LEGACY fundraising_goals columns**: `fundraising_goals.fundraising_goal` and `fundraising_goals.print_budget` are superseded by `group_goals.money_goal` and `group_goals.money_budget`. Not dropped — just no longer the display source. LEGACY comments mark all read sites. The `/api/fundraising` route still tracks `amount_raised` per month.
 - **Page titles**: Members and Group Media pages now have icon + h1 page titles matching Admin Panel pattern (`Icon` size={28} + `text-2xl font-bold`).
+- **Actions system error code contract**: `complete_action` RPC uses custom errcodes P0002–P0005 mapped to HTTP statuses in `/api/actions/[id]/complete/route.ts`. Both files have matching documentation blocks. If error messages change in one, they must change in the other.
+- **Actions adapter scaffold**: `src/lib/action-adapters/index.ts` defines the interface but has zero implementations. External source ingestion (NB, Action Network, ActBlue, Sosha) is deferred to future sessions. Integrations tab shows static "Not Connected" entries for these.
+- **Actions — no left sidebar nav**: The Actions page (`/actions`) is only reachable via the "All Actions" button in the Group Actions dashboard widget. This is intentional per spec.
+- **Signups API limit**: Changed from 3 to 50 to support the full signups page. Widget slices to 2 internally.
+- **Sheet default width**: `sheet.tsx` base component updated to `data-[side=right]:sm:max-w-3xl` (768px) from the Shadcn default of `sm:max-w-sm`. All right-side sheets inherit this.
+- **Inner page layout standard**: All pages must follow: root `flex-1 flex flex-col overflow-hidden bg-content-bg`, title in `px-6 pt-5 pb-0`, toolbar in `px-6 py-5 space-y-4`, content in `flex-1 overflow-y-auto px-6 pb-6`. Use design system tokens (`text-foreground`, `bg-card`, `border-border`) not hardcoded colors.
 - **Base UI hydration id mismatch** — pre-existing warning in browser console (`base-ui-_R_...` id differs between server and client render). Affects Input components in LeftSidebar and MediaGallery. Cosmetic only — page renders correctly. Flag for investigation in a future session.
 
 ---

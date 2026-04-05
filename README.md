@@ -8,9 +8,9 @@ We work in a spec-driven development model — every feature is fully specified 
 
 The platform serves four tiers of users within an organization: super admins who manage the entire organization's settings, bots, and integrations; group admins who oversee their local group's people and goals; members who actively participate in organizing work; and supporters who have limited access as newcomers. Each role sees a tailored experience — from a full admin panel with people management and integration controls, down to a streamlined dashboard focused on getting started.
 
-Today, the core platform is live and functional. Users can sign up, log in, chat with 24 AI bots across four categories (Advisors, Create Things, Use Organizing Tools, Understand + Analyze), upload and manage group media, track volunteer hours and fundraising goals, submit items for approval, manage reimbursement requests, and view a configurable dashboard with live data from NationBuilder signups, calendar feeds, and group conversations. The admin panel supports full organization, people, bot, goal, and integration management.
+Today, the core platform is live and functional. Users can sign up, log in, chat with 24 AI bots across four categories (Advisors, Create Things, Use Organizing Tools, Understand + Analyze), upload and manage group media, track volunteer hours and fundraising goals, submit items for approval, manage reimbursement requests, create and complete actions with points tracking, and view a configurable dashboard with live data from NationBuilder signups, calendar feeds, group conversations, and actions. The admin panel supports full organization, people, bot, goal, action, and integration management.
 
-The path to full launch involves completing a handful of integration connections (Action Network, Mobilize), wiring the Group Coach Bot to real campaign data, enabling the Graphics Creation bot's visual editor, resolving a DNS verification blocker for transactional emails, and expanding the platform to support multiple organizations and groups simultaneously — a capability the database schema already supports but the UI does not yet surface.
+The path to full launch involves connecting external action source adapters (NationBuilder actions, Action Network, ActBlue, Sosha), completing remaining integration connections (Mobilize), wiring the Group Coach Bot to real campaign data, enabling the Graphics Creation bot's visual editor, resolving a DNS verification blocker for transactional emails, and expanding the platform to support multiple organizations and groups simultaneously — a capability the database schema already supports but the UI does not yet surface.
 
 ---
 
@@ -34,6 +34,8 @@ The path to full launch involves completing a handful of integration connections
 - Super Admin Panel (Organization, People, Goals, Bots, Integrations tabs)
 - Configurable dashboard grid (React Grid Layout, role-aware save, per-widget size constraints)
 - Calendar integration (iCal/ICS feeds from Google Calendar, Outlook, Mobilize)
+- Actions system (internal actions with types, points, deadlines, assignment scoping, self-reported completion tracking, points ledger)
+- Signups page (full NationBuilder signup table with search, status, assignment info)
 - Notification bar (signups, approvals, reimbursements)
 - Profile and account settings with avatar upload
 - Activity log (unified timeline of hours, approvals, signups, reimbursements)
@@ -51,6 +53,7 @@ The path to full launch involves completing a handful of integration connections
 - **Resend domain verification** — `tectonica.co` is "Not Started" in Resend. The partner organization needs to add DNS records in GoDaddy. This blocks: signup confirmation emails, password reset emails, and all transactional emails sent to non-owner addresses. Supabase SMTP is configured correctly and just needs the verified domain.
 - **Reimbursement email notifications** — coded and ready but will not send until Resend domain is verified. In-app notifications work in the meantime.
 - **Action Network and Mobilize integrations** — not yet connected. UI shows "Not Connected" status in the Connected Systems widget.
+- **External action source adapters** — scaffold exists in `lib/action-adapters/` but no concrete implementations. NationBuilder Actions, Action Network, ActBlue, and Sosha show "Not Connected" in the Integrations tab Action Sources section.
 
 ---
 
@@ -114,7 +117,7 @@ The following must be configured manually in the Supabase dashboard:
    - `media` — for Media Library files. Setup instructions are in the header comment of `src/lib/media-storage.ts`
    - `reimbursements` — for reimbursement request attachments
 2. **Storage RLS policies** — Storage bucket policies are separate from table-level RLS and must be configured in the Supabase dashboard
-3. **All SQL migrations** (in `supabase/migrations/`, numbered 001–019) must be run in order in the Supabase SQL Editor
+3. **All SQL migrations** (in `supabase/migrations/`, numbered 001–020) must be run in order in the Supabase SQL Editor
 
 ### Test accounts
 
@@ -168,10 +171,12 @@ src/
 │   ├── forgot-password/    # Forgot password page
 │   ├── group/              # Group profile page
 │   ├── login/              # Login page
+│   ├── actions/            # Actions page (full list with filters)
 │   ├── media/              # Media Library page
 │   ├── members/            # Member directory + detail pages
 │   ├── reset-password/     # Reset password page
 │   ├── settings/           # Profile and account settings page
+│   ├── signups/            # NationBuilder signups page (full table)
 │   ├── layout.tsx          # Root layout
 │   ├── page.tsx            # Dashboard (home) page
 │   └── globals.css         # Global styles and CSS variables
@@ -185,7 +190,8 @@ src/
 │   ├── media/              # Media Library components (gallery, upload, detail)
 │   ├── members/            # Member directory components
 │   ├── settings/           # Settings page components
-│   ├── signups/            # NationBuilder signup components
+│   ├── actions/            # Actions system components (cards, sheets, view)
+│   ├── signups/            # NationBuilder signup components (modal, full view)
 │   ├── tremor/             # Tremor component wrappers
 │   ├── ui/                 # Shadcn/ui primitives + custom Icon component
 │   ├── AppShell.tsx        # Main layout shell
@@ -204,6 +210,7 @@ src/
     ├── bots.ts             # Bot definitions (24 bots, categories, metadata)
     ├── bots-prompts.ts     # Bot system prompts by ID
     ├── bot-resolver.ts     # DB-first bot resolution with hardcoded fallback
+    ├── action-adapters/    # Action source adapter scaffold (future: NB, Action Network, ActBlue, Sosha)
     ├── media-storage.ts    # Storage abstraction (only file that imports Supabase Storage for media)
     ├── signup-utils.ts     # NationBuilder API utilities
     ├── dashboard-widgets.ts # Widget IDs, permissions, constraints, layouts
@@ -214,7 +221,7 @@ src/
     ├── UserProfileContext.tsx # React Context for user profile data
     └── utils.ts            # General utilities
 supabase/
-└── migrations/             # 19 SQL migration files (001–019), run manually in Supabase SQL Editor
+└── migrations/             # 20 SQL migration files (001–020), run manually in Supabase SQL Editor
 ```
 
 ### Key architectural patterns
@@ -239,6 +246,7 @@ supabase/
 - `soft_delete_media_item()` — PostgreSQL evaluates ALL RLS policies (including SELECT) against the new row state during UPDATE, so soft delete must bypass this
 - `increment_storage_used()` — atomic counter increment
 - `create_signup_assignment()` — atomic assignment with notification creation
+- `complete_action()` — atomic action completion + points ledger entry with group boundary validation. Uses custom errcodes (P0002–P0005) mapped to HTTP statuses in the API route.
 
 **Context providers**
 - `UserProfileContext` provides user role, org, group, name, and avatar data across the component tree
@@ -391,13 +399,28 @@ Group conversation overlay with live messaging powered by Supabase Realtime subs
 
 ### NationBuilder integration
 
-Read-only signup ingestion from NationBuilder v2 API. New signups appear in the dashboard Sign-Ups widget with NB icon badges. Interactive assignment workflow: click a signup to open a modal with contact, call, and assign actions.
+Read-only signup ingestion from NationBuilder v2 API. New signups appear in the dashboard Sign-Ups widget (max 2 visible) with NB icon badges. Interactive assignment workflow: click a signup to open a modal with contact, call, and assign actions. Full signups page at `/signups` with table view, search, and status badges.
 
-- **All group members** can view recent signups
+- **All group members** can view recent signups in the widget and the full signups page
 - **Admins** can assign signups to team members (triggers Resend email notification)
 - NB data is read-only — the app never writes to NationBuilder or contacts NB people directly
 - Connection status is dynamic: widget shows Functional, Error, or Not Connected based on real API state
+- Widget shows "See all the (##) new signups" button linking to the full signups page
 - **Limitation**: Assignment email notifications depend on Resend domain verification
+
+### Actions system
+
+Full CRUD for internal group actions with points tracking, assignment scoping, and self-reported completion. Actions support 8 types (petition, donation, event_rsvp, letter, phone_bank, canvass, social_share, custom) with configurable deadlines, point values, visibility, and assignment scope (all, targeted, self_assign).
+
+- **group_admin and super_admin** can create, edit, and archive actions via the full actions page or dashboard widget
+- **All group members** can view actions, complete them (self-reported), and earn points
+- External actions (with URL) require clicking the CTA before "Mark as Complete" unlocks
+- Self-assign actions allow members to opt in
+- Points ledger tracks every completion atomically via `complete_action` SECURITY DEFINER RPC with group boundary validation
+- Dashboard Group Actions widget shows top 3 actions with click-to-detail sheets
+- Full page at `/actions` with scope filter (All Actions / Assigned to Me), type filter, status filter (Active / Completed / Archived — last admin-only)
+- Source adapter architecture scaffolded in `lib/action-adapters/` for future external source ingestion (NationBuilder, Action Network, ActBlue, Sosha)
+- **Limitation**: External source adapters not yet implemented. Targeted assignment member picker is scaffolded but not wired. API-verified completion method exists in schema but is unused. Leaderboards/points display not yet built (ledger data exists).
 
 ### Approval workflow
 
@@ -442,7 +465,7 @@ Role-guarded panel at `/admin` with 5 tabs for super_admin, 2 tabs (People, Goal
 - **People tab**: list members, change roles (with hierarchy enforcement), reassign groups (super_admin only), remove members, inline name editing
 - **Goals tab** (group_admin + super_admin): fundraising goals (monthly target, print budget, offline offset) and recruitment goals (member/supporter targets). Inline edit pattern.
 - **Bots tab** (super_admin): DB-driven bot CRUD — create, edit name/description/system prompt/category/icon, delete
-- **Integrations tab** (super_admin): calendar source management (add/remove iCal feeds, toggle enable/disable, color coding), NationBuilder connection status, Action Network/Mobilize status
+- **Integrations tab** (super_admin): calendar source management (add/remove iCal feeds, toggle enable/disable, color coding), Action Sources section (NationBuilder Actions, Action Network, ActBlue, Sosha — all scaffolded as "Not Connected"), NationBuilder connection status, Action Network/Mobilize status
 
 ### Configurable dashboard grid
 
@@ -521,6 +544,7 @@ Page at `/group` showing group name, description, member count, organization nam
 ### Roadmap — next priorities
 
 **Features:**
+- Actions: external source adapters (NationBuilder actions, Action Network, ActBlue, Sosha), targeted assignment member picker, API-verified completions, leaderboards/points display
 - Media Library: per-file visibility UI, thumbnail generation, virus scanning
 - Group Coach Bot with real campaign data (currently mock stats)
 - Graphics Creation bot with visual editor iframe integration
@@ -528,7 +552,7 @@ Page at `/group` showing group name, description, member count, organization nam
 - Group Admin features (invitations, recruiter IDs, /join flow)
 
 **Integrations:**
-- Action Network API connection
+- Action Network API connection (action source adapter + signup ingestion)
 - Mobilize API connection
 - Image generation for Graphics Creation bot
 - Resend domain verification (partner action required)

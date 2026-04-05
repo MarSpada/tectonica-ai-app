@@ -17,6 +17,7 @@ import {
 } from "@/lib/dashboard-widgets";
 import type { WidgetId } from "@/lib/dashboard-widgets";
 import type {
+  Action,
   Member,
   GroupMessage,
   NbSignup,
@@ -46,6 +47,7 @@ import CreateApprovalModal from "./approvals/CreateApprovalModal";
 import ReimbursementModal from "./ReimbursementModal";
 import LogHoursModal from "./hours/LogHoursModal";
 import HoursDetailOverlay from "./hours/HoursDetailOverlay";
+import ActionDetailSheet from "./actions/ActionDetailSheet";
 
 import SignupsWidget from "./dashboard/SignupsWidget";
 import RecruitWidget from "./dashboard/RecruitWidget";
@@ -123,6 +125,8 @@ export default function RightSidebar({
   const [showReimbursementModal, setShowReimbursementModal] = useState(false);
   const [fundraisingHistory, setFundraisingHistory] = useState<FundraisingHistory[]>([]);
   const [hoursHistory, setHoursHistory] = useState<HoursWeekBucket[]>([]);
+  const [actions, setActions] = useState<Action[]>([]);
+  const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
 
   const memberCount = allMembers.filter((m) =>
     ["super_admin", "group_admin", "member"].includes(m.role)
@@ -244,6 +248,15 @@ export default function RightSidebar({
         // History unavailable
       }
     }
+    async function fetchActions() {
+      try {
+        const res = await fetch("/api/actions?status=active&limit=3");
+        const json = await res.json();
+        if (json.actions) setActions(json.actions);
+      } catch {
+        // Actions unavailable
+      }
+    }
     fetchMembers();
     fetchSignups();
     fetchEvents();
@@ -253,6 +266,7 @@ export default function RightSidebar({
     fetchFundraisingHistory();
     fetchHoursHistory();
     fetchGoals();
+    fetchActions();
   }, []);
 
   // Auto-save on unmount if in edit mode
@@ -429,7 +443,7 @@ export default function RightSidebar({
           />
         );
       case "actions":
-        return <ActionsWidget />;
+        return <ActionsWidget actions={actions} onActionClick={setSelectedActionId} />;
       case "fundraising":
         return (
           <FundraisingWidget
@@ -662,6 +676,18 @@ export default function RightSidebar({
           }}
         />
       )}
+      <ActionDetailSheet
+        actionId={selectedActionId}
+        userRole={role}
+        onClose={() => setSelectedActionId(null)}
+        onUpdated={async () => {
+          try {
+            const res = await fetch("/api/actions?status=active&limit=3");
+            const json = await res.json();
+            if (json.actions) setActions(json.actions);
+          } catch {}
+        }}
+      />
     </aside>
   );
 }

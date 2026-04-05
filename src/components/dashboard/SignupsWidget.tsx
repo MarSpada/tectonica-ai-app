@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
 import { getAvatarColor, getInitials } from "@/lib/avatar";
 import { formatSignupTime } from "@/lib/signup-utils";
@@ -12,6 +13,8 @@ interface SignupsWidgetProps {
   onSignupClick: (signup: NbSignup) => void;
 }
 
+const MAX_VISIBLE = 2;
+
 export default function SignupsWidget({ signups, nbStatus, assignments, onSignupClick }: SignupsWidgetProps) {
   function getAssignment(signupId: string): SignupAssignment | null {
     return assignments.find((a) => a.nb_signup_id === signupId) || null;
@@ -20,7 +23,7 @@ export default function SignupsWidget({ signups, nbStatus, assignments, onSignup
   return (
     <div className="h-full overflow-auto p-5 flex flex-col">
       <h3 className="font-bold mb-3" style={{ fontSize: "var(--widget-title-size)", color: "var(--widget-text-color)" }}>New Sign-Ups</h3>
-      <div className="space-y-2.5">
+      <div className="space-y-2.5 flex-1">
         {nbStatus === "loading" ? (
           <div className="flex items-center gap-2">
             <Icon name="loading" size={16} className="animate-spin opacity-60" />
@@ -34,7 +37,7 @@ export default function SignupsWidget({ signups, nbStatus, assignments, onSignup
         ) : nbStatus === "not_configured" ? (
           <p className="text-sm text-text-muted">No source connected</p>
         ) : signups.length > 0 ? (
-          signups.map((s) => {
+          signups.slice(0, MAX_VISIBLE).map((s) => {
             const time = formatSignupTime(s.created_at);
             const assignment = getAssignment(s.id);
             return (
@@ -80,12 +83,15 @@ export default function SignupsWidget({ signups, nbStatus, assignments, onSignup
           <p className="text-sm text-text-muted">No recent sign-ups</p>
         )}
       </div>
-      <button
-        className="widget-cta-btn w-full rounded-sm text-white font-semibold cursor-pointer mt-3"
-        style={{ backgroundColor: "var(--widget-btn-signups)", fontSize: "var(--widget-btn-label-size)", padding: "8px 0" }}
-      >
-        All new signups
-      </button>
+      {signups.length > 0 && (
+        <Link
+          href="/signups"
+          className="widget-cta-btn w-full rounded-sm text-white font-semibold cursor-pointer mt-3 block text-center"
+          style={{ backgroundColor: "#c66a0c", fontSize: "var(--widget-btn-label-size)", padding: "8px 0" }}
+        >
+          See all the {signups.length} new signups
+        </Link>
+      )}
     </div>
   );
 }

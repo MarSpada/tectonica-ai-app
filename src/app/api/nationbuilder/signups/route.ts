@@ -13,7 +13,7 @@ export async function GET() {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const result = await fetchRecentSignups(3);
+    const result = await fetchRecentSignups(50);
     const { signups, status: nbStatus } = result;
 
     // If NB is not configured or erroring, return early with status

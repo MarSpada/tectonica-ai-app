@@ -270,3 +270,73 @@ export interface ReimbursementRequest {
   reviewer_name?: string;
   reviewer_avatar?: string | null;
 }
+
+/* ── Actions ── */
+
+export type ActionSource = "internal" | "nationbuilder" | "action_network" | "actblue" | "sosha" | "events";
+export type ActionType = "petition" | "donation" | "event_rsvp" | "letter" | "phone_bank" | "canvass" | "social_share" | "custom";
+export type ActionStatus = "active" | "completed" | "expired" | "archived";
+export type ActionVisibility = "group" | "admins_only";
+export type AssignmentScope = "all" | "targeted" | "self_assign";
+export type CompletionMethod = "self_reported" | "api_verified" | "admin_confirmed";
+
+export interface Action {
+  id: string;
+  group_id: string;
+  source: ActionSource;
+  source_id: string | null;
+  source_data: Record<string, unknown> | null;
+  type: ActionType;
+  title: string;
+  description: string | null;
+  call_to_action: string | null;
+  url: string | null;
+  suggested_bot_slug: string | null;
+  points_value: number;
+  priority: number;
+  assignment_scope: AssignmentScope;
+  starts_at: string | null;
+  ends_at: string | null;
+  status: ActionStatus;
+  visibility: ActionVisibility;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined fields from API
+  creator_name?: string;
+  creator_avatar?: string | null;
+  completion_count?: number;
+  is_completed_by_me?: boolean;
+}
+
+export interface ActionAssignment {
+  id: string;
+  action_id: string;
+  assigned_to_member_id: string | null;
+  assigned_to_group_id: string | null;
+  assigned_by: string;
+  assigned_at: string;
+}
+
+export interface ActionCompletion {
+  id: string;
+  action_id: string;
+  member_id: string;
+  completed_at: string;
+  completion_method: CompletionMethod;
+  points_earned: number;
+  source_confirmation_data: Record<string, unknown> | null;
+  notes: string | null;
+  // Joined fields from API
+  member_name?: string;
+  member_avatar?: string | null;
+}
+
+export interface MemberPointsLedger {
+  id: string;
+  member_id: string;
+  group_id: string;
+  action_completion_id: string;
+  points: number;
+  earned_at: string;
+}
