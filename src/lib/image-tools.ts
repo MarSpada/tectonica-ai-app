@@ -302,6 +302,7 @@ export async function generateImage(
       output_format: "jpeg",
     },
     ...(params.with_branding && { with_branding: true }),
+    ...(params.image_url && { imageUrl: params.image_url }),
   };
 
   const result = await callRailway(

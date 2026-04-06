@@ -268,6 +268,7 @@ export interface GenerateImageParams {
   platform?: string;
   publication_type?: string;
   with_branding?: boolean;
+  image_url?: string;
 }
 
 export interface EditImageParams {

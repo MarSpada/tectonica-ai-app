@@ -60,6 +60,11 @@ export const IMAGE_TOOL_DEFINITIONS = [
             description:
               "Whether to apply organisation branding to the generated image. Default false.",
           },
+          image_url: {
+            type: "string",
+            description:
+              "Optional URL of a reference image for image-to-image generation. Use when the user has uploaded an image to use as a base or reference.",
+          },
         },
         required: ["prompt"],
       },
