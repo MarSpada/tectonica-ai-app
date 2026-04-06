@@ -110,7 +110,7 @@ export async function POST(req: Request) {
   const systemPrompt = await getSystemPrompt(botId);
 
   // Pre-process messages: upload base64 images to Railway before sending to model
-  const processedMessages = await preprocessMessages(
+  const { messages: processedMessages, uploadedImageUrl } = await preprocessMessages(
     messages,
     imageCredentials,
     supabase,
@@ -315,6 +315,16 @@ export async function POST(req: Request) {
             toolArgs = JSON.parse(toolCall.function.arguments);
           } catch {
             toolArgs = {};
+          }
+
+          // Auto-inject uploaded image URL if the model didn't pass one
+          // The model uses @image1 syntax (Open WebUI convention) but our API needs an explicit URL
+          if (
+            toolName === "generate_image" &&
+            !toolArgs.image_url &&
+            uploadedImageUrl
+          ) {
+            toolArgs.image_url = uploadedImageUrl;
           }
 
           // Notify client that image generation is starting
@@ -657,8 +667,10 @@ async function preprocessMessages(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   groupId: string | null
-): Promise<Array<{ role: string; content: string }>> {
-  if (!imageCredentials) return messages;
+): Promise<{ messages: Array<{ role: string; content: string }>; uploadedImageUrl: string | null }> {
+  if (!imageCredentials) return { messages, uploadedImageUrl: null };
+
+  let uploadedImageUrl: string | null = null;
 
   const processed = [];
   for (const msg of messages) {
@@ -691,6 +703,7 @@ async function preprocessMessages(
           });
 
           // Replace base64 with URL in message
+          uploadedImageUrl = url;
           const newContent = msg.content.replace(
             /data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/,
             url
@@ -702,9 +715,16 @@ async function preprocessMessages(
         }
       }
     }
+    // Also check for Railway URLs in messages (from previous uploads in conversation)
+    if (msg.role === "user") {
+      const urlMatch = msg.content.match(/https:\/\/v3b\.fal\.media\/files\/[^\s]+/);
+      if (urlMatch) {
+        uploadedImageUrl = urlMatch[0];
+      }
+    }
     processed.push(msg);
   }
-  return processed;
+  return { messages: processed, uploadedImageUrl };
 }
 
 // ────────────────────────────────────────────────────────────
