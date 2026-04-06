@@ -144,11 +144,6 @@ export async function POST(req: Request) {
           apiBody.tool_choice = "auto";
         }
 
-        // Debug: log whether tools are being sent
-        console.log("[chat] useImageTools:", useImageTools, "tools count:", useImageTools ? IMAGE_TOOL_DEFINITIONS.length : 0);
-        console.log("[chat] imageToolsEnabled:", imageToolsEnabled, "imageCredentials:", imageCredentials ? `configured (${imageCredentials.creditsUsed}/${imageCredentials.creditsAllocated})` : "null");
-        console.log("[chat] model:", modelId, "endpoint:", `${endpointUrl}/v1/chat/completions`);
-
         const res = await fetch(`${endpointUrl}/v1/chat/completions`, {
           method: "POST",
           headers: {
@@ -186,12 +181,6 @@ export async function POST(req: Request) {
         );
         fullContent = streamResult.content;
 
-        // Debug: log stream result
-        console.log("[chat] streamResult — content length:", fullContent.length, "toolCalls:", streamResult.toolCalls.length);
-        if (streamResult.toolCalls.length > 0) {
-          console.log("[chat] tool call:", JSON.stringify(streamResult.toolCalls[0]));
-        }
-
         // Handle tool calls if the model requested one
         const KNOWN_IMAGE_TOOLS = ["generate_image", "edit_image", "fuse_images", "apply_branding"];
         const imageToolCall = streamResult.toolCalls.find(
@@ -217,13 +206,11 @@ export async function POST(req: Request) {
 
           try {
             // Execute the image tool
-            console.log("[chat] executing tool:", toolName, "args:", JSON.stringify(toolArgs));
             const { url: imageUrl } = await executeImageTool(
               toolName,
               toolArgs,
               imageCredentials
             );
-            console.log("[chat] tool success, imageUrl:", imageUrl);
 
             // Increment credits
             await incrementImageCredits(profile.org_id);
@@ -332,8 +319,6 @@ export async function POST(req: Request) {
             } else {
               errorMessage = "Image generation failed. Please try again.";
             }
-            console.error("[chat] image tool error:", err);
-
             fullContent = errorMessage;
             controller.enqueue(
               encoder.encode(
