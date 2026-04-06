@@ -135,6 +135,24 @@ function ThinkingIndicator() {
   );
 }
 
+/** Render user message content — show image thumbnails for base64 uploads */
+function renderUserContent(content: string): React.ReactNode {
+  // Detect base64 data URI (image upload)
+  if (content.startsWith("data:image/")) {
+    return (
+      <div className="flex items-center gap-2">
+        <img
+          src={content}
+          alt="Uploaded image"
+          className="rounded-lg max-w-[200px] max-h-[150px] object-cover border border-black/10"
+        />
+        <span className="text-xs text-text-muted italic">Image uploaded</span>
+      </div>
+    );
+  }
+  return content;
+}
+
 /** Strip [CREATIVE BRIEF IN PROGRESS] and [REQ:...] tags from visible text */
 function stripBriefTags(text: string): string {
   return text
@@ -390,7 +408,7 @@ export default function MessageList({
               >
                 {msg.role === "assistant"
                   ? renderContent(stripBriefTags(msg.content), onOpenStudio, onStyleSelect)
-                  : msg.content}
+                  : renderUserContent(msg.content)}
                 {msg.role === "assistant" &&
                   isStreaming &&
                   i === messages.length - 1 &&
