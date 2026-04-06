@@ -126,6 +126,15 @@ function renderContent(content: string, onOpenStudio?: (imageUrl: string) => voi
   return parts;
 }
 
+function ThinkingIndicator() {
+  return (
+    <div className="flex items-center gap-2 mt-3 text-text-muted">
+      <div className="w-4 h-4 border-2 border-accent-purple/30 border-t-accent-purple rounded-full animate-spin" />
+      <span className="text-xs">Thinking of recommended styles for your request...</span>
+    </div>
+  );
+}
+
 /** Strip markdown table syntax that leaks from gallery responses */
 function stripMarkdownTableSyntax(text: string): string {
   return text
@@ -150,6 +159,16 @@ function stripMarkdownTableSyntax(text: string): string {
 }
 
 function renderTextContent(text: string): React.ReactNode {
+  if (text.includes("__THINKING_STYLES__")) {
+    const [before, after] = text.split("__THINKING_STYLES__");
+    return (
+      <>
+        {before}
+        <ThinkingIndicator />
+        {after}
+      </>
+    );
+  }
   if (text.includes("✓ Saved to your Media Library")) {
     const [before, after] = text.split("✓ Saved to your Media Library");
     return (

@@ -270,6 +270,13 @@ export async function POST(req: Request) {
               }
             );
 
+            // Show thinking indicator while model generates recommendations
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({ status: "thinking_styles" })}\n\n`
+              )
+            );
+
             if (galleryRes.ok) {
               // Collect the follow-up response WITHOUT streaming it — we need to
               // strip the gallery markdown the model repeats before sending to client

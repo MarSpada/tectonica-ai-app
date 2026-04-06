@@ -132,6 +132,20 @@ export default function ChatView({
               continue;
             }
 
+            // Thinking about style recommendations
+            if (parsed.status === "thinking_styles") {
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                updated[updated.length - 1] = {
+                  ...last,
+                  content: last.content + "\n\n__THINKING_STYLES__",
+                };
+                return updated;
+              });
+              continue;
+            }
+
             // Image generation status
             if (parsed.status === "generating_image") {
               setIsGeneratingImage(true);
@@ -160,9 +174,11 @@ export default function ChatView({
               setMessages((prev) => {
                 const updated = [...prev];
                 const last = updated[updated.length - 1];
+                // Remove thinking marker when real content arrives
+                const cleanedContent = last.content.replace("__THINKING_STYLES__", "");
                 updated[updated.length - 1] = {
                   ...last,
-                  content: last.content + parsed.content,
+                  content: cleanedContent + parsed.content,
                 };
                 return updated;
               });
