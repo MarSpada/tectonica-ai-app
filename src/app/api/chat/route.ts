@@ -193,8 +193,13 @@ export async function POST(req: Request) {
         }
 
         // Handle tool calls if the model requested one
-        if (streamResult.toolCalls.length > 0 && imageCredentials) {
-          const toolCall = streamResult.toolCalls[0];
+        const KNOWN_IMAGE_TOOLS = ["generate_image", "edit_image", "fuse_images", "apply_branding"];
+        const imageToolCall = streamResult.toolCalls.find(
+          (tc) => KNOWN_IMAGE_TOOLS.includes(tc.function.name)
+        );
+
+        if (imageToolCall && imageCredentials) {
+          const toolCall = imageToolCall;
           const toolName = toolCall.function.name as ImageToolName;
           let toolArgs: Record<string, unknown>;
           try {
