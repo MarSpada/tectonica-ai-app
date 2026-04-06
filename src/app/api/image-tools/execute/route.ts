@@ -5,8 +5,10 @@ import {
   executeImageTool,
   incrementImageCredits,
   resolveDimensions,
+  downloadAndStoreImage,
   ImageToolError,
 } from "@/lib/image-tools";
+import { getSignedUrl } from "@/lib/media-storage";
 import { calculateEnergyWh } from "@/lib/energy";
 import type { ImageToolName } from "@/lib/types";
 
@@ -98,6 +100,23 @@ export async function POST(req: Request) {
     // Increment credits
     await incrementImageCredits(profile.org_id);
 
+    // Download from FAL and store in Supabase Storage
+    let storagePath: string | null = null;
+    let fileSize: number | null = null;
+    let displayUrl = imageResult.url; // fallback to FAL URL
+    try {
+      const stored = await downloadAndStoreImage(
+        imageResult.url,
+        supabase,
+        profile.group_id
+      );
+      storagePath = stored.storagePath;
+      fileSize = stored.fileSize;
+      displayUrl = await getSignedUrl(supabase, storagePath);
+    } catch (err) {
+      console.warn("Failed to store image in Supabase Storage, using FAL URL as fallback:", err);
+    }
+
     // Save to media_items as private generated image
     const toolLabel = (tool as string).replace(/_/g, " ");
     const { data: mediaItem, error: insertError } = await supabase
@@ -106,8 +125,10 @@ export async function POST(req: Request) {
         group_id: profile.group_id,
         uploaded_by: user.id,
         category: "generated",
-        file_name: `${tool}-${Date.now()}.png`,
-        url: imageResult.url,
+        file_name: `${tool}-${Date.now()}.jpg`,
+        url: imageResult.url, // keep FAL URL as fallback
+        storage_path: storagePath,
+        file_size: fileSize,
         title: `${toolLabel} — ${new Date().toLocaleDateString()}`,
         status: "ready",
         visibility: "private",
@@ -123,7 +144,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({
-      url: imageResult.url,
+      url: displayUrl,
       mediaItemId: mediaItem?.id ?? null,
     });
   } catch (err) {

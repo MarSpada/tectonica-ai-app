@@ -16,10 +16,12 @@ import {
   getOrgImageCredentials,
   executeImageTool,
   incrementImageCredits,
-  uploadImageToRailway,
+  downloadAndStoreImage,
+  uploadBase64ToStorage,
   resolveDimensions,
   ImageToolError,
 } from "@/lib/image-tools";
+import { getSignedUrl } from "@/lib/media-storage";
 import { calculateEnergyWh } from "@/lib/energy";
 import type { ImageToolName } from "@/lib/types";
 import { getStyleGalleryResponse } from "@/lib/style-gallery-data";
@@ -343,7 +345,23 @@ export async function POST(req: Request) {
               toolArgs,
               imageCredentials
             );
-            const imageUrl = imageResult.url;
+
+            // Download from FAL and store in Supabase Storage
+            let storagePath: string | null = null;
+            let fileSize: number | null = null;
+            let displayUrl = imageResult.url; // fallback to FAL URL
+            try {
+              const stored = await downloadAndStoreImage(
+                imageResult.url,
+                supabase,
+                profile.group_id
+              );
+              storagePath = stored.storagePath;
+              fileSize = stored.fileSize;
+              displayUrl = await getSignedUrl(supabase, storagePath);
+            } catch (storeErr) {
+              console.warn("Failed to store image in Supabase Storage, using FAL URL as fallback:", storeErr);
+            }
 
             // Resolve dimensions: prefer Railway response, fall back to request params
             let imageWidth = imageResult.width;
@@ -377,8 +395,10 @@ export async function POST(req: Request) {
                 group_id: profile.group_id,
                 uploaded_by: user.id,
                 category: "generated",
-                file_name: `${toolName}-${Date.now()}.png`,
-                url: imageUrl,
+                file_name: `${toolName}-${Date.now()}.jpg`,
+                url: imageResult.url, // keep FAL URL as fallback
+                storage_path: storagePath,
+                file_size: fileSize,
                 title: `${toolLabel} — ${new Date().toLocaleDateString()}`,
                 status: "ready",
                 visibility: "private",
@@ -394,7 +414,7 @@ export async function POST(req: Request) {
               encoder.encode(
                 `data: ${JSON.stringify({
                   image: {
-                    url: imageUrl,
+                    url: displayUrl,
                     mediaItemId: mediaItem?.id ?? null,
                     energyWh: energyWh,
                     imageWidth: imageWidth ?? null,
@@ -426,7 +446,7 @@ export async function POST(req: Request) {
                 tool_call_id: toolCall.id,
                 content: JSON.stringify({
                   success: true,
-                  image_url: imageUrl,
+                  image_url: displayUrl,
                 }),
               },
             ];
@@ -454,10 +474,10 @@ export async function POST(req: Request) {
                 encoder
               );
               // Build final content with image markdown
-              fullContent = `![Generated Image](${imageUrl})\n\n${followUpResult.content}\n\n✓ Saved to your Media Library`;
+              fullContent = `![Generated Image](${displayUrl})\n\n${followUpResult.content}\n\n✓ Saved to your Media Library`;
             } else {
               // If follow-up fails, still show the image
-              fullContent = `![Generated Image](${imageUrl})\n\n✓ Saved to your Media Library`;
+              fullContent = `![Generated Image](${displayUrl})\n\n✓ Saved to your Media Library`;
               controller.enqueue(
                 encoder.encode(
                   `data: ${JSON.stringify({ content: "\n\n✓ Saved to your Media Library" })}\n\n`
@@ -703,7 +723,7 @@ async function preprocessMessages(
   userId: string,
   groupId: string | null
 ): Promise<{ messages: Array<{ role: string; content: string }>; uploadedImageUrl: string | null }> {
-  if (!imageCredentials) return { messages, uploadedImageUrl: null };
+  if (!imageCredentials || !groupId) return { messages, uploadedImageUrl: null };
 
   let uploadedImageUrl: string | null = null;
 
@@ -720,12 +740,14 @@ async function preprocessMessages(
       );
       if (match) {
         try {
-          const { url } = await uploadImageToRailway(
+          // Upload to Supabase Storage instead of Railway
+          const { url } = await uploadBase64ToStorage(
             match[1],
-            imageCredentials
+            supabase,
+            groupId
           );
 
-          // Replace base64 with URL in message
+          // Replace base64 with signed URL in message
           uploadedImageUrl = url;
           const newContent = msg.content.replace(
             /data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/,
@@ -738,9 +760,10 @@ async function preprocessMessages(
         }
       }
     }
-    // Also check for Railway URLs in messages (from previous uploads in conversation)
+    // Check for image URLs in messages (from previous uploads in conversation)
+    // Matches both legacy FAL URLs and Supabase signed URLs
     if (msg.role === "user") {
-      const urlMatch = msg.content.match(/https:\/\/v3b\.fal\.media\/files\/[^\s]+/);
+      const urlMatch = msg.content.match(/https:\/\/[^\s]+\.(jpg|jpeg|png|webp)([^\s]*)/i);
       if (urlMatch) {
         uploadedImageUrl = urlMatch[0];
       }

@@ -1,18 +1,21 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-utils";
 import {
-  getOrgImageCredentials,
-  uploadImageToRailway,
+  uploadBase64ToStorage,
   ImageToolError,
 } from "@/lib/image-tools";
 
 export async function POST(req: Request) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
-  const { profile } = auth;
+  const { profile, supabase } = auth;
 
   if (!profile.org_id) {
     return NextResponse.json({ error: "No organization" }, { status: 400 });
+  }
+
+  if (!profile.group_id) {
+    return NextResponse.json({ error: "No group assigned" }, { status: 400 });
   }
 
   const { base64 } = await req.json();
@@ -32,16 +35,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const credentials = await getOrgImageCredentials(profile.org_id);
-  if (!credentials) {
-    return NextResponse.json(
-      { error: "not_configured" },
-      { status: 503 }
-    );
-  }
-
   try {
-    const { url } = await uploadImageToRailway(base64, credentials);
+    // Upload to Supabase Storage and get a signed URL (1hr TTL)
+    const { url } = await uploadBase64ToStorage(
+      base64,
+      supabase,
+      profile.group_id
+    );
 
     return NextResponse.json({ url });
   } catch (err) {

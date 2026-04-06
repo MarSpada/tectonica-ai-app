@@ -7,6 +7,7 @@ import {
   buildStoragePath,
   checkQuota,
   getFileExtension,
+  getSignedUrl,
   incrementStorageUsed,
   mimeToCategory,
   sanitizeFileName,
@@ -73,10 +74,24 @@ export async function GET(req: Request) {
     }
   }
 
+  // Generate signed URLs for items with storage_path (max page size, bounded cost)
+  const signedUrlMap: Record<string, string> = {};
+  const itemsWithStorage = (items || []).filter((item) => item.storage_path);
+  await Promise.all(
+    itemsWithStorage.map(async (item) => {
+      try {
+        signedUrlMap[item.id] = await getSignedUrl(supabase, item.storage_path);
+      } catch {
+        // If signed URL generation fails, skip — client will fall back to item.url
+      }
+    })
+  );
+
   const enriched = (items || []).map((item) => ({
     ...item,
     uploader_name: profileMap[item.uploaded_by]?.full_name || "Unknown",
     uploader_avatar: profileMap[item.uploaded_by]?.avatar_url || null,
+    signed_url: signedUrlMap[item.id] || null,
   }));
 
   return NextResponse.json({

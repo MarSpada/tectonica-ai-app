@@ -432,6 +432,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `NATIONBUILDER_SLUG` | NationBuilder subdomain slug |
 | `RESEND_API_KEY` | Resend email API key |
 | `RESEND_FROM_EMAIL` | Sender email address for Resend transactional emails |
+| `SUPABASE_SERVICE_ROLE_KEY` | Only required for running migration scripts. Never import or use in application code, components, or API routes — it bypasses RLS entirely. |
 
 ---
 
@@ -775,6 +776,9 @@ Desktop-first design. Mobile is out of scope for now.
 - **Calendar RLS vs API role mismatch (intentional)** — RLS policies use `is_admin()` (super_admin + group_admin). API routes use `isSuperAdmin()` only. This is by design for future flexibility — documented in Conventions section. Do not "fix" by aligning them.
 - **Connected Systems widget "Google Calendar" label** — Hardcodes "Google Calendar" even though multiple calendar sources are supported. Should be renamed to "Calendar". One-line fix deferred to next session.
 - **EventDetailSheet has no "Open Event" button** — iCal parser (`lib/ical-parser.ts`) does not extract event URLs. If URL support is needed, the parser would need to handle the `URL` VEVENT property.
+- **`uploadImageToRailway()` is dead code** — `lib/image-tools.ts` still exports this function but it is no longer imported anywhere. Remove in next cleanup session.
+- **`preprocessMessages` URL regex broadened** — `src/app/api/chat/route.ts` `preprocessMessages` was changed from hardcoded `fal.media` pattern to a generic image URL pattern (`https://....(jpg|jpeg|png|webp)...`). Review in next fresh-eyes audit for edge cases.
+- **`tsx` and `dotenv` dev dependencies** — Added for the one-time migration script (`scripts/migrate-generated-images.ts`). Can be removed in next cleanup session if no other scripts need them.
 
 ---
 

@@ -10,6 +10,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { decrypt } from "@/lib/encryption";
+import { buildStoragePath, uploadFile, getSignedUrl } from "@/lib/media-storage";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   ImageToolName,
   GenerateImageParams,
@@ -279,6 +281,78 @@ function extractImageResult(result: Record<string, unknown>): ImageResult {
     throw new ImageToolError("api_error", "No image URL in Railway response");
   }
   return { url };
+}
+
+// ────────────────────────────────────────────────────────────
+// Supabase Storage helpers
+// ────────────────────────────────────────────────────────────
+
+/**
+ * Download an image from a FAL/Railway URL and store it in Supabase Storage.
+ * Returns the storage path within the `media` bucket.
+ *
+ * This is the ONLY function that bridges external image URLs → Supabase Storage.
+ * Called by execute route and chat route after successful image generation.
+ */
+export async function downloadAndStoreImage(
+  falUrl: string,
+  supabase: SupabaseClient,
+  groupId: string
+): Promise<{ storagePath: string; fileSize: number }> {
+  // Download from external URL
+  let imageBuffer: Buffer;
+  try {
+    const res = await fetch(falUrl, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) {
+      throw new Error(`Download failed (${res.status})`);
+    }
+    const arrayBuf = await res.arrayBuffer();
+    imageBuffer = Buffer.from(arrayBuf);
+  } catch (err) {
+    throw new ImageToolError(
+      "upload_error",
+      `Failed to download image from external URL: ${err instanceof Error ? err.message : "unknown"}`
+    );
+  }
+
+  // Upload to Supabase Storage
+  const storagePath = buildStoragePath(groupId, "jpg");
+  try {
+    await uploadFile(supabase, storagePath, imageBuffer, "image/jpeg");
+  } catch (err) {
+    throw new ImageToolError(
+      "upload_error",
+      `Failed to upload image to storage: ${err instanceof Error ? err.message : "unknown"}`
+    );
+  }
+
+  return { storagePath, fileSize: imageBuffer.length };
+}
+
+/**
+ * Upload a base64-encoded image directly to Supabase Storage.
+ * Used for chat reference image uploads (replaces Railway upload).
+ * Returns a signed URL (1hr TTL) for immediate use by the AI model.
+ */
+export async function uploadBase64ToStorage(
+  base64: string,
+  supabase: SupabaseClient,
+  groupId: string
+): Promise<{ url: string; storagePath: string }> {
+  const imageBuffer = Buffer.from(base64, "base64");
+  const storagePath = buildStoragePath(groupId, "jpg");
+
+  try {
+    await uploadFile(supabase, storagePath, imageBuffer, "image/jpeg");
+  } catch (err) {
+    throw new ImageToolError(
+      "upload_error",
+      `Failed to upload image to storage: ${err instanceof Error ? err.message : "unknown"}`
+    );
+  }
+
+  const signedUrl = await getSignedUrl(supabase, storagePath);
+  return { url: signedUrl, storagePath };
 }
 
 // ────────────────────────────────────────────────────────────
