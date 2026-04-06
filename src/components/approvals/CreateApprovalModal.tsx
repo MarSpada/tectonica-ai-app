@@ -50,9 +50,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function CreateApprovalModal({ onClose, onCreated, prefilledTitle, prefilledImageUrl }: CreateApprovalModalProps) {
   const [title, setTitle] = useState(prefilledTitle || "");
-  const [description, setDescription] = useState(
-    prefilledImageUrl ? `Generated image for review:\n${prefilledImageUrl}` : ""
-  );
+  const [description, setDescription] = useState("");
   const [reviewerId, setReviewerId] = useState("");
   const [reviewers, setReviewers] = useState<Reviewer[]>([]);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
