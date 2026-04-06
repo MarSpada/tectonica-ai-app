@@ -17,51 +17,129 @@ interface MessageListProps {
 // Parse image markdown: ![alt](url)
 const IMAGE_REGEX = /!\[([^\]]*)\]\(([^)]+)\)/g;
 
+interface ParsedImage {
+  alt: string;
+  url: string;
+  index: number;
+}
+
 function renderContent(content: string, onOpenStudio?: (imageUrl: string) => void) {
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
-  let match: RegExpExecArray | null;
 
-  // Reset regex state
+  // Collect all images and text segments
+  const images: ParsedImage[] = [];
   IMAGE_REGEX.lastIndex = 0;
-
+  let match: RegExpExecArray | null;
   while ((match = IMAGE_REGEX.exec(content)) !== null) {
-    // Text before the image
-    if (match.index > lastIndex) {
-      parts.push(
-        <span key={`text-${lastIndex}`}>{content.slice(lastIndex, match.index)}</span>
-      );
+    images.push({ alt: match[1], url: match[2], index: match.index });
+  }
+
+  if (images.length === 0) {
+    return renderTextContent(content);
+  }
+
+  // Detect style gallery: 5+ images with style-like alt text appearing close together
+  const isStyleGallery = images.length >= 5 && images.every(
+    (img) => img.alt && !img.alt.startsWith("Generated")
+  );
+
+  if (isStyleGallery) {
+    // Render text before the first image
+    const textBefore = content.slice(0, images[0].index).trim();
+    if (textBefore) {
+      parts.push(<span key="text-before">{renderTextContent(textBefore)}</span>);
     }
 
-    const alt = match[1];
-    const url = match[2];
+    // Render images as a style gallery grid
     parts.push(
-      <ImageMessage key={`img-${match.index}`} url={url} alt={alt} onOpenStudio={onOpenStudio} />
+      <StyleGallery key="gallery" images={images} />
+    );
+
+    // Render text after the last image
+    const lastImg = images[images.length - 1];
+    const lastImgEnd = content.indexOf(")", lastImg.index) + 1;
+    const textAfter = content.slice(lastImgEnd).trim();
+    if (textAfter) {
+      parts.push(<span key="text-after">{renderTextContent(textAfter)}</span>);
+    }
+
+    return parts;
+  }
+
+  // Normal rendering: images inline with text
+  IMAGE_REGEX.lastIndex = 0;
+  while ((match = IMAGE_REGEX.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      const text = content.slice(lastIndex, match.index);
+      parts.push(<span key={`text-${lastIndex}`}>{renderTextContent(text)}</span>);
+    }
+
+    parts.push(
+      <ImageMessage
+        key={`img-${match.index}`}
+        url={match[2]}
+        alt={match[1]}
+        onOpenStudio={onOpenStudio}
+      />
     );
 
     lastIndex = match.index + match[0].length;
   }
 
-  // Remaining text after last image
   if (lastIndex < content.length) {
     const remaining = content.slice(lastIndex);
-    // Check for media library confirmation
-    if (remaining.includes("✓ Saved to your Media Library")) {
-      const [before, after] = remaining.split("✓ Saved to your Media Library");
-      if (before) parts.push(<span key="pre-confirm">{before}</span>);
-      parts.push(
-        <span key="confirm" className="flex items-center gap-1.5 text-green-600 text-xs mt-2">
+    parts.push(<span key={`text-${lastIndex}`}>{renderTextContent(remaining)}</span>);
+  }
+
+  return parts;
+}
+
+function renderTextContent(text: string): React.ReactNode {
+  if (text.includes("✓ Saved to your Media Library")) {
+    const [before, after] = text.split("✓ Saved to your Media Library");
+    return (
+      <>
+        {before}
+        <span className="flex items-center gap-1.5 text-green-600 text-xs mt-2">
           <Icon name="check" size={14} />
           Saved to your Media Library
         </span>
-      );
-      if (after) parts.push(<span key="post-confirm">{after}</span>);
-    } else {
-      parts.push(<span key={`text-${lastIndex}`}>{remaining}</span>);
-    }
+        {after}
+      </>
+    );
   }
+  return text;
+}
 
-  return parts.length > 0 ? parts : content;
+function StyleGallery({ images }: { images: ParsedImage[] }) {
+  return (
+    <div className="my-3">
+      <div className="grid grid-cols-5 gap-2">
+        {images.map((img, i) => (
+          <button
+            key={i}
+            className="group relative rounded-xl overflow-hidden aspect-square bg-black/5 hover:ring-2 hover:ring-accent-purple transition-all"
+            onClick={() => {
+              // No action needed — user types their choice
+            }}
+          >
+            <img
+              src={img.url}
+              alt={img.alt}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
+              <p className="text-[10px] font-bold text-white uppercase leading-tight">
+                {img.alt}
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function ImageMessage({

@@ -21,6 +21,20 @@ import {
 } from "@/lib/image-tools";
 import type { ImageToolName } from "@/lib/types";
 
+// Hardcoded style gallery response — matches the Open WebUI style_galery tool output.
+// This is returned when the model calls style_galery so it can present styles to the user.
+const STYLE_GALLERY_RESPONSE = `## Available Styles
+
+| Photorealistic | Flat Illustration | Hand-Drawn Illustration | Cartoon / Caricature | Collage / Mixed Media |
+| --- | --- | --- | --- | --- |
+| *4 substyles* | *3 substyles* | *5 substyles* | *5 substyles* | *4 substyles* |
+| ![Photorealistic](https://v3b.fal.media/files/b/0a9286fe/HoEYKmjzpXo9yTGPhFT7A_YzmNs0MC.jpg) | ![Flat Illustration](https://v3b.fal.media/files/b/0a928703/Dztvk346DhXABv2bnjZBh_A7Hw01xN.jpg) | ![Hand-Drawn Illustration](https://v3b.fal.media/files/b/0a928707/Tddq7X3f9M3e7dpdHrdNG_ylqnF5u1.jpg) | ![Cartoon / Caricature](https://v3b.fal.media/files/b/0a92870b/E4_duU8U42gZb8TE6rK6C_qQIBkyts.jpg) | ![Collage / Mixed Media](https://v3b.fal.media/files/b/0a92870d/p5x_G_E5elsyVvnq0Jrku_kFBVXDzI.jpg) |
+
+| Abstract / Conceptual | Political | Retro / Vintage | Mural / Street Art | Minimalist / Typographic |
+| --- | --- | --- | --- | --- |
+| *4 substyles* | *5 substyles* | *4 substyles* | *5 substyles* | *3 substyles* |
+| ![Abstract / Conceptual](https://v3b.fal.media/files/b/0a928710/w4ZrJYnaw6ZoGClglH-Nw_KFaQuJZO.jpg) | ![Political](https://v3b.fal.media/files/b/0a928715/a3C0HqzyTZYnlx3_WWze__nLeGq2L5.jpg) | ![Retro / Vintage](https://v3b.fal.media/files/b/0a928719/Vm7yGBF3ncBGrDHvKs7q5_Q3OQwAHx.jpg) | ![Mural / Street Art](https://v3b.fal.media/files/b/0a92871c/1VsyR8l3SSpzLWFiJ_uSa_MCiViytT.jpg) | ![Minimalist / Typographic](https://v3b.fal.media/files/b/0a92871f/sULHVH2t2Rkbw0MNfa7--_rDvFjphL.jpg) |`;
+
 export async function POST(req: Request) {
   const supabase = await createClient();
   const {
@@ -186,6 +200,68 @@ export async function POST(req: Request) {
         const imageToolCall = streamResult.toolCalls.find(
           (tc) => KNOWN_IMAGE_TOOLS.includes(tc.function.name)
         );
+
+        // Handle style_galery tool call — return gallery data to the model
+        const styleGalleryCall = streamResult.toolCalls.find(
+          (tc) => tc.function.name === "style_galery"
+        );
+        if (styleGalleryCall && !imageToolCall) {
+          try {
+            const galleryMessages = [
+              ...chatMessages,
+              {
+                role: "assistant" as const,
+                content: null,
+                tool_calls: [
+                  {
+                    id: styleGalleryCall.id,
+                    type: "function",
+                    function: {
+                      name: "style_galery",
+                      arguments: styleGalleryCall.function.arguments,
+                    },
+                  },
+                ],
+              },
+              {
+                role: "tool" as const,
+                tool_call_id: styleGalleryCall.id,
+                content: STYLE_GALLERY_RESPONSE,
+              },
+            ];
+
+            const galleryRes = await fetch(
+              `${endpointUrl}/v1/chat/completions`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  model: modelId,
+                  stream: true,
+                  messages: galleryMessages,
+                  ...(useImageTools && {
+                    tools: IMAGE_TOOL_DEFINITIONS,
+                    tool_choice: "auto",
+                  }),
+                }),
+              }
+            );
+
+            if (galleryRes.ok) {
+              const galleryResult = await streamModelResponse(
+                galleryRes,
+                controller,
+                encoder
+              );
+              fullContent = galleryResult.content;
+            }
+          } catch {
+            // If gallery follow-up fails, show whatever content we have
+          }
+        }
 
         if (imageToolCall && imageCredentials) {
           const toolCall = imageToolCall;
