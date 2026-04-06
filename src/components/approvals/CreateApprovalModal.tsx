@@ -187,7 +187,7 @@ export default function CreateApprovalModal({ onClose, onCreated, prefilledTitle
   }
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>New Approval Request</DialogTitle>

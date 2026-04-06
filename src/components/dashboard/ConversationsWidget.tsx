@@ -18,7 +18,7 @@ export default function ConversationsWidget({ groupMessages, onOpenConversation 
               <span className="font-semibold text-accent-purple">
                 @{msg.sender_name || "Unknown"}
               </span>{" "}
-              {msg.content}
+              {msg.content.startsWith("![") ? "shared an image" : msg.content}
             </p>
           ))
         ) : (
