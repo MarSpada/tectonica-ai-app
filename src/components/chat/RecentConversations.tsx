@@ -28,6 +28,7 @@ export default function RecentConversations({
   isImageBot = false,
 }: RecentConversationsProps) {
   const [showAll, setShowAll] = useState(false);
+  const [chatsExpanded, setChatsExpanded] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const visibleConversations = showAll
@@ -50,16 +51,13 @@ export default function RecentConversations({
   }
 
   return (
-    <aside className="w-[260px] border-l border-card-stroke bg-card-bg/50 backdrop-blur-md flex flex-col h-full">
-      <div className="px-4 py-3 border-b border-card-stroke flex items-center justify-between">
-        <h2 className="text-xs font-bold text-text-primary uppercase tracking-wider">
-          Recent Conversations
-        </h2>
+    <aside className="w-[320px] border-l border-card-stroke bg-card-bg/50 backdrop-blur-md flex flex-col h-full">
+      <div className="px-4 py-3 border-b border-card-stroke flex items-center justify-end">
         <button
           onClick={onNewChat}
           className="text-[10px] font-medium text-accent-purple hover:underline"
         >
-          New Chat
+          + New Chat
         </button>
       </div>
 
@@ -69,15 +67,6 @@ export default function RecentConversations({
       {/* Saved Briefs — only for image-capable bots */}
       <SavedBriefs isImageBot={isImageBot} onUseBrief={onUseBrief} />
 
-      {/* Conversation list header */}
-      {isImageBot && conversations.length > 0 && (
-        <div className="px-4 py-2 border-t border-card-stroke">
-          <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
-            Past Chats
-          </h3>
-        </div>
-      )}
-
       {/* Conversation list */}
       <div className="flex-1 overflow-y-auto">
         {conversations.length === 0 ? (
@@ -85,8 +74,19 @@ export default function RecentConversations({
             No conversations yet
           </p>
         ) : (
-          <div className="py-1">
-            {visibleConversations.map((conv) => (
+          <div>
+            {/* Past Chats header — collapsible */}
+            <button
+              onClick={() => setChatsExpanded(!chatsExpanded)}
+              className="w-full px-4 py-2.5 border-t border-card-stroke flex items-center justify-between hover:bg-black/3 transition-colors"
+            >
+              <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
+                Past Chats
+                <span className="font-normal ml-1">({conversations.length})</span>
+              </h3>
+              <Icon name={chatsExpanded ? "arrow-up" : "arrow-down"} size={10} className="opacity-40" />
+            </button>
+            {chatsExpanded && visibleConversations.map((conv) => (
               <div
                 key={conv.id}
                 className={`group relative flex items-center transition-colors ${
@@ -123,12 +123,12 @@ export default function RecentConversations({
               </div>
             ))}
             {/* Show all / Show less */}
-            {hasMore && (
+            {chatsExpanded && hasMore && (
               <button
                 onClick={() => setShowAll(!showAll)}
                 className="w-full px-4 py-2 text-[10px] font-medium text-accent-purple hover:underline text-center"
               >
-                {showAll ? "Show less" : `Show all ${conversations.length} conversations`}
+                {showAll ? "Show less" : `Show all ${conversations.length}`}
               </button>
             )}
           </div>
