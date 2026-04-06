@@ -93,6 +93,7 @@ export default function RightSidebar({
   const [hoursHistory, setHoursHistory] = useState<HoursWeekBucket[]>([]);
   const [actions, setActions] = useState<Action[]>([]);
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
+  const [runpodStatus, setRunpodStatus] = useState<"connected" | "error" | "not_configured" | "loading">("loading");
 
   const memberCount = allMembers.filter((m) => m.role !== ROLES.SUPPORTER).length;
   const supporterCount = allMembers.filter((m) => m.role === ROLES.SUPPORTER).length;
@@ -221,6 +222,20 @@ export default function RightSidebar({
         // Actions unavailable
       }
     }
+    async function fetchRunpodStatus() {
+      try {
+        const res = await fetch("/api/admin/integrations/runpod");
+        if (res.ok) {
+          const json = await res.json();
+          setRunpodStatus(json.status || "not_configured");
+        } else {
+          // Non-admin users get 403 — show not_configured gracefully
+          setRunpodStatus("not_configured");
+        }
+      } catch {
+        setRunpodStatus("not_configured");
+      }
+    }
     fetchMembers();
     fetchSignups();
     fetchEvents();
@@ -231,6 +246,7 @@ export default function RightSidebar({
     fetchHoursHistory();
     fetchGoals();
     fetchActions();
+    fetchRunpodStatus();
   }, []);
 
   // Auto-save on unmount if in edit mode
@@ -417,6 +433,7 @@ export default function RightSidebar({
         onLogHours={() => setShowLogHoursModal(true)}
         onShowHoursDetail={() => setShowHoursDetail(true)}
         onRequestReimbursement={() => setShowReimbursementModal(true)}
+        runpodStatus={runpodStatus}
       />
 
       {/* Reset Dialog */}

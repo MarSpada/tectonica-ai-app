@@ -88,6 +88,7 @@ export const ICON_MAP = {
   'widget-recruitment-goal': `${ICON_BASE}/business-products/performance-increase.svg`,
   'widget-approval': `${ICON_BASE}/interface-essential/check-badge.svg`,
   'widget-connected-systems': `${ICON_BASE}/internet-networks-servers/connector-1.svg`,
+  'widget-ai-models': `${ICON_BASE}/internet-networks-servers/server-star-1.svg`,
   'widget-hours': `${ICON_BASE}/interface-essential/time-clock-circle.svg`,
   'widget-events': `${ICON_BASE}/interface-essential/calendar-3.svg`,
   'widget-directory': `${ICON_BASE}/users/multiple-users-1.svg`,

@@ -88,6 +88,7 @@ interface WidgetGridProps {
   onLogHours: () => void;
   onShowHoursDetail: () => void;
   onRequestReimbursement: () => void;
+  runpodStatus?: "connected" | "error" | "not_configured" | "loading";
 }
 
 export default function WidgetGrid({
@@ -122,6 +123,7 @@ export default function WidgetGrid({
   onLogHours,
   onShowHoursDetail,
   onRequestReimbursement,
+  runpodStatus,
 }: WidgetGridProps) {
   // Visible widgets for current role
   const visibleWidgetIds = new Set(getVisibleWidgets(role));
@@ -202,6 +204,7 @@ export default function WidgetGrid({
             nbStatus={nbStatus}
             calendarSourceCount={calendarSourceCount}
             eventsCount={events.length}
+            runpodStatus={runpodStatus}
           />
         );
       case "hours_volunteered":

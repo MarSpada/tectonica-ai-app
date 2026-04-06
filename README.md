@@ -21,7 +21,7 @@ The path to full launch involves connecting external action source adapters (Nat
 - Authentication (email/password signup, login, email confirmation, forgot/reset password, session management)
 - Role-based access control (super_admin, group_admin, member, supporter) with automatic group assignment on signup
 - Dashboard with 24 AI bot cards in 4 categories, star/favorite system, drag-and-drop reordering
-- Bot chat with GPT-4o streaming responses and conversation persistence
+- Bot chat with self-hosted model streaming responses (via Open WebUI + RunPod) and conversation persistence
 - Group Coach Bot page (UI complete, campaign stats sidebar uses mock data)
 - Media Library with file upload, link bookmarks, category filters, full-text search, grid/list views, signed URL downloads, soft delete, storage quota tracking
 - Member directory with search and member detail pages
@@ -64,7 +64,7 @@ The path to full launch involves connecting external action source adapters (Nat
 - Node.js (version compatible with Next.js 16)
 - npm (used throughout — no yarn/pnpm/bun)
 - Access to the project's Supabase instance (URL + anon key)
-- Access to the project's OpenAI API key
+- An `ENCRYPTION_KEY` for credential encryption (generate with `openssl rand -hex 32`)
 - Git
 
 ### Environment variables
@@ -74,7 +74,7 @@ Create a `.env.local` file at the project root with:
 ```
 NEXT_PUBLIC_SUPABASE_URL=<Supabase project URL>
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<Supabase public anon key>
-OPENAI_API_KEY=<OpenAI API key for GPT-4o>
+ENCRYPTION_KEY=<32-byte hex string for token encryption — generate with: openssl rand -hex 32>
 NATIONBUILDER_API_TOKEN=<NationBuilder v2 API Bearer token>
 NATIONBUILDER_SLUG=<NationBuilder subdomain slug>
 RESEND_API_KEY=<Resend email API key>
@@ -106,6 +106,14 @@ Open [http://localhost:3000](http://localhost:3000).
   - `tectonica-ai-app` — auto-deploys from `main` (original app)
   - `tectonica-ai-v2` — auto-deploys from `v2` (redesigned app)
 - **No Supabase CLI access.** All migrations are run manually in the Supabase SQL Editor. There is no `supabase db push` workflow.
+
+### IMPORTANT: ENCRYPTION_KEY deployment
+
+The `ENCRYPTION_KEY` environment variable **must be added to Railway** before deploying. Without it, RunPod bearer token decryption will fail in production and all bot chats will return "not configured" errors.
+
+Generate a key: `openssl rand -hex 32`
+
+Add it to both Railway services and your local `.env.local`.
 
 ### Manual Supabase setup (not covered by migrations)
 
@@ -150,7 +158,7 @@ The following must be configured manually in the Supabase dashboard:
 | Styling | Tailwind CSS 4 with design token CSS variables |
 | Database | Supabase PostgreSQL with Row Level Security, Realtime subscriptions |
 | Auth | Supabase Auth (email/password, email confirmation) |
-| AI | OpenAI GPT-4o (streaming SSE via API routes) |
+| AI | Open WebUI + RunPod (OpenAI-compatible API via Open WebUI proxy, streaming SSE) |
 | Email | Resend (transactional emails) |
 | Animations | GSAP (entrance transitions, stagger animations) |
 | Dashboard grid | React Grid Layout |

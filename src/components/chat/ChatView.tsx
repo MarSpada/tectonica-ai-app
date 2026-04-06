@@ -8,6 +8,7 @@ import ChatHeader from "./ChatHeader";
 import MessageList from "./MessageList";
 import ChatInput from "./ChatInput";
 import RecentConversations from "./RecentConversations";
+import { Icon } from "@/components/ui/icon";
 
 interface ChatViewProps {
   bot: Bot;
@@ -25,6 +26,7 @@ export default function ChatView({
   const [isStreaming, setIsStreaming] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState(initialConversations);
+  const [notConfigured, setNotConfigured] = useState(false);
 
   const sendMessage = useCallback(async () => {
     if (!input.trim() || isStreaming) return;
@@ -53,6 +55,19 @@ export default function ChatView({
       });
 
       if (!response.ok) {
+        if (response.status === 503) {
+          try {
+            const errJson = await response.json();
+            if (errJson.error === "not_configured") {
+              setNotConfigured(true);
+              setMessages([]);
+              setIsStreaming(false);
+              return;
+            }
+          } catch {
+            // Fall through to generic error
+          }
+        }
         throw new Error(`Chat request failed: ${response.status}`);
       }
 
@@ -157,18 +172,36 @@ export default function ChatView({
       {/* Chat area */}
       <div className="flex-1 flex flex-col bg-bg">
         <ChatHeader bot={bot} />
-        <MessageList
-          messages={messages}
-          bot={bot}
-          userName={userName}
-          isStreaming={isStreaming}
-        />
-        <ChatInput
-          value={input}
-          onChange={setInput}
-          onSend={sendMessage}
-          isStreaming={isStreaming}
-        />
+        {notConfigured ? (
+          <div className="flex-1 flex items-center justify-center px-8">
+            <div className="text-center max-w-sm">
+              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-3">
+                <Icon name="info" size={24} className="text-amber-600" />
+              </div>
+              <p className="text-sm font-medium text-text-primary mb-1">
+                This bot is not yet configured
+              </p>
+              <p className="text-xs text-text-muted">
+                Please contact your administrator to set up the AI model connection.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <MessageList
+              messages={messages}
+              bot={bot}
+              userName={userName}
+              isStreaming={isStreaming}
+            />
+            <ChatInput
+              value={input}
+              onChange={setInput}
+              onSend={sendMessage}
+              isStreaming={isStreaming}
+            />
+          </>
+        )}
       </div>
 
       {/* Recent conversations sidebar */}

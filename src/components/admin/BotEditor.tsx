@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BotCategory } from "@/lib/bots";
 import { categoryMeta } from "@/lib/bots";
 import type { AdminBot } from "@/lib/types";
@@ -9,6 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Icon } from "@/components/ui/icon";
 import { ICON_MAP, type IconName } from "@/lib/icon-map";
+
+interface RunPodModel {
+  id: string;
+  name: string;
+}
 
 interface BotEditorProps {
   bot: AdminBot | null; // null = creating new
@@ -31,8 +36,33 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
   const [category, setCategory] = useState<BotCategory>(bot?.category || "advisors");
   const [description, setDescription] = useState(bot?.description || "");
   const [systemPrompt, setSystemPrompt] = useState(bot?.system_prompt || "");
+  const [modelId, setModelId] = useState(bot?.model_id || "");
   const [saving, setSaving] = useState(false);
   const [autoSlug, setAutoSlug] = useState(isNew);
+  const [availableModels, setAvailableModels] = useState<RunPodModel[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(true);
+  const [runpodConfigured, setRunpodConfigured] = useState(false);
+
+  useEffect(() => {
+    async function loadModels() {
+      try {
+        const res = await fetch("/api/admin/integrations/runpod/models");
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json.models && json.models.length > 0) {
+          setAvailableModels(json.models);
+          setRunpodConfigured(true);
+        } else if (json.error === "not_configured") {
+          setRunpodConfigured(false);
+        }
+      } catch {
+        // Failed to load models
+      } finally {
+        setModelsLoading(false);
+      }
+    }
+    loadModels();
+  }, []);
 
   function handleNameChange(val: string) {
     setName(val);
@@ -50,6 +80,7 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
       category,
       description: description.trim(),
       system_prompt: systemPrompt.trim() || null,
+      model_id: modelId || null,
     });
     setSaving(false);
   }
@@ -187,6 +218,37 @@ export default function BotEditor({ bot, onSave, onCancel }: BotEditorProps) {
             rows={16}
             className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-accent-purple/50 resize-y"
           />
+        </div>
+        <Separator />
+
+        {/* Model Selection */}
+        <div>
+          <label className="block text-xs font-semibold text-text-primary mb-1">
+            AI Model
+          </label>
+          {modelsLoading ? (
+            <div className="text-xs text-text-muted py-2">Loading available models...</div>
+          ) : !runpodConfigured ? (
+            <div className="px-3 py-2 text-xs text-amber-700 bg-amber-50 rounded-lg">
+              Configure RunPod connection in Integrations before assigning models.
+            </div>
+          ) : (
+            <>
+              <select
+                value={modelId}
+                onChange={(e) => setModelId(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-accent-purple/50"
+              >
+                <option value="">No model selected</option>
+                {availableModels.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name || m.id}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-text-muted mt-0.5">
+                Select the model this bot will use for chat responses.
+              </p>
+            </>
+          )}
         </div>
       </div>
 

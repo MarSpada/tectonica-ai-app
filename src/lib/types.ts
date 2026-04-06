@@ -117,6 +117,20 @@ export interface AdminBot {
   category: BotCategory;
   description: string;
   system_prompt: string | null;
+  model_id: string | null;
+}
+
+/* ── Org Integrations ── */
+
+export type RunPodStatus = "connected" | "error" | "not_configured";
+
+export interface OrgIntegration {
+  id: string;
+  org_id: string;
+  runpod_endpoint_url: string | null;
+  runpod_status: RunPodStatus;
+  runpod_last_checked_at: string | null;
+  updated_at: string;
 }
 
 /* ── Calendar ── */

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Icon } from "@/components/ui/icon";
+import type { RunPodStatus } from "@/lib/types";
 
 interface CalendarSource {
   id: string;
@@ -16,6 +17,11 @@ interface CalendarSource {
   color: string;
   enabled: boolean;
   created_at: string;
+}
+
+interface RunPodModel {
+  id: string;
+  name: string;
 }
 
 const PROVIDER_OPTIONS = [
@@ -35,8 +41,19 @@ export default function IntegrationsTab() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // RunPod state
+  const [rpEndpointUrl, setRpEndpointUrl] = useState("");
+  const [rpBearerToken, setRpBearerToken] = useState("");
+  const [rpStatus, setRpStatus] = useState<RunPodStatus>("not_configured");
+  const [rpHasToken, setRpHasToken] = useState(false);
+  const [rpModels, setRpModels] = useState<RunPodModel[]>([]);
+  const [rpSaving, setRpSaving] = useState(false);
+  const [rpError, setRpError] = useState("");
+  const [rpLoading, setRpLoading] = useState(true);
+
   useEffect(() => {
     fetchSources();
+    fetchRunPodConfig();
   }, []);
 
   async function fetchSources() {
@@ -100,8 +117,170 @@ export default function IntegrationsTab() {
     }
   }
 
+  // RunPod functions
+  async function fetchRunPodConfig() {
+    try {
+      const res = await fetch("/api/admin/integrations/runpod");
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json.endpointUrl) {
+        setRpEndpointUrl(json.endpointUrl);
+        setRpHasToken(true);
+      }
+      setRpStatus(json.status || "not_configured");
+      if (json.status === "connected") {
+        fetchRunPodModels();
+      }
+    } catch {
+      // Failed to load
+    } finally {
+      setRpLoading(false);
+    }
+  }
+
+  async function fetchRunPodModels() {
+    try {
+      const res = await fetch("/api/admin/integrations/runpod/models");
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json.models) setRpModels(json.models);
+    } catch {
+      // Failed
+    }
+  }
+
+  async function handleSaveRunPod() {
+    if (!rpEndpointUrl.trim()) {
+      setRpError("Endpoint URL is required");
+      return;
+    }
+    if (!rpHasToken && !rpBearerToken.trim()) {
+      setRpError("Bearer token is required");
+      return;
+    }
+    setRpSaving(true);
+    setRpError("");
+    try {
+      const body: Record<string, string> = { endpointUrl: rpEndpointUrl.trim() };
+      if (rpBearerToken.trim()) {
+        body.bearerToken = rpBearerToken.trim();
+      }
+      const res = await fetch("/api/admin/integrations/runpod", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setRpStatus(json.status || "error");
+        setRpModels(json.models || []);
+        setRpBearerToken("");
+        setRpHasToken(true);
+      } else {
+        setRpError(json.error || "Failed to save");
+        setRpStatus("error");
+      }
+    } catch {
+      setRpError("Something went wrong");
+    } finally {
+      setRpSaving(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
+      {/* AI Model Connection (RunPod) */}
+      <div>
+        <div className="mb-4">
+          <h3 className="text-sm font-bold text-text-primary">AI Model Connection</h3>
+          <p className="text-xs text-text-muted mt-0.5">
+            Connect to your AI model provider (Open WebUI, RunPod, or any OpenAI-compatible endpoint). All bots will use models from this endpoint.
+          </p>
+        </div>
+
+        {rpLoading ? (
+          <Skeleton className="h-40 w-full rounded-xl" />
+        ) : (
+          <div className="bg-white border border-black/5 rounded-xl p-5 space-y-4">
+            {rpError && (
+              <div className="px-3 py-2 text-xs text-red-700 bg-red-50 rounded-lg">{rpError}</div>
+            )}
+
+            {/* Status indicator */}
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-2.5 h-2.5 rounded-full ${
+                  rpStatus === "connected"
+                    ? "bg-green-500"
+                    : rpStatus === "error"
+                      ? "bg-red-500"
+                      : "bg-gray-300"
+                }`}
+              />
+              <span className="text-sm font-medium text-text-primary">
+                {rpStatus === "connected"
+                  ? `Connected — ${rpModels.length} model${rpModels.length !== 1 ? "s" : ""} available`
+                  : rpStatus === "error"
+                    ? "Connection failed — check your endpoint URL and token"
+                    : "Not configured"}
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-text-primary mb-1">
+                Endpoint URL
+              </label>
+              <Input
+                type="url"
+                value={rpEndpointUrl}
+                onChange={(e) => setRpEndpointUrl(e.target.value)}
+                placeholder="https://api.runpod.ai/v2/your-endpoint-id"
+                className="font-mono text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-text-primary mb-1">
+                Bearer Token
+              </label>
+              <Input
+                type="password"
+                value={rpBearerToken}
+                onChange={(e) => setRpBearerToken(e.target.value)}
+                placeholder={rpHasToken ? "••••••••" : "Enter your RunPod API key"}
+              />
+              {rpHasToken && (
+                <p className="text-[10px] text-text-muted mt-0.5">
+                  Token is stored encrypted. Leave blank to keep the existing token.
+                </p>
+              )}
+            </div>
+
+            <Button onClick={handleSaveRunPod} disabled={rpSaving} size="sm">
+              {rpSaving ? "Testing connection..." : "Save & Test Connection"}
+            </Button>
+
+            {/* Available models list */}
+            {rpStatus === "connected" && rpModels.length > 0 && (
+              <div className="border-t border-black/5 pt-3 mt-3">
+                <p className="text-xs font-semibold text-text-primary mb-2">Available Models</p>
+                <div className="space-y-1">
+                  {rpModels.map((m) => (
+                    <div
+                      key={m.id}
+                      className="flex items-center gap-2 text-xs text-text-secondary bg-gray-50 rounded-lg px-3 py-1.5"
+                    >
+                      <Icon name="bot-welcome" size={14} className="opacity-40" />
+                      <span className="font-mono">{m.id}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Calendar Sources Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
