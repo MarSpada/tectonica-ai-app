@@ -5,6 +5,22 @@ import { getAvatarColor, getInitials } from "@/lib/avatar";
 import type { GroupMessage } from "@/lib/types";
 import { Icon } from "@/components/ui/icon";
 
+const IMAGE_MD_REGEX = /^!\[([^\]]*)\]\(([^)]+)\)$/;
+
+function renderGroupMessageContent(content: string) {
+  const match = content.match(IMAGE_MD_REGEX);
+  if (match) {
+    return (
+      <img
+        src={match[2]}
+        alt={match[1] || "Shared image"}
+        className="rounded-lg max-w-[240px] max-h-[180px] object-cover"
+      />
+    );
+  }
+  return content;
+}
+
 interface GroupConversationOverlayProps {
   messages: GroupMessage[];
   currentUserId: string | null;
@@ -170,7 +186,7 @@ export default function GroupConversationOverlay({
                       : "bg-black/[.04] text-text-secondary rounded-tl-sm"
                   } ${msg.id.startsWith("optimistic-") ? "opacity-70" : ""}`}
                 >
-                  {msg.content}
+                  {renderGroupMessageContent(msg.content)}
                 </div>
               </div>
             </div>

@@ -334,7 +334,8 @@ export default function CreateApprovalModal({ onClose, onCreated, prefilledTitle
                 ))}
               </div>
             )}
-          </div>}
+          </div>
+          }
         </div>
 
         <DialogFooter>
