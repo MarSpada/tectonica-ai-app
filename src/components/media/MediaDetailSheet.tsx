@@ -25,6 +25,7 @@ const categoryIcons: Record<string, IconName> = {
   video: "file-video",
   document: "file-document",
   link: "link",
+  generated: "bot-graphics",
 };
 
 function formatBytes(bytes: number): string {
@@ -91,8 +92,9 @@ export default function MediaDetailSheet({
     }
   }
 
-  const isImage = item?.category === "image";
   const isLink = item?.category === "link";
+  const previewUrl = item?.signed_url || item?.url;
+  const canPreview = item && (item.category === "image" || item.category === "generated") && previewUrl;
 
   return (
     <Sheet open={!!mediaId} onOpenChange={() => onClose()}>
@@ -112,13 +114,13 @@ export default function MediaDetailSheet({
         ) : (
           <div className="space-y-5 pt-4">
             {/* Preview */}
-            {isImage && item.signed_url ? (
+            {canPreview ? (
               <div className="rounded-xl overflow-hidden border border-border bg-muted">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={item.signed_url}
+                  src={previewUrl!}
                   alt={item.title || item.file_name}
-                  className="w-full object-contain max-h-64"
+                  className="w-full object-contain max-h-80"
                 />
               </div>
             ) : (
