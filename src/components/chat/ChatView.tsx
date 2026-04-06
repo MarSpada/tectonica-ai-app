@@ -260,6 +260,9 @@ export default function ChatView({
                 setMostRecentImageUrl(imageUrl);
                 setShowStudio(true);
               } : undefined}
+              onStyleSelect={isImageBot ? (styleName) => {
+                sendMessage(`I'd like the ${styleName} style`);
+              } : undefined}
             />
             <ChatInput
               value={input}

@@ -12,6 +12,7 @@ interface MessageListProps {
   isStreaming: boolean;
   isGeneratingImage?: boolean;
   onOpenStudio?: (imageUrl: string) => void;
+  onStyleSelect?: (styleName: string) => void;
 }
 
 // Parse image markdown: ![alt](url)
@@ -23,7 +24,7 @@ interface ParsedImage {
   index: number;
 }
 
-function renderContent(content: string, onOpenStudio?: (imageUrl: string) => void) {
+function renderContent(content: string, onOpenStudio?: (imageUrl: string) => void, onStyleSelect?: (styleName: string) => void) {
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
 
@@ -53,7 +54,7 @@ function renderContent(content: string, onOpenStudio?: (imageUrl: string) => voi
 
     // Render images as a style gallery grid
     parts.push(
-      <StyleGallery key="gallery" images={images} />
+      <StyleGallery key="gallery" images={images} onSelect={onStyleSelect} />
     );
 
     // Render text after the last image
@@ -112,32 +113,54 @@ function renderTextContent(text: string): React.ReactNode {
   return text;
 }
 
-function StyleGallery({ images }: { images: ParsedImage[] }) {
+function StyleGallery({ images, onSelect }: { images: ParsedImage[]; onSelect?: (styleName: string) => void }) {
+  const [selected, setSelected] = useState<string | null>(null);
+
   return (
     <div className="my-3">
       <div className="grid grid-cols-5 gap-2">
-        {images.map((img, i) => (
-          <button
-            key={i}
-            className="group relative rounded-xl overflow-hidden aspect-square bg-black/5 hover:ring-2 hover:ring-accent-purple transition-all"
-            onClick={() => {
-              // No action needed — user types their choice
-            }}
-          >
-            <img
-              src={img.url}
-              alt={img.alt}
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
-              <p className="text-[10px] font-bold text-white uppercase leading-tight">
-                {img.alt}
-              </p>
-            </div>
-          </button>
-        ))}
+        {images.map((img, i) => {
+          const isSelected = selected === img.alt;
+          return (
+            <button
+              key={i}
+              className={`group relative rounded-xl overflow-hidden aspect-square bg-black/5 transition-all ${
+                isSelected
+                  ? "ring-2 ring-accent-purple scale-[1.03] shadow-lg"
+                  : selected
+                    ? "opacity-50 hover:opacity-80"
+                    : "hover:ring-2 hover:ring-accent-purple/50"
+              }`}
+              onClick={() => {
+                setSelected(img.alt);
+                if (onSelect) onSelect(img.alt);
+              }}
+            >
+              <img
+                src={img.url}
+                alt={img.alt}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
+                <p className="text-[10px] font-bold text-white uppercase leading-tight">
+                  {img.alt}
+                </p>
+              </div>
+              {isSelected && (
+                <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-accent-purple flex items-center justify-center">
+                  <Icon name="check" size={12} color="#ffffff" />
+                </div>
+              )}
+            </button>
+          );
+        })}
       </div>
+      {selected && (
+        <p className="text-xs text-accent-purple font-medium mt-2">
+          Selected: {selected}
+        </p>
+      )}
     </div>
   );
 }
@@ -206,6 +229,7 @@ export default function MessageList({
   isStreaming,
   isGeneratingImage,
   onOpenStudio,
+  onStyleSelect,
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -262,7 +286,7 @@ export default function MessageList({
                 }}
               >
                 {msg.role === "assistant"
-                  ? renderContent(msg.content, onOpenStudio)
+                  ? renderContent(msg.content, onOpenStudio, onStyleSelect)
                   : msg.content}
                 {msg.role === "assistant" &&
                   isStreaming &&
