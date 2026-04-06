@@ -40,6 +40,7 @@ The path to full launch involves connecting external action source adapters (Nat
 - Profile and account settings with avatar upload
 - Activity log (unified timeline of hours, approvals, signups, reimbursements)
 - Group profile page with description, member count, quick links
+- Energy consumption indicator per AI-generated image (Stanford/AXA 2025 research, collapsible display in chat and Media Library)
 - GSAP entrance animations throughout
 - Deployed on Railway with auto-deploy from `v2` branch
 
@@ -125,7 +126,7 @@ The following must be configured manually in the Supabase dashboard:
    - `media` — for Media Library files. Setup instructions are in the header comment of `src/lib/media-storage.ts`
    - `reimbursements` — for reimbursement request attachments
 2. **Storage RLS policies** — Storage bucket policies are separate from table-level RLS and must be configured in the Supabase dashboard
-3. **All SQL migrations** (in `supabase/migrations/`, numbered 001–020) must be run in order in the Supabase SQL Editor
+3. **All SQL migrations** (in `supabase/migrations/`, numbered 001–024) must be run in order in the Supabase SQL Editor
 
 ### Test accounts
 
@@ -233,7 +234,7 @@ src/
     ├── UserProfileContext.tsx # React Context for user profile data (role, orgName, groupName, name, avatar)
     └── utils.ts            # General utilities
 supabase/
-└── migrations/             # 21 SQL migration files (001–021), run manually in Supabase SQL Editor
+└── migrations/             # 24 SQL migration files (001–024), run manually in Supabase SQL Editor
 ```
 
 ### Key architectural patterns
@@ -399,6 +400,7 @@ Functional file management: upload files (5MB limit, MIME validation), bookmark 
 - **File owner + admins** can delete media (soft delete)
 - Storage abstracted behind `lib/media-storage.ts` for provider portability
 - **Limitation**: Per-file visibility UI, thumbnail generation, and virus scanning are not yet implemented (hook placeholder exists in `media-storage.ts`)
+- **Energy consumption indicator**: Generated images display an estimated energy cost based on Stanford/AXA "Energy Scaling Laws for Diffusion Models" (2025). Collapsible display shows Wh value, toggleable human-readable comparisons (Google searches, smartphone charging, LED bulb), and research disclaimer. Visible in both bot chat and Media Library detail view.
 
 ### Member directory
 

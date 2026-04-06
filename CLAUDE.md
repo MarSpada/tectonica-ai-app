@@ -456,6 +456,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `021_create_action_with_assignments.sql` | `create_action_with_assignments()` SECURITY DEFINER RPC: atomic action creation with optional targeted assignments. If either insert fails, both roll back. Replaces the two-step insert pattern in `/api/actions` POST. |
 | `022_org_integrations.sql` | `org_integrations` table (one row per org): RunPod endpoint URL, encrypted bearer token, connection status, last checked timestamp. RLS: super_admin only. Adds `model_id` column to `bots` table for per-bot model selection from RunPod endpoint. |
 | `023_image_tools.sql` | Extends `org_integrations` with image API columns (endpoint, encrypted token, credits allocated/used). Adds `image_tools_enabled` boolean to `bots` table (true for graphics-creation). Updates `media_items`: adds 'generated' category, 'private' visibility, updates `media_file_or_link` constraint, updates RLS SELECT to allow users to see own private items. Adds `increment_image_credits()` SECURITY DEFINER RPC. |
+| `024_energy_consumption.sql` | Adds `image_width` (integer), `image_height` (integer), `energy_wh` (double precision) nullable columns to `media_items`. Partial index on `(group_id) WHERE category='generated' AND energy_wh IS NOT NULL` for efficient aggregation. Energy is pre-computed at generation time using Stanford/AXA 2025 reference data. |
 
 ---
 
@@ -532,7 +533,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `chat/ChatView.tsx` | Bot chat with streaming, conversation persistence, image tool SSE handling (gallery/image/status events), Studio overlay state, approval + share workflows |
 | `chat/ChatHeader.tsx` | Bot name, status, back button, "Open in Studio" button (image bots only) |
 | `chat/ChatInput.tsx` | Message input with send button, image attachment upload (image bots only) |
-| `chat/MessageList.tsx` | Message history with image markdown rendering, style gallery grid, image action buttons (Studio/Try again/Request approval/Share to group), creative brief tag stripping |
+| `chat/MessageList.tsx` | Message history with image markdown rendering, style gallery grid, image action buttons (Studio/Try again/Request approval/Share to group), creative brief tag stripping, per-image energy estimate display |
 | `chat/RecentConversations.tsx` | Sidebar: saved briefs (image bots), creative brief (live REQ tags), past chats (collapsible, 10-limit, deletable) |
 | `chat/CreativeBrief.tsx` | Live creative brief from [REQ:] tags + saved briefs section with 4 hardcoded example briefs |
 | `chat/StudioOverlay.tsx` | Full-screen iframe overlay for Railway Studio visual editor. Opens with most recent generated image. ESC to close. One-way integration — edits don't save back. |
@@ -540,7 +541,8 @@ Desktop-first design. Mobile is out of scope for now.
 | `coach/CampaignStats.tsx` | Campaign goals, strategy notes, upcoming events sidebar |
 | `media/MediaGallery.tsx` | Functional media gallery: API-driven list with category filters, full-text search, pagination, grid/list views, upload modal, detail sheet |
 | `media/UploadMediaModal.tsx` | Dialog with file upload and link tabs, MIME/size validation |
-| `media/MediaDetailSheet.tsx` | Sheet side panel: preview, metadata, download, delete with confirmation |
+| `media/MediaDetailSheet.tsx` | Sheet side panel: preview, metadata, energy estimate (generated images), download, delete with confirmation |
+| `media/EnergyEstimate.tsx` | Collapsible per-image energy consumption display with human-readable comparisons and disclaimer |
 | `media/StorageUsageBar.tsx` | Progress bar showing group storage usage vs quota |
 | `signups/NbSignupModal.tsx` | NB signup detail modal with contact/call/assign actions |
 | `signups/SignupsView.tsx` | Full signups table page: search, status badges, assignment info, click-to-modal |
@@ -589,7 +591,8 @@ Desktop-first design. Mobile is out of scope for now.
 | `lib/bots-prompts.ts` | Bot system prompts mapped by bot ID, falls back to generic prompt |
 | `lib/bot-resolver.ts` | getBots() (DB-first, fallback to hardcoded), getSystemPrompt() (DB-first, fallback to bots-prompts.ts) |
 | `lib/encryption.ts` | AES-256-GCM encrypt/decrypt utility for RunPod bearer token. Uses `ENCRYPTION_KEY` env var (32-byte hex). Node.js `crypto` module, no dependencies. |
-| `lib/image-tools.ts` | **Only file that calls the Railway image API.** Upload, generate, edit, fuse, brand images. Credential fetch + decryption, credit tracking, platform size lookup. Mirrors `lib/media-storage.ts` pattern. |
+| `lib/image-tools.ts` | **Only file that calls the Railway image API.** Upload, generate, edit, fuse, brand images. Credential fetch + decryption, credit tracking, platform size lookup, dimension capture from Railway response. Mirrors `lib/media-storage.ts` pattern. |
+| `lib/energy.ts` | Energy consumption estimation for AI-generated images. Pure calculation library based on Stanford/AXA 2025 research. Named constants, linear interpolation formula, 3 human-readable comparison formatters (Google searches, phone charge, LED bulb), disclaimer text. |
 | `lib/image-tool-definitions.ts` | OpenAI-compatible tool definitions array for ChangeAgent. Passed via `tools` parameter — never injected into system prompt. 4 tools: generate_image, edit_image, fuse_images, apply_branding. |
 | `lib/style-gallery-data.ts` | Style gallery data for Graphics Creation bot. Main gallery (10 styles) + 10 substyle galleries with fal.ai CDN image URLs. Used by chat route to respond to model's `style_galery` tool calls. |
 | `lib/ical-parser.ts` | Lightweight ICS parser (no native deps) — handles DTSTART/DTEND with TZID, line unfolding, escaped chars |
@@ -647,6 +650,8 @@ Desktop-first design. Mobile is out of scope for now.
 - GSAP entrance animations throughout (except right sidebar — uses CSS fade-in)
 - **Graphics Creation bot — image tools**: Full image generation via Railway/fal.ai with OpenAI tool calling. Style gallery (10 styles × substyles, clickable grid with preloading). Image-to-image with uploaded reference photos. Inline image rendering with action buttons (Studio, Try again, Request approval, Share to group). Studio iframe overlay. Creative brief sidebar (live [REQ:] tag parsing + 4 saved example briefs). Image upload shows thumbnail preview. Chat sidebar: collapsible past chats (10-limit, deletable), saved briefs section.
 - **Media Library thumbnails**: Image and generated items show actual image thumbnails. Select mode with bulk delete.
+- **Energy consumption indicator** — estimated energy cost per AI-generated image based on Stanford/AXA "Energy Scaling Laws for Diffusion Models" (2025). Captures image dimensions from Railway API response (with fallback to request params). Displays collapsible "Energy estimate" below each generated image in bot chat and Media Library detail view. Shows Wh value, toggleable human-readable comparisons (Google searches, smartphone charging, LED bulb time), and research disclaimer. Pre-computed `energy_wh` stored in `media_items` for efficient aggregation. Migration 024.
+- **Notification bar follow-up guidance** — signup notification now reads "Follow up with them or reassign to another member in the next 48 hours" instead of just listing the count.
 - Deployed on Railway with auto-deploy from `v2` branch
 
 ## What Still Needs Work (Prioritized)
@@ -745,6 +750,12 @@ Desktop-first design. Mobile is out of scope for now.
 - **Image tools DB-driven** — `bots.image_tools_enabled` boolean controls which bots get image tools. Currently only `graphics-creation` is enabled. To add image tools to another bot, set `image_tools_enabled = true` in the bots table.
 - **Image credits manual** — `image_api_credits_allocated` is set manually by the Tectonica team in the database. No self-service credit top-up UI.
 - **Private generated images** — visibility='private' items are only visible to their creator (RLS-enforced). Not visible to admins. Not counted in group storage quota. Lock icon shown in Media Library grid.
+- **Migration 024 required** — Adds `image_width`, `image_height`, `energy_wh` columns to `media_items`. Must be run in Supabase SQL Editor for energy estimates to work. Without it, columns don't exist and inserts silently omit energy data.
+- **Energy estimates — existing images** — Generated images created before migration 024 won't have energy data (columns are nullable). Energy estimate only appears for newly generated images.
+- **Energy calculation formula** — Linear interpolation between 512x512 (0.051 Wh) and 1024x1024 (3.58 Wh) by pixel count. Constants stored in `src/lib/energy.ts` as named values. Update there if better research data becomes available.
+- **Both chat route and execute route store energy** — `/api/chat/route.ts` and `/api/image-tools/execute/route.ts` are two separate code paths that both call `executeImageTool()` and save to `media_items`. Both now capture dimensions + energy. If the save logic changes, update both.
+- **Bot model_id select bug fixed** — GET `/api/admin/bots` was missing `model_id` in its Supabase select. Bot Editor always showed "No model selected" even when a model was saved. Fixed — now includes `model_id` in both GET (list) and POST (create).
+- **All non-graphics bots set to ChangeAgent** — Done via direct SQL in Supabase: `UPDATE bots SET model_id = 'ChangeAgent' WHERE slug != 'graphics-creation'`.
 
 ---
 
