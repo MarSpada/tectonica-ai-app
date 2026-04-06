@@ -129,12 +129,22 @@ function renderContent(content: string, onOpenStudio?: (imageUrl: string) => voi
 /** Strip markdown table syntax that leaks from gallery responses */
 function stripMarkdownTableSyntax(text: string): string {
   return text
+    // Remove gallery headers
     .replace(/^\s*##\s+Available Styles\s*/m, "")
     .replace(/^\s*##\s+.*?—\s*Substyles\s*/m, "")
-    .replace(/\|[^|]*\|/g, "")
-    .replace(/\|\s*---\s*/g, "")
-    .replace(/\*\d+\s+substyles\*/gi, "")
+    // Remove markdown table rows: | content | content |
+    .replace(/^\s*\|.*\|\s*$/gm, "")
+    // Remove standalone pipes and dashes (table separators)
+    .replace(/^\s*[-|]+\s*$/gm, "")
+    // Remove leftover style names without context (e.g. "Flat Illustration  Cartoon / Caricature")
+    .replace(/^\s*(?:Photorealistic|Flat Illustration|Hand-Drawn Illustration|Cartoon \/ Caricature|Collage \/ Mixed Media|Abstract \/ Conceptual|Political|Retro \/ Vintage|Mural \/ Street Art|Minimalist \/ Typographic)(?:\s{2,}(?:Photorealistic|Flat Illustration|Hand-Drawn Illustration|Cartoon \/ Caricature|Collage \/ Mixed Media|Abstract \/ Conceptual|Political|Retro \/ Vintage|Mural \/ Street Art|Minimalist \/ Typographic))*\s*$/gm, "")
+    // Remove substyle count markers
+    .replace(/\*\d+\s+substyles?\*/gi, "")
+    // Remove image markdown
     .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
+    // Remove standalone dashes used as separators
+    .replace(/^\s*---+\s*$/gm, "")
+    // Collapse multiple blank lines
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }

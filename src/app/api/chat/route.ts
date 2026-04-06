@@ -271,13 +271,29 @@ export async function POST(req: Request) {
             );
 
             if (galleryRes.ok) {
-              const galleryResult = await streamModelResponse(
-                galleryRes,
-                controller,
-                encoder
-              );
-              // Store only the text part (gallery images already sent via SSE event)
-              fullContent = galleryResult.content;
+              // Collect the follow-up response WITHOUT streaming it — we need to
+              // strip the gallery markdown the model repeats before sending to client
+              const galleryResult = await collectModelResponse(galleryRes);
+
+              // Strip gallery table/image markdown, keep only the model's text recommendations
+              const cleanText = galleryResult.content
+                .replace(/^\s*##\s+Available Styles.*$/m, "")
+                .replace(/^\s*##\s+.*?—\s*Substyles.*$/m, "")
+                .replace(/^\s*\|.*\|\s*$/gm, "")
+                .replace(/^\s*[-|]+\s*$/gm, "")
+                .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
+                .replace(/\*\d+\s+substyles?\*/gi, "")
+                .replace(/\n{3,}/g, "\n\n")
+                .trim();
+
+              if (cleanText) {
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({ content: cleanText })}\n\n`
+                  )
+                );
+              }
+              fullContent = cleanText;
             }
           } catch {
             // If gallery follow-up fails, show whatever content we have
@@ -480,6 +496,48 @@ interface ToolCallAccumulator {
 interface StreamResult {
   content: string;
   toolCalls: ToolCallAccumulator[];
+}
+
+/** Collect full model response WITHOUT streaming to client. Used for gallery follow-ups. */
+async function collectModelResponse(res: Response): Promise<StreamResult> {
+  let content = "";
+  const toolCalls: ToolCallAccumulator[] = [];
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith("data: ")) continue;
+      const data = trimmed.slice(6);
+      if (data === "[DONE]") continue;
+      try {
+        const parsed = JSON.parse(data);
+        const delta = parsed.choices?.[0]?.delta;
+        if (!delta) continue;
+        if (delta.reasoning) delete delta.reasoning;
+        if (delta.content) content += delta.content;
+        if (delta.tool_calls) {
+          for (const tc of delta.tool_calls) {
+            const idx = tc.index ?? 0;
+            if (!toolCalls[idx]) {
+              toolCalls[idx] = { id: tc.id || "", function: { name: "", arguments: "" } };
+            }
+            if (tc.id) toolCalls[idx].id = tc.id;
+            if (tc.function?.name) toolCalls[idx].function.name += tc.function.name;
+            if (tc.function?.arguments) toolCalls[idx].function.arguments += tc.function.arguments;
+          }
+        }
+      } catch { /* skip */ }
+    }
+  }
+  return { content, toolCalls };
 }
 
 async function streamModelResponse(
