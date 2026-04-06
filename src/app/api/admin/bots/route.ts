@@ -23,7 +23,7 @@ export async function GET() {
 
   const { data: bots } = await supabase
     .from("bots")
-    .select("id, slug, name, icon, category, description, system_prompt")
+    .select("id, slug, name, icon, category, description, system_prompt, model_id")
     .or(`org_id.eq.${profile.org_id},org_id.is.null`)
     .order("name");
 
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   if (!profile) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await request.json();
-  const { slug, name, icon, category, description, system_prompt } = body;
+  const { slug, name, icon, category, description, system_prompt, model_id } = body;
 
   if (!slug?.trim() || !name?.trim()) {
     return NextResponse.json({ error: "Slug and name are required" }, { status: 400 });
@@ -51,6 +51,7 @@ export async function POST(request: Request) {
       category: category || "advisors",
       description: description?.trim() || "",
       system_prompt: system_prompt || null,
+      model_id: model_id || null,
       org_id: profile.org_id,
     })
     .select("id, slug, name")
