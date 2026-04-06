@@ -524,17 +524,18 @@ Desktop-first design. Mobile is out of scope for now.
 | `LeftSidebar.tsx` | Navigation, bot chats list, user info footer |
 | `RightSidebar.tsx` | Dashboard sidebar: layout state, data fetching, edit/save/reset flows, modal management. Delegates widget rendering to WidgetGrid. |
 | `dashboard/WidgetGrid.tsx` | Widget rendering orchestration: ResponsiveGridLayout, renderWidget switch, visibility filtering, constraint application. Receives data as props from RightSidebar. |
-| `chat/StudioOverlay.tsx` | Full-screen iframe overlay for Railway Studio visual editor. Opens with most recent generated image. ESC to close. One-way integration — edits don't save back. |
 | `NotificationBar.tsx` | Amber bar for unread signup/approval notifications |
 | `BotGrid.tsx` | Featured carousel + categorized bot card grid with GSAP |
 | `BotCard.tsx` | Individual bot card with star/favorite, hover description |
 | `WelcomeHelper.tsx` | Welcome bot chat on dashboard |
 | `DashboardShell.tsx` | Dashboard layout container |
-| `chat/ChatView.tsx` | Bot chat with streaming, conversation persistence |
-| `chat/ChatHeader.tsx` | Bot name, status, back button |
-| `chat/ChatInput.tsx` | Message input with send button |
-| `chat/MessageList.tsx` | Scrollable message history |
-| `chat/RecentConversations.tsx` | Sidebar of recent bot chats |
+| `chat/ChatView.tsx` | Bot chat with streaming, conversation persistence, image tool SSE handling (gallery/image/status events), Studio overlay state, approval + share workflows |
+| `chat/ChatHeader.tsx` | Bot name, status, back button, "Open in Studio" button (image bots only) |
+| `chat/ChatInput.tsx` | Message input with send button, image attachment upload (image bots only) |
+| `chat/MessageList.tsx` | Message history with image markdown rendering, style gallery grid, image action buttons (Studio/Try again/Request approval/Share to group), creative brief tag stripping |
+| `chat/RecentConversations.tsx` | Sidebar: saved briefs (image bots), creative brief (live REQ tags), past chats (collapsible, 10-limit, deletable) |
+| `chat/CreativeBrief.tsx` | Live creative brief from [REQ:] tags + saved briefs section with 4 hardcoded example briefs |
+| `chat/StudioOverlay.tsx` | Full-screen iframe overlay for Railway Studio visual editor. Opens with most recent generated image. ESC to close. One-way integration — edits don't save back. |
 | `coach/CoachChatView.tsx` | Group Coach Bot with campaign stats sidebar |
 | `coach/CampaignStats.tsx` | Campaign goals, strategy notes, upcoming events sidebar |
 | `media/MediaGallery.tsx` | Functional media gallery: API-driven list with category filters, full-text search, pagination, grid/list views, upload modal, detail sheet |
@@ -590,6 +591,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `lib/encryption.ts` | AES-256-GCM encrypt/decrypt utility for RunPod bearer token. Uses `ENCRYPTION_KEY` env var (32-byte hex). Node.js `crypto` module, no dependencies. |
 | `lib/image-tools.ts` | **Only file that calls the Railway image API.** Upload, generate, edit, fuse, brand images. Credential fetch + decryption, credit tracking, platform size lookup. Mirrors `lib/media-storage.ts` pattern. |
 | `lib/image-tool-definitions.ts` | OpenAI-compatible tool definitions array for ChangeAgent. Passed via `tools` parameter — never injected into system prompt. 4 tools: generate_image, edit_image, fuse_images, apply_branding. |
+| `lib/style-gallery-data.ts` | Style gallery data for Graphics Creation bot. Main gallery (10 styles) + 10 substyle galleries with fal.ai CDN image URLs. Used by chat route to respond to model's `style_galery` tool calls. |
 | `lib/ical-parser.ts` | Lightweight ICS parser (no native deps) — handles DTSTART/DTEND with TZID, line unfolding, escaped chars |
 | `lib/avatar.ts` | Avatar utilities (upload, delete, generate URL) for Supabase Storage |
 | `lib/signup-utils.ts` | NationBuilder signup utilities (fetch, parse, enrich). Returns connection status (connected/error/not_configured) |
@@ -643,6 +645,8 @@ Desktop-first design. Mobile is out of scope for now.
 - **Signups page** — `/signups` full table view of NationBuilder signups with search, status badges, assignment info. Entry point: "See all (##)" button in SignupsWidget. SignupsWidget now shows max 2 items with count-based CTA button (#c66a0c).
 - **Integrations tab — Action Sources** — scaffold section in admin Integrations showing NationBuilder Actions, Action Network, ActBlue, Sosha with "Not Connected" status and disabled Configure buttons.
 - GSAP entrance animations throughout (except right sidebar — uses CSS fade-in)
+- **Graphics Creation bot — image tools**: Full image generation via Railway/fal.ai with OpenAI tool calling. Style gallery (10 styles × substyles, clickable grid with preloading). Image-to-image with uploaded reference photos. Inline image rendering with action buttons (Studio, Try again, Request approval, Share to group). Studio iframe overlay. Creative brief sidebar (live [REQ:] tag parsing + 4 saved example briefs). Image upload shows thumbnail preview. Chat sidebar: collapsible past chats (10-limit, deletable), saved briefs section.
+- **Media Library thumbnails**: Image and generated items show actual image thumbnails. Select mode with bulk delete.
 - Deployed on Railway with auto-deploy from `v2` branch
 
 ## What Still Needs Work (Prioritized)
@@ -650,7 +654,7 @@ Desktop-first design. Mobile is out of scope for now.
 ### Priority — Next Features
 - Media Library: per-file visibility UI, thumbnail generation, virus scanning (hook placeholder exists in media-storage.ts)
 - Group Coach Bot with real campaign data (currently mock stats)
-- Graphics Creation bot with visual editor iframe integration
+- Graphics Creation bot: visual editor integration, style gallery, image upload — DONE (see below)
 - Leaders & Organizers real-time chat (UI exists, needs real-time backend)
 - Group Admin features (invitations, recruiter IDs, /join flow)
 

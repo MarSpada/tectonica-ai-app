@@ -564,14 +564,14 @@ Page at `/group` showing group name, description, member count, organization nam
 - Actions: external source adapters (NationBuilder actions, Action Network, ActBlue, Sosha), targeted assignment member picker, API-verified completions, leaderboards/points display
 - Media Library: per-file visibility UI, thumbnail generation, virus scanning
 - Group Coach Bot with real campaign data (currently mock stats)
-- Graphics Creation bot with visual editor iframe integration
+- Graphics Creation bot with image generation (Railway/fal.ai), style gallery, Studio visual editor, creative briefs — DONE
 - Leaders & Organizers real-time chat (UI exists, needs real-time backend)
 - Group Admin features (invitations, recruiter IDs, /join flow)
 
 **Integrations:**
 - Action Network API connection (action source adapter + signup ingestion)
 - Mobilize API connection
-- Image generation for Graphics Creation bot
+- Image generation for Graphics Creation bot — DONE (Railway/fal.ai integration live)
 - Resend domain verification (partner action required)
 
 **Platform:**
