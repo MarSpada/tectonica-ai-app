@@ -212,7 +212,7 @@ export default function LeadersChat({ open, onClose, userName = "" }: LeadersCha
   );
 }
 
-function ContactRow({ contact }: { contact: Contact }) {
+function ContactRow({ contact }: { contact: LeadersChatContact }) {
   return (
     <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-black/[.03] transition-colors cursor-pointer">
       {/* Avatar with status dot */}

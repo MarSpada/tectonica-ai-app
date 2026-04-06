@@ -30,6 +30,8 @@ export default async function RootLayout({
     fullName: string;
     avatarUrl: string | null;
     role?: UserRole;
+    orgName?: string;
+    groupName?: string;
   } | null = null;
 
   try {
