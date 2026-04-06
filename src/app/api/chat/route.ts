@@ -350,7 +350,7 @@ export async function POST(req: Request) {
             let storagePath: string | null = null;
             let fileSize: number | null = null;
             let displayUrl = imageResult.url; // fallback to FAL URL
-            try {
+            if (profile.group_id) try {
               const stored = await downloadAndStoreImage(
                 imageResult.url,
                 supabase,
