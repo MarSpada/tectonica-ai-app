@@ -203,9 +203,9 @@ function renderTextContent(text: string): React.ReactNode {
     return (
       <>
         {before}
-        <span className="flex items-center gap-1.5 text-green-600 text-xs mt-2">
-          <Icon name="check" size={14} />
-          Saved to your Media Library
+        <span className="flex items-center gap-1 text-text-muted text-[10px] mt-1.5">
+          <Icon name="check" size={10} />
+          Saved to Media Library
         </span>
         {after}
       </>
@@ -340,19 +340,19 @@ function ImageMessage({
       </div>
       {expanded && (
         <div
-          className="fixed inset-0 z-40 bg-black/80 flex items-center justify-center p-8"
+          className="fixed inset-0 z-40 bg-black/90 flex items-center justify-center p-4"
           onClick={() => setExpanded(false)}
         >
           <button
             onClick={() => setExpanded(false)}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
+            className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
           >
             <Icon name="close" size={24} color="#ffffff" />
           </button>
           <img
             src={url}
             alt={alt || "Generated image"}
-            className="max-w-full max-h-full rounded-xl"
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-xl"
           />
         </div>
       )}
