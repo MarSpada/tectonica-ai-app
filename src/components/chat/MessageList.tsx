@@ -24,11 +24,69 @@ interface ParsedImage {
   index: number;
 }
 
+// Gallery marker pattern: __GALLERY__{...}__END_GALLERY__
+const GALLERY_REGEX = /__GALLERY__([\s\S]*?)__END_GALLERY__/g;
+
 function renderContent(content: string, onOpenStudio?: (imageUrl: string) => void, onStyleSelect?: (styleName: string) => void) {
   const parts: React.ReactNode[] = [];
-  let lastIndex = 0;
 
-  // Collect all images and text segments
+  // Check for gallery markers first (sent as special SSE events)
+  if (content.includes("__GALLERY__")) {
+    let lastIndex = 0;
+    GALLERY_REGEX.lastIndex = 0;
+    let galleryMatch;
+
+    while ((galleryMatch = GALLERY_REGEX.exec(content)) !== null) {
+      // Text before gallery
+      if (galleryMatch.index > lastIndex) {
+        const textBefore = content.slice(lastIndex, galleryMatch.index).trim();
+        if (textBefore) {
+          // Strip any markdown table remnants from model response
+          const cleanText = stripMarkdownTableSyntax(textBefore);
+          if (cleanText) {
+            parts.push(<span key={`text-${lastIndex}`}>{renderTextContent(cleanText)}</span>);
+          }
+        }
+      }
+
+      // Parse and render gallery
+      try {
+        const galleryData = JSON.parse(galleryMatch[1]) as {
+          images: Array<{ alt: string; url: string }>;
+          title: string;
+        };
+        parts.push(
+          <span key={`gtitle-${galleryMatch.index}`} className="block text-sm font-medium text-text-primary mb-2">
+            {galleryData.title}
+          </span>
+        );
+        parts.push(
+          <StyleGallery
+            key={`gallery-${galleryMatch.index}`}
+            images={galleryData.images.map((img, i) => ({ ...img, index: i }))}
+            onSelect={onStyleSelect}
+          />
+        );
+      } catch {
+        // Failed to parse gallery JSON — skip
+      }
+
+      lastIndex = galleryMatch.index + galleryMatch[0].length;
+    }
+
+    // Text after last gallery
+    if (lastIndex < content.length) {
+      const textAfter = content.slice(lastIndex).trim();
+      const cleanText = stripMarkdownTableSyntax(textAfter);
+      if (cleanText) {
+        parts.push(<span key={`text-${lastIndex}`}>{renderTextContent(cleanText)}</span>);
+      }
+    }
+
+    return parts.length > 0 ? parts : null;
+  }
+
+  // Normal rendering: images inline with text
   const images: ParsedImage[] = [];
   IMAGE_REGEX.lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -40,44 +98,7 @@ function renderContent(content: string, onOpenStudio?: (imageUrl: string) => voi
     return renderTextContent(content);
   }
 
-  // Detect style gallery: 5+ images with style-like alt text appearing close together
-  const isStyleGallery = images.length >= 5 && images.every(
-    (img) => img.alt && !img.alt.startsWith("Generated")
-  );
-
-  if (isStyleGallery) {
-    // Detect if this is a substyle gallery (title contains " — Substyles")
-    const isSubstyle = content.includes("— Substyles");
-    const galleryTitle = isSubstyle
-      ? "Choose a substyle:"
-      : "Choose a style for your image:";
-
-    // Strip the markdown table text before the images — replace with clean title
-    parts.push(
-      <span key="gallery-title" className="block text-sm font-medium text-text-primary mb-2">
-        {galleryTitle}
-      </span>
-    );
-
-    // Render images as a style gallery grid
-    parts.push(
-      <StyleGallery key="gallery" images={images} onSelect={onStyleSelect} />
-    );
-
-    // Render only the text AFTER all images, stripping markdown table remnants
-    const lastImg = images[images.length - 1];
-    const lastImgEnd = content.indexOf(")", lastImg.index) + 1;
-    let textAfter = content.slice(lastImgEnd).trim();
-    // Strip leftover markdown table syntax (pipes, dashes, newlines)
-    textAfter = textAfter.replace(/^[\s|*\-_\n]+/, "").trim();
-    if (textAfter) {
-      parts.push(<span key="text-after">{renderTextContent(textAfter)}</span>);
-    }
-
-    return parts;
-  }
-
-  // Normal rendering: images inline with text
+  let lastIndex = 0;
   IMAGE_REGEX.lastIndex = 0;
   while ((match = IMAGE_REGEX.exec(content)) !== null) {
     if (match.index > lastIndex) {
@@ -103,6 +124,19 @@ function renderContent(content: string, onOpenStudio?: (imageUrl: string) => voi
   }
 
   return parts;
+}
+
+/** Strip markdown table syntax that leaks from gallery responses */
+function stripMarkdownTableSyntax(text: string): string {
+  return text
+    .replace(/^\s*##\s+Available Styles\s*/m, "")
+    .replace(/^\s*##\s+.*?—\s*Substyles\s*/m, "")
+    .replace(/\|[^|]*\|/g, "")
+    .replace(/\|\s*---\s*/g, "")
+    .replace(/\*\d+\s+substyles\*/gi, "")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function renderTextContent(text: string): React.ReactNode {

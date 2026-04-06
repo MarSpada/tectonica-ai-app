@@ -203,6 +203,30 @@ export async function POST(req: Request) {
             }
             const galleryContent = getStyleGalleryResponse(galleryArgs);
 
+            // Extract images from gallery markdown and send as a special SSE event
+            // This avoids streaming raw markdown — client renders gallery instantly
+            const galleryImages: Array<{ alt: string; url: string }> = [];
+            const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+            let imgMatch;
+            while ((imgMatch = imgRegex.exec(galleryContent)) !== null) {
+              galleryImages.push({ alt: imgMatch[1], url: imgMatch[2] });
+            }
+
+            const isSubstyle = !!galleryArgs.style;
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  gallery: {
+                    images: galleryImages,
+                    title: isSubstyle
+                      ? `Choose a substyle for ${galleryArgs.style}:`
+                      : "Choose a style for your image:",
+                  },
+                })}\n\n`
+              )
+            );
+
+            // Make follow-up request to get the model's text recommendation
             const galleryMessages = [
               ...chatMessages,
               {
@@ -252,6 +276,7 @@ export async function POST(req: Request) {
                 controller,
                 encoder
               );
+              // Store only the text part (gallery images already sent via SSE event)
               fullContent = galleryResult.content;
             }
           } catch {

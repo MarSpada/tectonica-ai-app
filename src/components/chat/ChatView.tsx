@@ -116,6 +116,22 @@ export default function ChatView({
               continue;
             }
 
+            // Style gallery — render directly without streaming
+            if (parsed.gallery) {
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                // Store gallery data as a special JSON marker in the content
+                const galleryMarker = `__GALLERY__${JSON.stringify(parsed.gallery)}__END_GALLERY__`;
+                updated[updated.length - 1] = {
+                  ...last,
+                  content: last.content + galleryMarker,
+                };
+                return updated;
+              });
+              continue;
+            }
+
             // Image generation status
             if (parsed.status === "generating_image") {
               setIsGeneratingImage(true);
