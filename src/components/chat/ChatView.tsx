@@ -8,18 +8,23 @@ import ChatHeader from "./ChatHeader";
 import MessageList from "./MessageList";
 import ChatInput from "./ChatInput";
 import RecentConversations from "./RecentConversations";
+import StudioOverlay from "./StudioOverlay";
 import { Icon } from "@/components/ui/icon";
 
 interface ChatViewProps {
   bot: Bot;
   userName: string;
   recentConversations: Array<{ id: string; title: string; updated_at: string }>;
+  isImageBot?: boolean;
+  orgSlug?: string;
 }
 
 export default function ChatView({
   bot,
   userName,
   recentConversations: initialConversations,
+  isImageBot = false,
+  orgSlug = "",
 }: ChatViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -28,13 +33,19 @@ export default function ChatView({
   const [conversations, setConversations] = useState(initialConversations);
   const [notConfigured, setNotConfigured] = useState(false);
 
-  const sendMessage = useCallback(async () => {
-    if (!input.trim() || isStreaming) return;
+  // Image-specific state
+  const [mostRecentImageUrl, setMostRecentImageUrl] = useState<string | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [showStudio, setShowStudio] = useState(false);
 
-    const userMessage: Message = { role: "user", content: input.trim() };
+  const sendMessage = useCallback(async (messageContent?: string) => {
+    const content = messageContent || input.trim();
+    if (!content || isStreaming) return;
+
+    const userMessage: Message = { role: "user", content };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
-    setInput("");
+    if (!messageContent) setInput("");
     setIsStreaming(true);
 
     // Add placeholder assistant message
@@ -105,7 +116,31 @@ export default function ChatView({
               continue;
             }
 
+            // Image generation status
+            if (parsed.status === "generating_image") {
+              setIsGeneratingImage(true);
+              continue;
+            }
+
+            // Image result
+            if (parsed.image) {
+              setIsGeneratingImage(false);
+              setMostRecentImageUrl(parsed.image.url);
+              // Insert image markdown into assistant message
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                updated[updated.length - 1] = {
+                  ...last,
+                  content: last.content + `![Generated Image](${parsed.image.url})`,
+                };
+                return updated;
+              });
+              continue;
+            }
+
             if (parsed.content) {
+              setIsGeneratingImage(false);
               setMessages((prev) => {
                 const updated = [...prev];
                 const last = updated[updated.length - 1];
@@ -122,6 +157,7 @@ export default function ChatView({
         }
       }
     } catch (err) {
+      setIsGeneratingImage(false);
       setMessages((prev) => {
         const updated = [...prev];
         updated[updated.length - 1] = {
@@ -138,8 +174,17 @@ export default function ChatView({
     setIsStreaming(false);
   }, [input, isStreaming, messages, bot.id, conversationId]);
 
+  const handleImageUpload = useCallback(
+    (base64: string) => {
+      // Send the base64 as the message content — the chat route handles upload
+      sendMessage(base64);
+    },
+    [sendMessage]
+  );
+
   async function loadConversation(convId: string) {
     setConversationId(convId);
+    setMostRecentImageUrl(null);
     try {
       const supabase = createClient();
       const { data } = await supabase
@@ -149,12 +194,22 @@ export default function ChatView({
         .order("created_at", { ascending: true });
 
       if (data) {
-        setMessages(
-          data.map((m) => ({
-            role: m.role as "user" | "assistant",
-            content: m.content,
-          }))
-        );
+        const loadedMessages = data.map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        }));
+        setMessages(loadedMessages);
+
+        // Find most recent image URL in loaded conversation
+        for (let i = loadedMessages.length - 1; i >= 0; i--) {
+          const match = loadedMessages[i].content.match(
+            /!\[[^\]]*\]\(([^)]+)\)/
+          );
+          if (match) {
+            setMostRecentImageUrl(match[1]);
+            break;
+          }
+        }
       }
     } catch {
       // Tables may not exist
@@ -165,13 +220,20 @@ export default function ChatView({
     setMessages([]);
     setConversationId(null);
     setInput("");
+    setMostRecentImageUrl(null);
+    setIsGeneratingImage(false);
   }
 
   return (
     <div className="flex-1 flex overflow-hidden bg-content-bg">
       {/* Chat area */}
       <div className="flex-1 flex flex-col bg-bg">
-        <ChatHeader bot={bot} />
+        <ChatHeader
+          bot={bot}
+          isImageBot={isImageBot}
+          mostRecentImageUrl={mostRecentImageUrl}
+          onOpenStudio={() => setShowStudio(true)}
+        />
         {notConfigured ? (
           <div className="flex-1 flex items-center justify-center px-8">
             <div className="text-center max-w-sm">
@@ -193,12 +255,19 @@ export default function ChatView({
               bot={bot}
               userName={userName}
               isStreaming={isStreaming}
+              isGeneratingImage={isGeneratingImage}
+              onOpenStudio={isImageBot ? (imageUrl) => {
+                setMostRecentImageUrl(imageUrl);
+                setShowStudio(true);
+              } : undefined}
             />
             <ChatInput
               value={input}
               onChange={setInput}
-              onSend={sendMessage}
+              onSend={() => sendMessage()}
               isStreaming={isStreaming}
+              isImageBot={isImageBot}
+              onImageUpload={handleImageUpload}
             />
           </>
         )}
@@ -211,6 +280,15 @@ export default function ChatView({
         onSelect={loadConversation}
         onNewChat={startNewChat}
       />
+
+      {/* Studio overlay */}
+      {showStudio && (
+        <StudioOverlay
+          imageUrl={mostRecentImageUrl}
+          orgClientId={orgSlug}
+          onClose={() => setShowStudio(false)}
+        />
+      )}
     </div>
   );
 }

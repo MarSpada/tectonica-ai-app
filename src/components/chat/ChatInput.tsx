@@ -9,7 +9,11 @@ interface ChatInputProps {
   onSend: () => void;
   isStreaming: boolean;
   placeholder?: string;
+  isImageBot?: boolean;
+  onImageUpload?: (base64: string) => void;
 }
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function ChatInput({
   value,
@@ -17,8 +21,11 @@ export default function ChatInput({
   onSend,
   isStreaming,
   placeholder = "Type a message...",
+  isImageBot,
+  onImageUpload,
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -35,12 +42,53 @@ export default function ChatInput({
     }
   }
 
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !onImageUpload) return;
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      alert("Image must be smaller than 5MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      onImageUpload(result);
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input so the same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   return (
     <div
       className="px-4 py-3 backdrop-blur-md"
       style={{ backgroundColor: "var(--chat-input-bg)" }}
     >
       <div className="flex items-end gap-3 max-w-3xl mx-auto">
+        {/* Image upload button — only for image-capable bots */}
+        {isImageBot && onImageUpload && (
+          <>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isStreaming}
+              className="w-10 h-10 rounded-full flex items-center justify-center text-text-muted hover:bg-white/30 transition-colors disabled:opacity-40"
+              title="Attach image"
+            >
+              <Icon name="file-image" size={20} className="opacity-60" />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+          </>
+        )}
+
         <textarea
           ref={textareaRef}
           value={value}

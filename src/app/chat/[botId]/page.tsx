@@ -40,12 +40,45 @@ export default async function ChatPage({
     // Tables don't exist yet — that's fine
   }
 
+  // Check if this bot has image tools enabled (DB-driven)
+  let isImageBot = false;
+  let orgSlug = "";
+  try {
+    const { data: botRow } = await supabase
+      .from("bots")
+      .select("image_tools_enabled")
+      .eq("slug", botId)
+      .single();
+    isImageBot = !!botRow?.image_tools_enabled;
+
+    if (isImageBot && user) {
+      // Get org name/slug for Studio iframe user_id param
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("org_id")
+        .eq("id", user.id)
+        .single();
+      if (profile?.org_id) {
+        const { data: org } = await supabase
+          .from("organizations")
+          .select("name")
+          .eq("id", profile.org_id)
+          .single();
+        orgSlug = org?.name ?? "Tectonica";
+      }
+    }
+  } catch {
+    // Graceful fallback — image tools just won't be available
+  }
+
   return (
     <AppShell userName={displayName}>
       <ChatView
         bot={bot}
         userName={displayName.split(" ")[0]}
         recentConversations={recentConversations}
+        isImageBot={isImageBot}
+        orgSlug={orgSlug}
       />
     </AppShell>
   );

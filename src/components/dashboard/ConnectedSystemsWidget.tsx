@@ -7,6 +7,7 @@ interface ConnectedSystemsWidgetProps {
   calendarSourceCount: number;
   eventsCount: number;
   runpodStatus?: "connected" | "error" | "not_configured" | "loading";
+  imageApiStatus?: "connected" | "error" | "not_configured" | "loading";
 }
 
 export default function ConnectedSystemsWidget({
@@ -14,6 +15,7 @@ export default function ConnectedSystemsWidget({
   calendarSourceCount,
   eventsCount,
   runpodStatus,
+  imageApiStatus,
 }: ConnectedSystemsWidgetProps) {
   return (
     <div className="p-5">
@@ -34,6 +36,23 @@ export default function ConnectedSystemsWidget({
                 : "text-gray-500 bg-gray-100"
           }`}>
             {runpodStatus === "connected" ? "RunPod" : runpodStatus === "error" ? "Error" : "Not connected"}
+          </span>
+        </div>
+        <div className="flex items-center justify-between rounded-lg px-4 py-2.5" style={{ backgroundColor: "var(--widget-list-item-bg)" }}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center">
+              <Icon name="bot-graphics" size={16} />
+            </div>
+            <span className="font-medium" style={{ fontSize: "var(--widget-list-primary-size)", color: "var(--widget-text-color)" }}>Image API</span>
+          </div>
+          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+            imageApiStatus === "connected"
+              ? "text-green-700 bg-green-100"
+              : imageApiStatus === "error"
+                ? "text-red-700 bg-red-100"
+                : "text-gray-500 bg-gray-100"
+          }`}>
+            {imageApiStatus === "connected" ? "Configured" : imageApiStatus === "error" ? "Error" : "Not connected"}
           </span>
         </div>
         <SystemBadge name="Action Network" icon="/systems-icon-action-network.png" status="not_connected" />

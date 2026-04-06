@@ -94,6 +94,7 @@ export default function RightSidebar({
   const [actions, setActions] = useState<Action[]>([]);
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   const [runpodStatus, setRunpodStatus] = useState<"connected" | "error" | "not_configured" | "loading">("loading");
+  const [imageApiStatus, setImageApiStatus] = useState<"connected" | "error" | "not_configured" | "loading">("loading");
 
   const memberCount = allMembers.filter((m) => m.role !== ROLES.SUPPORTER).length;
   const supporterCount = allMembers.filter((m) => m.role === ROLES.SUPPORTER).length;
@@ -247,6 +248,20 @@ export default function RightSidebar({
     fetchGoals();
     fetchActions();
     fetchRunpodStatus();
+    async function fetchImageApiStatus() {
+      try {
+        const res = await fetch("/api/image-tools/credentials-status");
+        if (res.ok) {
+          const json = await res.json();
+          setImageApiStatus(json.configured ? "connected" : "not_configured");
+        } else {
+          setImageApiStatus("not_configured");
+        }
+      } catch {
+        setImageApiStatus("not_configured");
+      }
+    }
+    fetchImageApiStatus();
   }, []);
 
   // Auto-save on unmount if in edit mode
@@ -434,6 +449,7 @@ export default function RightSidebar({
         onShowHoursDetail={() => setShowHoursDetail(true)}
         onRequestReimbursement={() => setShowReimbursementModal(true)}
         runpodStatus={runpodStatus}
+        imageApiStatus={imageApiStatus}
       />
 
       {/* Reset Dialog */}

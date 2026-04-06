@@ -28,6 +28,7 @@ const categoryIcons: Record<string, IconName> = {
   video: "file-video",
   document: "file-document",
   link: "link",
+  generated: "bot-graphics",
 };
 
 const categoryLabels: Record<string, string> = {
@@ -35,6 +36,7 @@ const categoryLabels: Record<string, string> = {
   video: "VID",
   document: "DOC",
   link: "LINK",
+  generated: "GEN",
 };
 
 function formatBytes(bytes: number): string {
@@ -156,7 +158,7 @@ export default function MediaGallery({
 
           {/* Filter pills */}
           <div className="flex gap-1.5">
-            {(["all", "image", "video", "document", "link"] as FilterType[]).map((f) => (
+            {(["all", "image", "video", "document", "link", "generated"] as FilterType[]).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -244,6 +246,11 @@ export default function MediaGallery({
                   <Badge variant="outline" className="absolute top-2 right-2 text-[10px] font-bold">
                     {categoryLabels[item.category] ?? "FILE"}
                   </Badge>
+                  {item.visibility === "private" && (
+                    <div className="absolute top-2 left-2 w-5 h-5 rounded-full bg-black/50 flex items-center justify-center" title="Private — only visible to you">
+                      <Icon name="lock" size={12} color="#ffffff" />
+                    </div>
+                  )}
                 </div>
                 <p className="text-xs font-medium text-foreground mt-2 truncate">
                   {item.title || item.file_name}

@@ -228,9 +228,9 @@ export interface GroupGoals {
 
 /* ── Media Library ── */
 
-export type MediaCategory = "image" | "video" | "document" | "link";
+export type MediaCategory = "image" | "video" | "document" | "link" | "generated";
 export type MediaItemStatus = "pending" | "ready" | "failed";
-export type MediaVisibility = "group" | "admins_only" | "specific_members";
+export type MediaVisibility = "group" | "admins_only" | "specific_members" | "private";
 
 export interface MediaItem {
   id: string;
@@ -256,6 +256,57 @@ export interface MediaItem {
   uploader_avatar?: string | null;
   signed_url?: string;
 }
+
+/* ── Image Tools ── */
+
+export type ImageToolName = "generate_image" | "edit_image" | "fuse_images" | "apply_branding";
+
+export interface GenerateImageParams {
+  tool: "generate_image";
+  prompt: string;
+  aspect_ratio?: string;
+  platform?: string;
+  publication_type?: string;
+  with_branding?: boolean;
+}
+
+export interface EditImageParams {
+  tool: "edit_image";
+  instructions: string;
+  image_url: string;
+  aspect_ratio?: string;
+}
+
+export interface FuseImagesParams {
+  tool: "fuse_images";
+  image_url_1: string;
+  image_url_2: string;
+  instructions?: string;
+  aspect_ratio?: string;
+  use_style_reference?: boolean;
+}
+
+export interface ApplyBrandingParams {
+  tool: "apply_branding";
+  image_url: string;
+  branding_style?: string;
+  aspect_ratio?: string;
+}
+
+export type ImageToolParams =
+  | GenerateImageParams
+  | EditImageParams
+  | FuseImagesParams
+  | ApplyBrandingParams;
+
+export interface ImageCredentialsStatus {
+  configured: boolean;
+  creditsAllocated?: number;
+  creditsUsed?: number;
+  creditsRemaining?: number;
+}
+
+export type ImageToolErrorCode = "not_configured" | "no_credits" | "api_error" | "upload_error";
 
 /* ── Dashboard Layout ── */
 

@@ -51,9 +51,22 @@ export default function IntegrationsTab() {
   const [rpError, setRpError] = useState("");
   const [rpLoading, setRpLoading] = useState(true);
 
+  // Image API state
+  const [imgEndpoint, setImgEndpoint] = useState("");
+  const [imgBearerToken, setImgBearerToken] = useState("");
+  const [imgConfigured, setImgConfigured] = useState(false);
+  const [imgHasToken, setImgHasToken] = useState(false);
+  const [imgCreditsAllocated, setImgCreditsAllocated] = useState(0);
+  const [imgCreditsUsed, setImgCreditsUsed] = useState(0);
+  const [imgSaving, setImgSaving] = useState(false);
+  const [imgError, setImgError] = useState("");
+  const [imgLoading, setImgLoading] = useState(true);
+  const [imgWarningDismissed, setImgWarningDismissed] = useState(false);
+
   useEffect(() => {
     fetchSources();
     fetchRunPodConfig();
+    fetchImageApiConfig();
   }, []);
 
   async function fetchSources() {
@@ -187,6 +200,62 @@ export default function IntegrationsTab() {
     }
   }
 
+  // Image API functions
+  async function fetchImageApiConfig() {
+    try {
+      const res = await fetch("/api/admin/integrations/image-api");
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json.endpoint) {
+        setImgEndpoint(json.endpoint);
+        setImgHasToken(true);
+      }
+      setImgConfigured(json.configured ?? false);
+      setImgCreditsAllocated(json.creditsAllocated ?? 0);
+      setImgCreditsUsed(json.creditsUsed ?? 0);
+    } catch {
+      // Failed to load
+    } finally {
+      setImgLoading(false);
+    }
+  }
+
+  async function handleSaveImageApi() {
+    if (!imgEndpoint.trim()) {
+      setImgError("Endpoint URL is required");
+      return;
+    }
+    if (!imgHasToken && !imgBearerToken.trim()) {
+      setImgError("Bearer token is required");
+      return;
+    }
+    setImgSaving(true);
+    setImgError("");
+    try {
+      const body: Record<string, string> = { endpoint: imgEndpoint.trim() };
+      if (imgBearerToken.trim()) {
+        body.bearerToken = imgBearerToken.trim();
+      }
+      const res = await fetch("/api/admin/integrations/image-api", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setImgConfigured(true);
+        setImgBearerToken("");
+        setImgHasToken(true);
+      } else {
+        setImgError(json.error || "Failed to save");
+      }
+    } catch {
+      setImgError("Something went wrong");
+    } finally {
+      setImgSaving(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* AI Model Connection (RunPod) */}
@@ -274,6 +343,114 @@ export default function IntegrationsTab() {
                       <span className="font-mono">{m.id}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Image Generation */}
+      <div>
+        <div className="mb-4">
+          <h3 className="text-sm font-bold text-text-primary">Image Generation</h3>
+          <p className="text-xs text-text-muted mt-0.5">
+            Connect to the image generation API for the Graphics Creation bot. Powers AI image creation, editing, fusion, and branding.
+          </p>
+        </div>
+
+        {imgLoading ? (
+          <Skeleton className="h-40 w-full rounded-xl" />
+        ) : (
+          <div className="bg-white border border-black/5 rounded-xl p-5 space-y-4">
+            {/* Token rotation warning */}
+            {!imgWarningDismissed && (
+              <div className="flex items-start gap-2 px-3 py-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg">
+                <span className="mt-0.5 shrink-0">⚠️</span>
+                <div className="flex-1">
+                  The current bearer token must be rotated before production use. Contact the Tectonica team to issue a new token.
+                </div>
+                <button
+                  onClick={() => setImgWarningDismissed(true)}
+                  className="text-amber-600 hover:text-amber-800 shrink-0"
+                >
+                  <Icon name="close" size={14} />
+                </button>
+              </div>
+            )}
+
+            {imgError && (
+              <div className="px-3 py-2 text-xs text-red-700 bg-red-50 rounded-lg">{imgError}</div>
+            )}
+
+            {/* Status indicator */}
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-2.5 h-2.5 rounded-full ${
+                  imgConfigured ? "bg-green-500" : "bg-gray-300"
+                }`}
+              />
+              <span className="text-sm font-medium text-text-primary">
+                {imgConfigured ? "Configured" : "Not configured"}
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-text-primary mb-1">
+                Endpoint URL
+              </label>
+              <Input
+                type="url"
+                value={imgEndpoint}
+                onChange={(e) => setImgEndpoint(e.target.value)}
+                placeholder="https://qwen-image-editor-production-49d4.up.railway.app"
+                className="font-mono text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-text-primary mb-1">
+                Bearer Token
+              </label>
+              <Input
+                type="password"
+                value={imgBearerToken}
+                onChange={(e) => setImgBearerToken(e.target.value)}
+                placeholder={imgHasToken ? "••••••••" : "Enter your image API token"}
+              />
+              {imgHasToken && (
+                <p className="text-[10px] text-text-muted mt-0.5">
+                  Token is stored encrypted. Leave blank to keep the existing token.
+                </p>
+              )}
+            </div>
+
+            <Button onClick={handleSaveImageApi} disabled={imgSaving} size="sm">
+              {imgSaving ? "Saving..." : "Save Configuration"}
+            </Button>
+
+            {/* Credits display */}
+            {imgConfigured && (
+              <div className="border-t border-black/5 pt-3 mt-3">
+                <p className="text-xs font-semibold text-text-primary mb-2">Image Credits</p>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs text-text-secondary">
+                    <span>{imgCreditsUsed} used</span>
+                    <span>{imgCreditsAllocated} allocated</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 rounded-full transition-all"
+                      style={{
+                        width: imgCreditsAllocated > 0
+                          ? `${Math.min(100, (imgCreditsUsed / imgCreditsAllocated) * 100)}%`
+                          : "0%",
+                      }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-text-muted">
+                    To allocate additional credits, contact the Tectonica team.
+                  </p>
                 </div>
               </div>
             )}

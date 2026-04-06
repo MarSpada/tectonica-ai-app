@@ -455,6 +455,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `020_actions.sql` | Full actions system: `actions` table (source, type, title, description, call_to_action, url, suggested_bot_slug, points_value, priority, assignment_scope, starts_at, ends_at, status, visibility), `action_assignments` (member + group targeting), `action_completions` (UNIQUE per member per action, snapshotted points), `member_points_ledger` (UNIQUE per completion, audit trail). `complete_action()` SECURITY DEFINER RPC for atomic completion + points. RLS on all 4 tables: group-scoped reads, admin-only writes, members see own completions/ledger only. Error code contract (P0002–P0005) documented in both migration and API route. |
 | `021_create_action_with_assignments.sql` | `create_action_with_assignments()` SECURITY DEFINER RPC: atomic action creation with optional targeted assignments. If either insert fails, both roll back. Replaces the two-step insert pattern in `/api/actions` POST. |
 | `022_org_integrations.sql` | `org_integrations` table (one row per org): RunPod endpoint URL, encrypted bearer token, connection status, last checked timestamp. RLS: super_admin only. Adds `model_id` column to `bots` table for per-bot model selection from RunPod endpoint. |
+| `023_image_tools.sql` | Extends `org_integrations` with image API columns (endpoint, encrypted token, credits allocated/used). Adds `image_tools_enabled` boolean to `bots` table (true for graphics-creation). Updates `media_items`: adds 'generated' category, 'private' visibility, updates `media_file_or_link` constraint, updates RLS SELECT to allow users to see own private items. Adds `increment_image_credits()` SECURITY DEFINER RPC. |
 
 ---
 
@@ -506,6 +507,10 @@ Desktop-first design. Mobile is out of scope for now.
 | `/auth/callback` | GET | OAuth/email confirmation callback — signs out after confirmation, redirects to login |
 | `/api/admin/integrations/runpod` | GET/POST | GET: RunPod config (URL, status, lastChecked — never token). POST: save URL + encrypted token, test connection, return status + models. Super admin only. |
 | `/api/admin/integrations/runpod/models` | GET | Fetch available models from RunPod endpoint using stored encrypted credentials. Super admin only. |
+| `/api/image-tools/upload` | POST | Upload base64 image to Railway, save to media_items as private generated image |
+| `/api/image-tools/execute` | POST | Execute image tool (generate/edit/fuse/brand), validates bot has image_tools_enabled, checks credits, saves result to media_items |
+| `/api/image-tools/credentials-status` | GET | Image API status — super_admin sees credits, other roles see configured boolean only |
+| `/api/admin/integrations/image-api` | GET/POST | GET: image API config (never token). POST: save endpoint + encrypted token (super_admin only) |
 | `/auth/reset-callback` | GET | Password reset callback — exchanges PKCE code, redirects to /reset-password |
 
 ---
@@ -519,6 +524,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `LeftSidebar.tsx` | Navigation, bot chats list, user info footer |
 | `RightSidebar.tsx` | Dashboard sidebar: layout state, data fetching, edit/save/reset flows, modal management. Delegates widget rendering to WidgetGrid. |
 | `dashboard/WidgetGrid.tsx` | Widget rendering orchestration: ResponsiveGridLayout, renderWidget switch, visibility filtering, constraint application. Receives data as props from RightSidebar. |
+| `chat/StudioOverlay.tsx` | Full-screen iframe overlay for Railway Studio visual editor. Opens with most recent generated image. ESC to close. One-way integration — edits don't save back. |
 | `NotificationBar.tsx` | Amber bar for unread signup/approval notifications |
 | `BotGrid.tsx` | Featured carousel + categorized bot card grid with GSAP |
 | `BotCard.tsx` | Individual bot card with star/favorite, hover description |
@@ -582,6 +588,8 @@ Desktop-first design. Mobile is out of scope for now.
 | `lib/bots-prompts.ts` | Bot system prompts mapped by bot ID, falls back to generic prompt |
 | `lib/bot-resolver.ts` | getBots() (DB-first, fallback to hardcoded), getSystemPrompt() (DB-first, fallback to bots-prompts.ts) |
 | `lib/encryption.ts` | AES-256-GCM encrypt/decrypt utility for RunPod bearer token. Uses `ENCRYPTION_KEY` env var (32-byte hex). Node.js `crypto` module, no dependencies. |
+| `lib/image-tools.ts` | **Only file that calls the Railway image API.** Upload, generate, edit, fuse, brand images. Credential fetch + decryption, credit tracking, platform size lookup. Mirrors `lib/media-storage.ts` pattern. |
+| `lib/image-tool-definitions.ts` | OpenAI-compatible tool definitions array for ChangeAgent. Passed via `tools` parameter — never injected into system prompt. 4 tools: generate_image, edit_image, fuse_images, apply_branding. |
 | `lib/ical-parser.ts` | Lightweight ICS parser (no native deps) — handles DTSTART/DTEND with TZID, line unfolding, escaped chars |
 | `lib/avatar.ts` | Avatar utilities (upload, delete, generate URL) for Supabase Storage |
 | `lib/signup-utils.ts` | NationBuilder signup utilities (fetch, parse, enrich). Returns connection status (connected/error/not_configured) |
@@ -727,6 +735,12 @@ Desktop-first design. Mobile is out of scope for now.
 - **RightSidebar decomposition** — split into `RightSidebar.tsx` (529 lines: state, data fetching, layout management, modals) and `dashboard/WidgetGrid.tsx` (286 lines: grid rendering). All behavior preserved.
 - **requireAuth() migration status** — 3 routes use `requireAuth()` (actions, goals, reimbursements GET). 40 routes still use inline auth pattern. New routes should use `requireAuth()`. Incremental migration in future sessions.
 - **WelcomeHelper exhaustive-deps** — `src/components/WelcomeHelper.tsx:161` has eslint-disable for `react-hooks/exhaustive-deps`. Should be audited for stale closure bugs in a future session.
+- **⚠️ Image API token rotation required** — Token `sk-j6gKait8TE8ZkV3LrNPPYDHEAvM8zqVN` was exposed during testing. Must be rotated in Railway and the new token saved in org_integrations before production or demos. See `lib/image-tools.ts` header comment.
+- **Studio overlay one-way** — Members can edit images in the Railway Studio but results are not automatically saved back to the chat or Media Library. Requires a backend change on the Railway Studio side to support arbitrary callback URLs. When implemented, wire to a new POST `/api/image-tools/studio-callback` endpoint.
+- **Studio overlay blocked on localhost** — The Railway Studio iframe shows "Access denied — This Studio can only be accessed from an approved host" when running locally. This is an origin restriction on the Railway Studio side. Works when deployed to Railway. To fix for local dev, the Railway Studio app would need `localhost:3000` added to its allowed origins.
+- **Image tools DB-driven** — `bots.image_tools_enabled` boolean controls which bots get image tools. Currently only `graphics-creation` is enabled. To add image tools to another bot, set `image_tools_enabled = true` in the bots table.
+- **Image credits manual** — `image_api_credits_allocated` is set manually by the Tectonica team in the database. No self-service credit top-up UI.
+- **Private generated images** — visibility='private' items are only visible to their creator (RLS-enforced). Not visible to admins. Not counted in group storage quota. Lock icon shown in Media Library grid.
 
 ---
 
