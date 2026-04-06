@@ -39,6 +39,9 @@ const categoryLabels: Record<string, string> = {
   generated: "GEN",
 };
 
+/** Categories that can show image thumbnails */
+const THUMBNAIL_CATEGORIES = new Set(["image", "generated"]);
+
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -51,6 +54,41 @@ function formatDate(iso: string): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+/** Get thumbnail URL for an item, or null if not available */
+function getThumbnailUrl(item: MediaItem): string | null {
+  if (!THUMBNAIL_CATEGORIES.has(item.category)) return null;
+  // Generated images and links have a direct URL
+  if (item.url) return item.url;
+  // Uploaded images may have a signed URL
+  if (item.signed_url) return item.signed_url;
+  return null;
+}
+
+function Thumbnail({ item }: { item: MediaItem }) {
+  const [failed, setFailed] = useState(false);
+  const thumbUrl = getThumbnailUrl(item);
+
+  if (!thumbUrl || failed) {
+    return (
+      <Icon
+        name={categoryIcons[item.category] ?? "file-document"}
+        size={32}
+        className="opacity-50"
+      />
+    );
+  }
+
+  return (
+    <img
+      src={thumbUrl}
+      alt={item.title || item.file_name}
+      className="w-full h-full object-cover"
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
+  );
 }
 
 export default function MediaGallery({
@@ -70,6 +108,12 @@ export default function MediaGallery({
 
   const [showUpload, setShowUpload] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Select mode
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const canUpload = userRole !== ROLES.SUPPORTER;
   const canDelete = isAdminRole(userRole);
@@ -115,6 +159,45 @@ export default function MediaGallery({
     fetchItems();
   }, [fetchItems]);
 
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }
+
+  async function handleBulkDelete() {
+    setDeleting(true);
+    try {
+      const promises = [...selectedIds].map((id) =>
+        fetch(`/api/media/${id}`, { method: "DELETE" })
+      );
+      await Promise.all(promises);
+      exitSelectMode();
+      setShowDeleteConfirm(false);
+      fetchItems();
+    } catch {
+      // Some deletions may have failed
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  function handleCardClick(item: MediaItem) {
+    if (selectMode) {
+      toggleSelect(item.id);
+    } else {
+      setSelectedId(item.id);
+    }
+  }
+
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
   return (
@@ -140,7 +223,7 @@ export default function MediaGallery({
           )}
         </div>
 
-        {/* Toolbar: search + filters + view toggle + count */}
+        {/* Toolbar: search + filters + view toggle + select + count */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Search */}
           <div className="relative w-72">
@@ -193,6 +276,19 @@ export default function MediaGallery({
             </button>
           </div>
 
+          {/* Select / Cancel button */}
+          {canDelete && items.length > 0 && (
+            selectMode ? (
+              <Button variant="ghost" size="sm" onClick={exitSelectMode} className="text-xs">
+                Cancel
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setSelectMode(true)} className="text-xs">
+                Select
+              </Button>
+            )
+          )}
+
           <Badge variant="outline" className="ml-auto text-muted-foreground">
             {total} item{total !== 1 ? "s" : ""}
           </Badge>
@@ -231,42 +327,56 @@ export default function MediaGallery({
           </div>
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="cursor-pointer group"
-                onClick={() => setSelectedId(item.id)}
-              >
-                <div className="relative rounded-xl aspect-[4/3] flex items-center justify-center bg-muted border border-border">
-                  <Icon
-                    name={categoryIcons[item.category] ?? "file-document"}
-                    size={32}
-                    className="opacity-50"
-                  />
-                  <Badge variant="outline" className="absolute top-2 right-2 text-[10px] font-bold">
-                    {categoryLabels[item.category] ?? "FILE"}
-                  </Badge>
-                  {item.visibility === "private" && (
-                    <div className="absolute top-2 left-2 w-5 h-5 rounded-full bg-black/50 flex items-center justify-center" title="Private — only visible to you">
-                      <Icon name="lock" size={12} color="#ffffff" />
-                    </div>
-                  )}
+            {items.map((item) => {
+              const isSelected = selectedIds.has(item.id);
+              return (
+                <div
+                  key={item.id}
+                  className={`cursor-pointer group ${isSelected ? "ring-2 ring-accent-purple rounded-xl" : ""}`}
+                  onClick={() => handleCardClick(item)}
+                >
+                  <div className="relative rounded-xl aspect-[4/3] overflow-hidden flex items-center justify-center bg-muted border border-border">
+                    <Thumbnail item={item} />
+                    <Badge variant="outline" className="absolute top-2 right-2 text-[10px] font-bold bg-white/80 backdrop-blur-sm">
+                      {categoryLabels[item.category] ?? "FILE"}
+                    </Badge>
+                    {item.visibility === "private" && (
+                      <div className="absolute top-2 left-2 w-5 h-5 rounded-full bg-black/50 flex items-center justify-center" title="Private — only visible to you">
+                        <Icon name="lock" size={12} color="#ffffff" />
+                      </div>
+                    )}
+                    {/* Select checkbox */}
+                    {selectMode && (
+                      <div className={`absolute top-2 left-2 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                        isSelected
+                          ? "bg-accent-purple border-accent-purple"
+                          : "bg-white/80 border-black/20"
+                      }`}>
+                        {isSelected && (
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 6L5 9L10 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs font-medium text-foreground mt-2 truncate">
+                    {item.title || item.file_name}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {formatDate(item.created_at)}
+                    {item.file_size ? ` · ${formatBytes(item.file_size)}` : ""}
+                  </p>
                 </div>
-                <p className="text-xs font-medium text-foreground mt-2 truncate">
-                  {item.title || item.file_name}
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  {formatDate(item.created_at)}
-                  {item.file_size ? ` · ${formatBytes(item.file_size)}` : ""}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border text-left">
+                  {selectMode && <th className="px-4 py-2.5 w-10" />}
                   <th className="px-4 py-2.5 text-xs font-semibold text-muted-foreground">Name</th>
                   <th className="px-4 py-2.5 text-xs font-semibold text-muted-foreground">Type</th>
                   <th className="px-4 py-2.5 text-xs font-semibold text-muted-foreground">Size</th>
@@ -275,45 +385,119 @@ export default function MediaGallery({
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
-                  <tr
-                    key={item.id}
-                    className="border-b border-border last:border-0 hover:bg-muted/50 cursor-pointer"
-                    onClick={() => setSelectedId(item.id)}
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <Icon
-                          name={categoryIcons[item.category] ?? "file-document"}
-                          size={18}
-                          className="opacity-60"
-                        />
-                        <span className="text-sm font-medium text-foreground truncate max-w-xs">
-                          {item.title || item.file_name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge variant="outline" className="text-[10px] font-bold">
-                        {categoryLabels[item.category] ?? "FILE"}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {item.file_size ? formatBytes(item.file_size) : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {formatDate(item.created_at)}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {item.uploader_name ?? "—"}
-                    </td>
-                  </tr>
-                ))}
+                {items.map((item) => {
+                  const isSelected = selectedIds.has(item.id);
+                  const thumbUrl = getThumbnailUrl(item);
+                  return (
+                    <tr
+                      key={item.id}
+                      className={`border-b border-border last:border-0 cursor-pointer ${
+                        isSelected ? "bg-accent-purple/5" : "hover:bg-muted/50"
+                      }`}
+                      onClick={() => handleCardClick(item)}
+                    >
+                      {selectMode && (
+                        <td className="px-4 py-3">
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                            isSelected
+                              ? "bg-accent-purple border-accent-purple"
+                              : "border-black/20"
+                          }`}>
+                            {isSelected && (
+                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M2 6L5 9L10 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          {thumbUrl ? (
+                            <img src={thumbUrl} alt="" className="w-8 h-8 rounded object-cover shrink-0" />
+                          ) : (
+                            <Icon
+                              name={categoryIcons[item.category] ?? "file-document"}
+                              size={18}
+                              className="opacity-60"
+                            />
+                          )}
+                          <span className="text-sm font-medium text-foreground truncate max-w-xs">
+                            {item.title || item.file_name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant="outline" className="text-[10px] font-bold">
+                          {categoryLabels[item.category] ?? "FILE"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {item.file_size ? formatBytes(item.file_size) : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {formatDate(item.created_at)}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {item.uploader_name ?? "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
+
+      {/* Bulk delete bar */}
+      {selectMode && selectedIds.size > 0 && (
+        <div className="px-6 py-3 border-t border-border bg-card flex items-center justify-between">
+          <span className="text-sm font-medium text-foreground">
+            {selectedIds.size} item{selectedIds.size !== 1 ? "s" : ""} selected
+          </span>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={exitSelectMode}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              <Icon name="delete" size={14} />
+              Delete
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-bold text-foreground mb-2">
+              Delete {selectedIds.size} item{selectedIds.size !== 1 ? "s" : ""}?
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              This cannot be undone. The items will be permanently removed.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
