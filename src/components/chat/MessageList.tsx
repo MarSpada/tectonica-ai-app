@@ -17,6 +17,7 @@ interface MessageListProps {
   onTryAgain?: () => void;
   onRequestApproval?: (imageUrl: string) => void;
   onShareToChat?: (imageUrl: string) => void;
+  approvedImageUrls?: Map<string, string>;
 }
 
 // Parse image markdown: ![alt](url)
@@ -38,6 +39,7 @@ function renderContent(
   onTryAgain?: () => void,
   onRequestApproval?: (imageUrl: string) => void,
   onShareToChat?: (imageUrl: string) => void,
+  approvedImageUrls?: Map<string, string>,
 ) {
   const parts: React.ReactNode[] = [];
 
@@ -126,6 +128,7 @@ function renderContent(
         onTryAgain={onTryAgain}
         onRequestApproval={onRequestApproval}
         onShareToChat={onShareToChat}
+        isApproved={approvedImageUrls?.has(match[2])}
       />
     );
 
@@ -347,6 +350,7 @@ function ImageMessage({
   onTryAgain,
   onRequestApproval,
   onShareToChat,
+  isApproved,
 }: {
   url: string;
   alt: string;
@@ -354,6 +358,7 @@ function ImageMessage({
   onTryAgain?: () => void;
   onRequestApproval?: (imageUrl: string) => void;
   onShareToChat?: (imageUrl: string) => void;
+  isApproved?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const hasActions = onOpenStudio || onTryAgain || onRequestApproval || onShareToChat;
@@ -390,11 +395,20 @@ function ImageMessage({
               />
             )}
             {onRequestApproval && (
-              <ImageActionButton
-                icon="widget-approval"
-                label="Request approval"
-                onClick={() => onRequestApproval(url)}
-              />
+              isApproved ? (
+                <ImageActionButton
+                  icon="close"
+                  label="Cancel approval"
+                  onClick={() => onRequestApproval(url)}
+                  confirmLabel="Cancelled"
+                />
+              ) : (
+                <ImageActionButton
+                  icon="widget-approval"
+                  label="Request approval"
+                  onClick={() => onRequestApproval(url)}
+                />
+              )
             )}
             {onShareToChat && (
               <ImageActionButton
@@ -442,6 +456,7 @@ export default function MessageList({
   onTryAgain,
   onRequestApproval,
   onShareToChat,
+  approvedImageUrls,
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -498,7 +513,7 @@ export default function MessageList({
                 }}
               >
                 {msg.role === "assistant"
-                  ? renderContent(stripBriefTags(msg.content), onOpenStudio, onStyleSelect, onTryAgain, onRequestApproval, onShareToChat)
+                  ? renderContent(stripBriefTags(msg.content), onOpenStudio, onStyleSelect, onTryAgain, onRequestApproval, onShareToChat, approvedImageUrls)
                   : renderUserContent(msg.content)}
                 {msg.role === "assistant" &&
                   isStreaming &&

@@ -32,7 +32,7 @@ interface PendingFile {
 
 interface CreateApprovalModalProps {
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (requestId?: string) => void;
   prefilledTitle?: string;
   prefilledImageUrl?: string;
 }
@@ -175,7 +175,7 @@ export default function CreateApprovalModal({ onClose, onCreated, prefilledTitle
         }
       }
 
-      onCreated();
+      onCreated(requestId);
       onClose();
     } catch {
       setError("Something went wrong. Please try again.");

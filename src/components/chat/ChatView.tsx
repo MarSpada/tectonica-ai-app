@@ -40,6 +40,7 @@ export default function ChatView({
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [showStudio, setShowStudio] = useState(false);
   const [approvalImageUrl, setApprovalImageUrl] = useState<string | null>(null);
+  const [approvedImages, setApprovedImages] = useState<Map<string, string>>(new Map()); // imageUrl → approvalId
 
   const sendMessage = useCallback(async (messageContent?: string) => {
     const content = messageContent || input.trim();
@@ -253,6 +254,22 @@ export default function ChatView({
 
   const [shareConfirmUrl, setShareConfirmUrl] = useState<string | null>(null);
 
+  async function handleCancelApproval(imageUrl: string) {
+    const approvalId = approvedImages.get(imageUrl);
+    if (!approvalId) return;
+    try {
+      const supabase = createClient();
+      await supabase.from("approval_requests").delete().eq("id", approvalId);
+      setApprovedImages((prev) => {
+        const next = new Map(prev);
+        next.delete(imageUrl);
+        return next;
+      });
+    } catch {
+      // Silently fail
+    }
+  }
+
   async function handleShareToChat(imageUrl: string) {
     try {
       const supabase = createClient();
@@ -350,8 +367,14 @@ export default function ChatView({
                 sendMessage("Generate another version of this image");
               } : undefined}
               onRequestApproval={isImageBot ? (imageUrl) => {
-                setApprovalImageUrl(imageUrl);
+                if (approvedImages.has(imageUrl)) {
+                  // Cancel the existing approval
+                  handleCancelApproval(imageUrl);
+                } else {
+                  setApprovalImageUrl(imageUrl);
+                }
               } : undefined}
+              approvedImageUrls={approvedImages}
               onShareToChat={isImageBot ? handleShareToChat : undefined}
             />
             <ChatInput
@@ -382,7 +405,12 @@ export default function ChatView({
       {approvalImageUrl && (
         <CreateApprovalModal
           onClose={() => setApprovalImageUrl(null)}
-          onCreated={() => setApprovalImageUrl(null)}
+          onCreated={(requestId) => {
+            if (requestId && approvalImageUrl) {
+              setApprovedImages((prev) => new Map(prev).set(approvalImageUrl, requestId));
+            }
+            setApprovalImageUrl(null);
+          }}
           prefilledTitle={`Generated image — ${bot.name}`}
           prefilledImageUrl={approvalImageUrl}
         />
