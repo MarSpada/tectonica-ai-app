@@ -1,7 +1,8 @@
 "use client";
 
 import { getAvatarColor, getInitials } from "@/lib/avatar";
-import type { HourEntry } from "@/lib/types";
+import { isAdminRole } from "@/lib/constants/roles";
+import type { HourEntry, UserRole } from "@/lib/types";
 import { Icon } from "@/components/ui/icon";
 import {
   Dialog,
@@ -15,6 +16,8 @@ interface HoursDetailOverlayProps {
   entries: HourEntry[];
   total: number;
   thisWeek: number;
+  role: UserRole;
+  userId: string;
   onClose: () => void;
   onLogHours: () => void;
 }
@@ -23,12 +26,19 @@ export default function HoursDetailOverlay({
   entries,
   total,
   thisWeek,
+  role,
+  userId,
   onClose,
   onLogHours,
 }: HoursDetailOverlayProps) {
+  // Non-admins only see their own hours entries
+  const visibleEntries = isAdminRole(role)
+    ? entries
+    : entries.filter((e) => e.user_id === userId);
+
   // Group entries by date
   const grouped = new Map<string, HourEntry[]>();
-  for (const entry of entries) {
+  for (const entry of visibleEntries) {
     const dateKey = entry.activity_date;
     if (!grouped.has(dateKey)) grouped.set(dateKey, []);
     grouped.get(dateKey)!.push(entry);
@@ -53,7 +63,7 @@ export default function HoursDetailOverlay({
 
         {/* Entries */}
         <div className="flex-1 overflow-y-auto -mx-4 px-4">
-          {entries.length === 0 ? (
+          {visibleEntries.length === 0 ? (
             <div className="text-center py-8">
               <Icon name="history" size={40} className="opacity-60" />
               <p className="text-sm text-text-muted mt-2">No hours logged yet</p>

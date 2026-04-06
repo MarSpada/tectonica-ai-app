@@ -12,13 +12,13 @@ export default function DirectoryWidget({ members }: DirectoryWidgetProps) {
   const directoryMembers = members.slice(0, 6);
 
   return (
-    <div className="h-full overflow-auto p-5">
+    <div className="h-full overflow-auto p-5 flex flex-col">
       <Link href="/members">
         <h3 className="font-bold mb-4 hover:underline cursor-pointer" style={{ fontSize: "var(--widget-title-size)", color: "var(--widget-text-color)" }}>
           Group Directory
         </h3>
       </Link>
-      <div className="space-y-3">
+      <div className="space-y-3 flex-1">
         {directoryMembers.length > 0 ? (
           directoryMembers.map((person) => (
             <Link
@@ -51,6 +51,13 @@ export default function DirectoryWidget({ members }: DirectoryWidgetProps) {
           <p className="text-sm text-text-muted">Loading members...</p>
         )}
       </div>
+      <Link
+        href="/members"
+        className="widget-cta-btn mt-4 w-full rounded-sm text-white font-semibold cursor-pointer block text-center"
+        style={{ backgroundColor: "var(--widget-btn-directory, var(--accent-purple))", fontSize: "var(--widget-btn-label-size)", padding: "8px 0" }}
+      >
+        View All Members
+      </Link>
     </div>
   );
 }

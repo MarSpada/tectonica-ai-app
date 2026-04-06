@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import type { UserRole } from "@/lib/types";
 import { ROLES } from "@/lib/constants/roles";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -11,6 +12,14 @@ import BotsTab from "./BotsTab";
 import IntegrationsTab from "./IntegrationsTab";
 import GoalsTab from "./GoalsTab";
 
+const TAB_PARAM_MAP: Record<string, string> = {
+  organization: "Organization",
+  people: "People",
+  goals: "Goals",
+  bots: "Bots",
+  integrations: "Integrations",
+};
+
 interface AdminViewProps {
   role: UserRole;
   orgId: string | null;
@@ -18,15 +27,22 @@ interface AdminViewProps {
 }
 
 export default function AdminView({ role, orgId, groupId }: AdminViewProps) {
+  const searchParams = useSearchParams();
   const isSuperAdmin = role === ROLES.SUPER_ADMIN;
 
   const tabs = isSuperAdmin
     ? (["Organization", "People", "Goals", "Bots", "Integrations"] as const)
     : (["People", "Goals"] as const);
 
+  const tabParam = searchParams.get("tab")?.toLowerCase() || "";
+  const requestedTab = TAB_PARAM_MAP[tabParam];
+  const defaultTab = requestedTab && (tabs as readonly string[]).includes(requestedTab)
+    ? requestedTab
+    : tabs[0];
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-content-bg">
-      <Tabs defaultValue={tabs[0]} className="flex-1 flex flex-col gap-0 overflow-hidden">
+      <Tabs defaultValue={defaultTab} className="flex-1 flex flex-col gap-0 overflow-hidden">
         {/* Header */}
         <div className="px-6 pt-5 pb-0">
           <div className="flex items-center gap-3 mb-4">

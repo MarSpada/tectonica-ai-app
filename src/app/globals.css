@@ -109,6 +109,9 @@
   --widget-list-item-bg: #F8F7FF;
   --widget-btn-max-width: none;
   --widget-btn-signups: #C66A0C;
+  --widget-btn-connected: #422D8F;
+  --widget-btn-events: #C66A0C;
+  --widget-btn-directory: #422D8F;
 
   /* Widget chart/progress accents — Figma (Session G) */
   --widget-chart-fundraising: #FE6778;
@@ -193,6 +196,8 @@
   --color-widget-btn-fundraising: var(--widget-btn-fundraising);
   --color-widget-btn-hours: var(--widget-btn-hours);
   --color-widget-btn-approval: var(--widget-btn-approval);
+  --color-widget-btn-connected: var(--widget-btn-connected);
+  --color-widget-btn-directory: var(--widget-btn-directory);
   --color-widget-chart-fundraising: var(--widget-chart-fundraising);
   --color-widget-chart-fundraising-track: var(--widget-chart-fundraising-track);
   --color-widget-chart-members: var(--widget-chart-members);

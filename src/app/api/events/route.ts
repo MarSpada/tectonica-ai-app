@@ -1,30 +1,21 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { parseIcs } from "@/lib/ical-parser";
+import { requireAuth } from "@/lib/api-utils";
 import type { CalendarEvent } from "@/lib/types";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { profile, supabase } = auth;
 
-    // Get user's org
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("org_id")
-      .eq("id", user.id)
-      .single();
+    if (!profile.group_id) return NextResponse.json({ events: [] });
 
-    if (!profile?.org_id) return NextResponse.json({ events: [] });
-
-    // Fetch enabled calendar sources for this org
+    // Fetch enabled calendar sources for this group
     const { data: sources } = await supabase
       .from("calendar_sources")
       .select("*")
-      .eq("org_id", profile.org_id)
+      .eq("group_id", profile.group_id)
       .eq("enabled", true);
 
     if (!sources || sources.length === 0) {

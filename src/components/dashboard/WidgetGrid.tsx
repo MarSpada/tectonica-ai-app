@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Responsive, WidthProvider } from "react-grid-layout/legacy";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -36,6 +37,7 @@ import RequestApprovalWidget from "./RequestApprovalWidget";
 import ConnectedSystemsWidget from "./ConnectedSystemsWidget";
 import HoursWidget from "./HoursWidget";
 import EventsWidget from "./EventsWidget";
+import EventDetailSheet from "./EventDetailSheet";
 import DirectoryWidget from "./DirectoryWidget";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
@@ -77,6 +79,7 @@ interface WidgetGridProps {
   weekHours: number;
   prevWeekHours: number;
   hoursHistory: HoursWeekBucket[];
+  uniqueMembers: number;
   fundraising: FundraisingGoal | null;
   groupGoals: GroupGoals | null;
   fundraisingHistory: FundraisingHistory[];
@@ -114,6 +117,7 @@ export default function WidgetGrid({
   weekHours,
   prevWeekHours,
   hoursHistory,
+  uniqueMembers,
   fundraising,
   groupGoals,
   fundraisingHistory,
@@ -127,6 +131,9 @@ export default function WidgetGrid({
   runpodStatus,
   imageApiStatus,
 }: WidgetGridProps) {
+  // Event detail sheet state
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+
   // Visible widgets for current role
   const visibleWidgetIds = new Set(getVisibleWidgets(role));
 
@@ -208,6 +215,7 @@ export default function WidgetGrid({
             eventsCount={events.length}
             runpodStatus={runpodStatus}
             imageApiStatus={imageApiStatus}
+            role={role}
           />
         );
       case "hours_volunteered":
@@ -217,12 +225,21 @@ export default function WidgetGrid({
             weekHours={weekHours}
             prevWeekHours={prevWeekHours}
             hoursHistory={hoursHistory}
+            uniqueMembers={uniqueMembers}
+            hoursGoal={groupGoals?.hours_goal || 0}
             onLogHours={onLogHours}
             onShowDetail={onShowHoursDetail}
           />
         );
       case "upcoming_events":
-        return <EventsWidget events={events} eventsLoading={eventsLoading} />;
+        return (
+          <EventsWidget
+            events={events}
+            eventsLoading={eventsLoading}
+            role={role}
+            onEventClick={setSelectedEvent}
+          />
+        );
       case "group_directory":
         return <DirectoryWidget members={allMembers} />;
       default:
@@ -287,6 +304,11 @@ export default function WidgetGrid({
           );
         })}
       </ResponsiveGridLayout>
+      <EventDetailSheet
+        event={selectedEvent}
+        open={!!selectedEvent}
+        onOpenChange={(open) => { if (!open) setSelectedEvent(null); }}
+      />
     </div>
   );
 }

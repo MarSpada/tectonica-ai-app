@@ -40,7 +40,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { money_goal, money_budget, money_raised_offline, members_goal, supporters_goal } = body;
+    const { money_goal, money_budget, money_raised_offline, members_goal, supporters_goal, hours_goal } = body;
 
     const updateFields: Record<string, unknown> = {
       group_id: profile.group_id,
@@ -53,6 +53,7 @@ export async function PATCH(request: Request) {
     if (money_raised_offline !== undefined) updateFields.money_raised_offline = money_raised_offline;
     if (members_goal !== undefined) updateFields.members_goal = members_goal;
     if (supporters_goal !== undefined) updateFields.supporters_goal = supporters_goal;
+    if (hours_goal !== undefined) updateFields.hours_goal = hours_goal;
 
     const { data, error } = await supabase
       .from("group_goals")

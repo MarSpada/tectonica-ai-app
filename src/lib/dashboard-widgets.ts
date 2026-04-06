@@ -65,8 +65,8 @@ export const WIDGET_CONSTRAINTS: Record<WidgetId, {
   fundraising:       { minW: 1, maxW: 2, minH: 3, maxH: 7 },
   recruitment_goal:  { minW: 1, maxW: 3, minH: 3, maxH: 6 },
   request_approval:  { minW: 1, maxW: 2, minH: 2, maxH: 4 },
-  connected_systems: { minW: 1, maxW: 2, minH: 2, maxH: 8 },
-  hours_volunteered: { minW: 1, maxW: 3, minH: 3, maxH: 6 },
+  connected_systems: { minW: 1, maxW: 2, minH: 2, maxH: 10 },
+  hours_volunteered: { minW: 1, maxW: 3, minH: 4, maxH: 7 },
   upcoming_events:   { minW: 1, maxW: 2, minH: 3, maxH: 8 },
   group_directory:   { minW: 2, maxW: 3, minH: 3, maxH: 8 },
 }
@@ -80,7 +80,7 @@ export const SYSTEM_DEFAULT_LAYOUT = [
   { i: 'recruitment_goal', x: 1, y: 7,  w: 2, h: 4 },
   { i: 'request_approval', x: 0, y: 12, w: 1, h: 3 },
   { i: 'connected_systems',x: 1, y: 12, w: 1, h: 6 },
-  { i: 'hours_volunteered',x: 2, y: 12, w: 1, h: 4 },
+  { i: 'hours_volunteered',x: 2, y: 12, w: 1, h: 5 },
   { i: 'upcoming_events',  x: 0, y: 16, w: 1, h: 5 },
   { i: 'group_directory',  x: 1, y: 16, w: 2, h: 5 },
 ]
@@ -92,13 +92,25 @@ export function getVisibleWidgets(
     WIDGET_PERMISSIONS[id].includes(role))
 }
 
+// Widgets whose height should adjust based on role (super_admin sees more rows)
+const ROLE_HEIGHT_OVERRIDES: Partial<Record<WidgetId, { super_admin: number; default: number }>> = {
+  connected_systems: { super_admin: 8, default: 4 },
+}
+
 export function filterLayoutToRole(
   layout: typeof SYSTEM_DEFAULT_LAYOUT,
   role: UserRole
 ): typeof SYSTEM_DEFAULT_LAYOUT {
   const visible = new Set(getVisibleWidgets(role))
-  return layout.filter(item =>
-    visible.has(item.i as WidgetId))
+  return layout
+    .filter(item => visible.has(item.i as WidgetId))
+    .map(item => {
+      const override = ROLE_HEIGHT_OVERRIDES[item.i as WidgetId]
+      if (override) {
+        return { ...item, h: role === 'super_admin' ? override.super_admin : override.default }
+      }
+      return item
+    })
 }
 
 export function mergeLayoutWithDefaults(
@@ -114,5 +126,12 @@ export function mergeLayoutWithDefaults(
     item => visible.has(item.i as WidgetId) &&
     !savedIds.has(item.i)
   )
-  return [...base, ...missing]
+  // Apply role-based height overrides
+  return [...base, ...missing].map(item => {
+    const override = ROLE_HEIGHT_OVERRIDES[item.i as WidgetId]
+    if (override) {
+      return { ...item, h: role === 'super_admin' ? override.super_admin : override.default }
+    }
+    return item
+  })
 }

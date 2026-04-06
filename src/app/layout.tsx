@@ -32,6 +32,7 @@ export default async function RootLayout({
     role?: UserRole;
     orgName?: string;
     groupName?: string;
+    groupId?: string;
   } | null = null;
 
   try {
@@ -79,6 +80,7 @@ export default async function RootLayout({
         role: (profile?.role as UserRole) || "member",
         orgName,
         groupName,
+        groupId: profile?.group_id || undefined,
       };
     }
   } catch {

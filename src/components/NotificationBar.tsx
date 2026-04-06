@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getAvatarColor, getInitials } from "@/lib/avatar";
 import { formatSignupTime } from "@/lib/signup-utils";
+import { useUserProfile } from "@/lib/UserProfileContext";
 import type { AppNotification, NbSignup, SignupAssignment } from "@/lib/types";
 import { Icon } from "@/components/ui/icon";
 import {
@@ -16,6 +17,9 @@ import {
 import { Button } from "@/components/ui/button";
 
 export default function NotificationBar() {
+  const { profile } = useUserProfile();
+  const groupId = profile?.groupId;
+
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [dismissed, setDismissed] = useState(false);
   const [nbConnected, setNbConnected] = useState<boolean | null>(null);
@@ -23,6 +27,15 @@ export default function NotificationBar() {
     (SignupAssignment & { signup?: NbSignup })[]
   >([]);
   const [showLightbox, setShowLightbox] = useState(false);
+
+  // Check sessionStorage for prior dismiss in this browser session
+  useEffect(() => {
+    if (!groupId) return;
+    const key = `notificationBar_dismissed_${groupId}`;
+    if (sessionStorage.getItem(key) === "true") {
+      setDismissed(true);
+    }
+  }, [groupId]);
 
   useEffect(() => {
     async function fetchNotifications() {
@@ -79,6 +92,9 @@ export default function NotificationBar() {
 
   async function handleDismiss() {
     setDismissed(true);
+    if (groupId) {
+      sessionStorage.setItem(`notificationBar_dismissed_${groupId}`, "true");
+    }
     try {
       await fetch("/api/notifications/read", {
         method: "POST",

@@ -28,15 +28,15 @@ The path to full launch involves connecting external action source adapters (Nat
 - Real-time group messaging via Supabase Realtime
 - NationBuilder integration (read-only signup ingestion, interactive assignment workflow)
 - Approval workflow (submit, review, approve/request changes, resubmit, comment threads)
-- Volunteer hours tracking with dashboard widget and detail overlay
-- Fundraising and recruitment goals (admin-editable, DB-driven, displayed in dashboard widgets)
+- Volunteer hours tracking with dashboard widget (spark chart + progress bar when goal set), detail overlay (role-gated: admins see all, non-admins see own hours)
+- Fundraising, recruitment, and volunteer hours goals (admin-editable, DB-driven, displayed in dashboard widgets)
 - Reimbursement requests with approval workflow and in-app notifications
 - Super Admin Panel (Organization, People, Goals, Bots, Integrations tabs)
 - Configurable dashboard grid (React Grid Layout, role-aware save, per-widget size constraints)
-- Calendar integration (iCal/ICS feeds from Google Calendar, Outlook, Mobilize)
+- Calendar integration (group-scoped iCal/ICS feeds from Google Calendar, Outlook, Apple Calendar, Mobilize, any iCal source) with event detail sheet
 - Actions system (internal actions with types, points, deadlines, assignment scoping, self-reported completion tracking, points ledger)
 - Signups page (full NationBuilder signup table with search, status, assignment info)
-- Notification bar (signups, approvals, reimbursements)
+- Notification bar (signups, approvals, reimbursements) with session-based dismiss
 - Profile and account settings with avatar upload
 - Activity log (unified timeline of hours, approvals, signups, reimbursements)
 - Group profile page with description, member count, quick links
@@ -53,7 +53,7 @@ The path to full launch involves connecting external action source adapters (Nat
 
 - **Resend domain verification** — `tectonica.co` is "Not Started" in Resend. The partner organization needs to add DNS records in GoDaddy. This blocks: signup confirmation emails, password reset emails, and all transactional emails sent to non-owner addresses. Supabase SMTP is configured correctly and just needs the verified domain.
 - **Reimbursement email notifications** — coded and ready but will not send until Resend domain is verified. In-app notifications work in the meantime.
-- **Action Network and Mobilize integrations** — not yet connected. UI shows "Not Connected" status in the Connected Systems widget.
+- **Action Network and Mobilize integrations** — not yet connected. UI shows "Not Connected" status in the Connected Systems widget. AI Models and Image API rows are visible to super_admin only. "Manage Integrations" button (super_admin only) deep-links to `/admin?tab=integrations`.
 - **External action source adapters** — scaffold exists in `lib/action-adapters/` but no concrete implementations. NationBuilder Actions, Action Network, ActBlue, and Sosha show "Not Connected" in the Integrations tab Action Sources section.
 
 ---
@@ -126,7 +126,8 @@ The following must be configured manually in the Supabase dashboard:
    - `media` — for Media Library files. Setup instructions are in the header comment of `src/lib/media-storage.ts`
    - `reimbursements` — for reimbursement request attachments
 2. **Storage RLS policies** — Storage bucket policies are separate from table-level RLS and must be configured in the Supabase dashboard
-3. **All SQL migrations** (in `supabase/migrations/`, numbered 001–024) must be run in order in the Supabase SQL Editor
+3. **All SQL migrations** (in `supabase/migrations/`, numbered 001–025) must be run in order in the Supabase SQL Editor
+4. **Manual schema addition**: `ALTER TABLE group_goals ADD COLUMN hours_goal integer NOT NULL DEFAULT 0;` (no migration file — run directly in SQL Editor)
 
 ### Test accounts
 
@@ -234,7 +235,7 @@ src/
     ├── UserProfileContext.tsx # React Context for user profile data (role, orgName, groupName, name, avatar)
     └── utils.ts            # General utilities
 supabase/
-└── migrations/             # 24 SQL migration files (001–024), run manually in Supabase SQL Editor
+└── migrations/             # 25 SQL migration files (001–025), run manually in Supabase SQL Editor
 ```
 
 ### Key architectural patterns
@@ -249,7 +250,7 @@ supabase/
 
 **API route structure**
 - All routes require auth (`supabase.auth.getUser()`) and return 401 if no session
-- New routes should use `requireAuth()` from `lib/api-utils.ts` (3 routes migrated, 40 still on inline pattern — incremental migration)
+- New routes should use `requireAuth()` from `lib/api-utils.ts` (6 routes migrated, ~37 still on inline pattern — incremental migration)
 - All error responses use `NextResponse.json({ error: string })` with appropriate HTTP status
 - Role checks use `lib/constants/roles.ts` constants — never hardcode role strings
 - All `/api/admin/` routes have server-side role checks (`isSuperAdmin` or `isAdminRole`)
@@ -267,7 +268,7 @@ supabase/
 - `complete_action()` — atomic action completion + points ledger entry with group boundary validation. Uses custom errcodes (P0002–P0005) mapped to HTTP statuses in the API route.
 
 **Context providers**
-- `UserProfileContext` provides user role, org, group, name, and avatar data across the component tree
+- `UserProfileContext` provides user role, org, group (name + ID), name, and avatar data across the component tree
 - Components never re-fetch this data — they consume it from context
 
 **RLS approach**
@@ -453,11 +454,12 @@ Submit items for admin/group_admin review with text and file attachments. Status
 
 ### Volunteer hours tracking
 
-Log volunteer hours with date, dashboard widget showing real totals, detail overlay with entries grouped by date.
+Log volunteer hours with date, dashboard widget showing real totals and progress toward goal, detail overlay with entries grouped by date.
 
 - **All group members** can log their own hours and view group totals
-- Hours widget on dashboard shows aggregate data
-- Detail overlay accessible from the widget
+- Hours widget shows spark line chart, total hours, unique member count, and progress bar when a group hours goal is set (hours_goal > 0)
+- Detail overlay is role-gated: admins (super_admin + group_admin) see all group member entries, non-admins see only their own
+- **group_admin and super_admin** can set a group hours goal via the Goals tab in the Admin Panel
 
 ### Fundraising goals
 
@@ -476,13 +478,22 @@ Members goal and supporters goal stored in `group_goals` table. RecruitmentGoalW
 - Handles goal=0 gracefully (shows raw count, hides percentage)
 - **Same first-run limitation** as fundraising goals
 
+### Volunteer hours goal
+
+Group hours target stored as `hours_goal` in `group_goals` table. Hours Volunteered widget shows a progress bar when goal > 0.
+
+- **group_admin and super_admin** can set the hours goal via the Goals tab
+- Progress bar uses `--widget-chart-hours` color (#308C4F) with 20% opacity track
+- When goal = 0, no progress bar is shown (current behavior preserved)
+- **Same first-run limitation** as other goals
+
 ### Admin panel
 
 Role-guarded panel at `/admin` with 5 tabs for super_admin, 2 tabs (People, Goals) for group_admin.
 
 - **Organization tab** (super_admin): edit org name, manage groups (rename), edit group descriptions
 - **People tab**: list members, change roles (with hierarchy enforcement), reassign groups (super_admin only), remove members, inline name editing
-- **Goals tab** (group_admin + super_admin): fundraising goals (monthly target, print budget, offline offset) and recruitment goals (member/supporter targets). Inline edit pattern.
+- **Goals tab** (group_admin + super_admin): fundraising goals (monthly target, print budget, offline offset), recruitment goals (member/supporter targets), and volunteer hours goal. Inline edit pattern.
 - **Bots tab** (super_admin): DB-driven bot CRUD — create, edit name/description/system prompt/category/icon, delete
 - **Integrations tab** (super_admin): calendar source management (add/remove iCal feeds, toggle enable/disable, color coding), Action Sources section (NationBuilder Actions, Action Network, ActBlue, Sosha — all scaffolded as "Not Connected"), NationBuilder connection status, Action Network/Mobilize status
 
@@ -503,14 +514,16 @@ Amber bar showing unread notifications for signups, approvals, and reimbursement
 - Uses real `signup_assignments` count (not stale notification records)
 - Clickable signup count opens assignment lightbox
 - Handles multiple notification types simultaneously
+- Session-based dismiss via sessionStorage (scoped to groupId, clears when browser tab closes)
 
 ### Calendar integration and Upcoming Events widget
 
-System-agnostic iCal/ICS feed support (Google Calendar, Outlook, Mobilize). Feeds managed by super_admin in the Integrations tab. Upcoming Events widget shows next 30 days of events (max 20).
+Group-scoped iCal/ICS feed support (Google Calendar, Outlook, Apple Calendar, Mobilize, any iCal source). Feeds managed by super_admin in the Integrations tab. Upcoming Events widget shows next 30 days of events (max 20). Clicking an event opens a detail sheet with title, date/time, location, source, and description.
 
-- **super_admin** can add, remove, enable/disable, and color-code calendar feeds
-- **All group members** can view upcoming events in the dashboard widget
+- **super_admin** can add, remove, enable/disable, and color-code calendar feeds. "Manage Calendars" button in widget links to Integrations tab.
+- **All group members** can view upcoming events in the dashboard widget and click for details
 - Uses a lightweight ICS parser (`lib/ical-parser.ts`) with no native dependencies
+- Calendar sources are group-scoped (migration 025). RLS uses `is_admin()` for future group_admin management, while API routes currently restrict to `isSuperAdmin()` — this mismatch is intentional.
 
 ### Reimbursement requests
 
@@ -552,6 +565,9 @@ Page at `/group` showing group name, description, member count, organization nam
 - **Auth race conditions** — Client components (RightSidebar, NotificationBar, TopBar) receive 401s during unauthenticated initial load. Error handling exists but should be verified when modifying these components.
 - **Group goals first-run** — Widgets show zeros until an admin visits the Goals tab and saves once to create the `group_goals` row.
 - **Bot icon field mismatch** — DB bot records store old Material Icons strings. `getBots()` merges DB names with hardcoded Streamline icons as fallback.
+- **Image uploads not saved to Media Library** — User-uploaded reference images in chat are not saved to `media_items`. Only AI-generated outputs are saved. This prevents cluttering the Media Library with reference photos.
+- **Admin tab deep-linking** — AdminView reads `?tab=` URL param (e.g. `/admin?tab=integrations`). Values: `organization`, `people`, `goals`, `bots`, `integrations` (case-insensitive). Falls back to first available tab if invalid or unauthorized.
+- **Connected Systems role-aware height** — Widget height adjusts by role via `ROLE_HEIGHT_OVERRIDES` in `dashboard-widgets.ts` (super_admin: h:8, others: h:4).
 - **`--accent-purple` still neutral** — Set to `#18181B`, awaiting brand color decision.
 - **`SparkAreaChart` default color** — Uses Tremor `"emerald"` default, needs custom color pass.
 - **Container query breakpoint** — Button breakpoint at `350px` may need tuning if grid column widths change.

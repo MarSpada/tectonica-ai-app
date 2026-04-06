@@ -54,6 +54,7 @@ export async function GET(request: Request) {
 
     // Calculate totals
     const total = enriched.reduce((sum, e) => sum + Number(e.hours), 0);
+    const uniqueMembers = new Set(enriched.map((e) => e.user_id)).size;
 
     // This week's hours
     const now = new Date();
@@ -64,7 +65,7 @@ export async function GET(request: Request) {
       .filter((e) => new Date(e.activity_date) >= weekStart)
       .reduce((sum, e) => sum + Number(e.hours), 0);
 
-    return NextResponse.json({ entries: enriched, total, thisWeek });
+    return NextResponse.json({ entries: enriched, total, thisWeek, uniqueMembers });
   } catch (err) {
     console.error("Fetch volunteer hours failed:", err);
     return NextResponse.json({ error: "Failed to fetch volunteer hours" }, { status: 500 });

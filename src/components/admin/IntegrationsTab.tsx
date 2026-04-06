@@ -7,17 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Icon } from "@/components/ui/icon";
-import type { RunPodStatus } from "@/lib/types";
-
-interface CalendarSource {
-  id: string;
-  name: string;
-  provider: string;
-  feed_url: string;
-  color: string;
-  enabled: boolean;
-  created_at: string;
-}
+import type { RunPodStatus, CalendarSource } from "@/lib/types";
 
 interface RunPodModel {
   id: string;
@@ -465,7 +455,8 @@ export default function IntegrationsTab() {
             <h3 className="text-sm font-bold text-text-primary">Calendar Sources</h3>
             <p className="text-xs text-text-muted mt-0.5">
               Connect calendar feeds to show upcoming events in the dashboard.
-              Supports any iCal/ICS feed (Google Calendar, Outlook, Apple Calendar, Mobilize, etc.)
+              Supports Google Calendar, Outlook, Apple Calendar, Mobilize, and any other iCal/ICS-compatible source.
+              Apple Calendar exports standard .ics files and is fully supported.
             </p>
           </div>
           <Button onClick={() => setShowForm(true)} size="sm">
@@ -555,7 +546,7 @@ export default function IntegrationsTab() {
           </div>
         ) : sources.length === 0 ? (
           <div className="text-center py-8 bg-gray-50 rounded-xl">
-            <Icon name="calendar" size={40} className="opacity-60" />
+            <Icon name="calendar" size={40} className="opacity-60 mx-auto" />
             <p className="text-sm text-text-muted mt-2">No calendar sources connected</p>
             <p className="text-xs text-text-muted mt-1">
               Add an iCal/ICS feed to show upcoming events in the dashboard

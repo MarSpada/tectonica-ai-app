@@ -29,6 +29,11 @@ export default function GoalsTab({ groupId }: GoalsTabProps) {
   const [supportersGoalInput, setSupportersGoalInput] = useState("");
   const [savingRecruitment, setSavingRecruitment] = useState(false);
 
+  // Volunteer Hours edit state
+  const [editingHours, setEditingHours] = useState(false);
+  const [hoursGoalInput, setHoursGoalInput] = useState("");
+  const [savingHours, setSavingHours] = useState(false);
+
   const fetchGoals = useCallback(async () => {
     if (!groupId) return;
     try {
@@ -96,6 +101,31 @@ export default function GoalsTab({ groupId }: GoalsTabProps) {
       toast.error("Failed to save");
     } finally {
       setSavingRecruitment(false);
+    }
+  }
+
+  async function handleSaveHours() {
+    setSavingHours(true);
+    try {
+      const res = await fetch("/api/goals", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hours_goal: parseInt(hoursGoalInput) || 0,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok && json.goals) {
+        setGoals(json.goals);
+        setEditingHours(false);
+        toast.success("Volunteer hours goal saved");
+      } else {
+        toast.error(json.error || "Failed to save");
+      }
+    } catch {
+      toast.error("Failed to save");
+    } finally {
+      setSavingHours(false);
     }
   }
 
@@ -286,6 +316,66 @@ export default function GoalsTab({ groupId }: GoalsTabProps) {
               <span className="text-xs text-text-muted">Supporter Recruitment Goal</span>
               <span className="text-sm font-medium text-text-primary">
                 {goals?.supporters_goal || 0}
+              </span>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Volunteer Hours Goals */}
+      <section className="bg-card-bg rounded-xl border border-card-stroke p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-text-primary">
+            Volunteer Hours Goals
+          </h2>
+          {!editingHours && (
+            <Button
+              variant="link"
+              onClick={() => {
+                setHoursGoalInput(String(goals?.hours_goal || 0));
+                setEditingHours(true);
+              }}
+            >
+              Edit
+            </Button>
+          )}
+        </div>
+
+        {editingHours ? (
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-medium text-text-muted mb-1 block">
+                Group Hours Goal
+              </label>
+              <Input
+                type="number"
+                min="0"
+                value={hoursGoalInput}
+                onChange={(e) => setHoursGoalInput(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setEditingHours(false);
+                }}
+              />
+              <p className="text-xs text-text-muted mt-1">
+                Total volunteer hours target for this group. Displayed as a progress bar in the Hours Volunteered widget.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button onClick={handleSaveHours} disabled={savingHours}>
+                {savingHours ? "Saving..." : "Save"}
+              </Button>
+              <Button variant="ghost" onClick={() => setEditingHours(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-black/[0.02] border border-black/5">
+              <span className="text-xs text-text-muted">Group Hours Goal</span>
+              <span className="text-sm font-medium text-text-primary">
+                {goals?.hours_goal || 0} hrs
               </span>
             </div>
           </div>

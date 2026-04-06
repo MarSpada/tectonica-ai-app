@@ -128,6 +128,7 @@ export const ICON_MAP = {
   'expand-down': `${ICON_BASE}/arrows-diagrams/arrow-button-up.svg`,
   'link': `${ICON_BASE}/internet-networks-servers/network-browser.svg`,
   'trash': `${ICON_BASE}/interface-essential/bin-1.svg`,
+  'location-pin': `${ICON_BASE}/maps-navigation/pin-2.svg`,
 } as const;
 
 export type IconName = keyof typeof ICON_MAP;

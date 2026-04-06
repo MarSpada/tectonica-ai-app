@@ -725,18 +725,6 @@ async function preprocessMessages(
             imageCredentials
           );
 
-          // Save uploaded image to media
-          await supabase.from("media_items").insert({
-            group_id: groupId,
-            uploaded_by: userId,
-            category: "generated",
-            file_name: `upload-${Date.now()}.png`,
-            url,
-            title: `Uploaded image — ${new Date().toLocaleDateString()}`,
-            status: "ready",
-            visibility: "private",
-          });
-
           // Replace base64 with URL in message
           uploadedImageUrl = url;
           const newContent = msg.content.replace(

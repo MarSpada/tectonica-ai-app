@@ -9,7 +9,7 @@ import {
 export async function POST(req: Request) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
-  const { user, profile, supabase } = auth;
+  const { profile } = auth;
 
   if (!profile.org_id) {
     return NextResponse.json({ error: "No organization" }, { status: 400 });
@@ -43,30 +43,7 @@ export async function POST(req: Request) {
   try {
     const { url } = await uploadImageToRailway(base64, credentials);
 
-    // Save to media_items as private generated image
-    const { data: mediaItem, error: insertError } = await supabase
-      .from("media_items")
-      .insert({
-        group_id: profile.group_id,
-        uploaded_by: user.id,
-        category: "generated",
-        file_name: `upload-${Date.now()}.png`,
-        url,
-        title: `Uploaded image — ${new Date().toLocaleDateString()}`,
-        status: "ready",
-        visibility: "private",
-      })
-      .select("id")
-      .single();
-
-    if (insertError) {
-      console.warn("Failed to save uploaded image to media_items:", insertError.message);
-    }
-
-    return NextResponse.json({
-      url,
-      mediaItemId: mediaItem?.id ?? null,
-    });
+    return NextResponse.json({ url });
   } catch (err) {
     if (err instanceof ImageToolError) {
       return NextResponse.json(

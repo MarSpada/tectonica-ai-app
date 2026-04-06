@@ -11,6 +11,7 @@ interface UserProfile {
   role?: UserRole;
   orgName?: string;
   groupName?: string;
+  groupId?: string;
 }
 
 interface UserProfileContextValue {

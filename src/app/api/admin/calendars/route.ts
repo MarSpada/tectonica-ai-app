@@ -1,30 +1,26 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { isSuperAdmin } from "@/lib/constants/roles";
+import { requireAuth } from "@/lib/api-utils";
 
-// GET — list all calendar sources for the admin's org
+// GET — list all calendar sources for the admin's group
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { profile, supabase } = auth;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("org_id, role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.org_id || !isSuperAdmin(profile.role)) {
+    if (!isSuperAdmin(profile.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (!profile.group_id) {
+      return NextResponse.json({ error: "No group assigned" }, { status: 403 });
     }
 
     const { data: sources, error } = await supabase
       .from("calendar_sources")
       .select("*")
-      .eq("org_id", profile.org_id)
+      .eq("group_id", profile.group_id)
       .order("created_at", { ascending: false });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -38,20 +34,16 @@ export async function GET() {
 // POST — add a new calendar source
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, profile, supabase } = auth;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("org_id, role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.org_id || !isSuperAdmin(profile.role)) {
+    if (!isSuperAdmin(profile.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (!profile.group_id) {
+      return NextResponse.json({ error: "No group assigned" }, { status: 403 });
     }
 
     const body = await request.json();
@@ -64,6 +56,7 @@ export async function POST(request: Request) {
     const { data: source, error } = await supabase
       .from("calendar_sources")
       .insert({
+        group_id: profile.group_id,
         org_id: profile.org_id,
         name: name.trim(),
         feed_url: feedUrl.trim(),

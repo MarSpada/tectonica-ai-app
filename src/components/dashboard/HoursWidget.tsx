@@ -8,17 +8,21 @@ interface HoursWidgetProps {
   weekHours: number;
   prevWeekHours: number;
   hoursHistory: HoursWeekBucket[];
+  uniqueMembers: number;
+  hoursGoal: number;
   onLogHours: () => void;
   onShowDetail: () => void;
 }
 
 export default function HoursWidget({
   totalHours,
-  weekHours,
   hoursHistory,
+  uniqueMembers,
+  hoursGoal,
   onLogHours,
   onShowDetail,
 }: HoursWidgetProps) {
+  const pct = hoursGoal > 0 ? Math.min(100, Math.round((totalHours / hoursGoal) * 100)) : 0;
 
   return (
     <div
@@ -46,8 +50,27 @@ export default function HoursWidget({
         <span className="font-semibold" style={{ fontSize: "var(--widget-metric-lg)", color: "var(--widget-text-color)" }}>hrs.</span>
       </div>
       <div className="font-medium" style={{ fontSize: "var(--widget-list-secondary-size)", color: "var(--widget-text-muted)" }}>
-        {weekHours > 0 ? `${weekHours} people` : "0 people"}
+        {uniqueMembers} {uniqueMembers === 1 ? "member" : "members"}
       </div>
+
+      {hoursGoal > 0 && (
+        <div className="mt-2">
+          <div className="w-full h-2 rounded-full" style={{ backgroundColor: "rgba(48, 140, 79, 0.2)" }}>
+            <div
+              className="h-2 rounded-full transition-all"
+              style={{ width: `${pct}%`, backgroundColor: "var(--widget-chart-hours)" }}
+            />
+          </div>
+          <div className="flex items-center justify-between mt-1">
+            <span className="font-semibold" style={{ fontSize: "var(--widget-list-secondary-size)", color: "var(--widget-chart-hours)" }}>
+              {pct}%
+            </span>
+            <span style={{ fontSize: "var(--widget-list-secondary-size)", color: "var(--widget-text-muted)" }}>
+              of {hoursGoal} hrs goal
+            </span>
+          </div>
+        </div>
+      )}
 
       <button
         onClick={(e) => {

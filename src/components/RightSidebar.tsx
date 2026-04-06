@@ -83,6 +83,7 @@ export default function RightSidebar({
   const [hourEntries, setHourEntries] = useState<HourEntry[]>([]);
   const [totalHours, setTotalHours] = useState(0);
   const [weekHours, setWeekHours] = useState(0);
+  const [uniqueMembers, setUniqueMembers] = useState(0);
   const [prevWeekHours, setPrevWeekHours] = useState(0);
   const [showLogHoursModal, setShowLogHoursModal] = useState(false);
   const [showHoursDetail, setShowHoursDetail] = useState(false);
@@ -169,6 +170,7 @@ export default function RightSidebar({
         if (json.entries) setHourEntries(json.entries);
         setTotalHours(json.total || 0);
         setWeekHours(json.thisWeek || 0);
+        setUniqueMembers(json.uniqueMembers || 0);
       } catch {
         // Hours unavailable
       }
@@ -379,6 +381,7 @@ export default function RightSidebar({
       if (json.entries) setHourEntries(json.entries);
       setTotalHours(json.total || 0);
       setWeekHours(json.thisWeek || 0);
+      setUniqueMembers(json.uniqueMembers || 0);
     } catch {
       // ignore
     }
@@ -438,6 +441,7 @@ export default function RightSidebar({
         weekHours={weekHours}
         prevWeekHours={prevWeekHours}
         hoursHistory={hoursHistory}
+        uniqueMembers={uniqueMembers}
         fundraising={fundraising}
         groupGoals={groupGoals}
         fundraisingHistory={fundraisingHistory}
@@ -533,6 +537,8 @@ export default function RightSidebar({
           entries={hourEntries}
           total={totalHours}
           thisWeek={weekHours}
+          role={role}
+          userId={profile?.userId || ""}
           onClose={() => setShowHoursDetail(false)}
           onLogHours={() => setShowLogHoursModal(true)}
         />

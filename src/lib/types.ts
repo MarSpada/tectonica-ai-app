@@ -135,6 +135,17 @@ export interface OrgIntegration {
 
 /* ── Calendar ── */
 
+export interface CalendarSource {
+  id: string;
+  name: string;
+  provider: string;
+  feed_url: string;
+  color: string;
+  enabled: boolean;
+  group_id: string;
+  created_at: string;
+}
+
 export interface CalendarEvent {
   id: string;
   title: string;
@@ -222,6 +233,7 @@ export interface GroupGoals {
   money_raised_offline: number;
   members_goal: number;
   supporters_goal: number;
+  hours_goal: number;
   updated_at: string;
   updated_by: string | null;
 }

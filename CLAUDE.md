@@ -128,6 +128,12 @@ codebase and follow it — don't invent a new approach.
 - Badges use rounded-full intentionally — do not change
 - Do not override border radius per-component unless there is a specific design reason
 
+### RLS vs API role checks (calendar_sources)
+- Calendar source RLS policies use `is_admin()` (allows both super_admin and group_admin) for future flexibility
+- Calendar source API routes (`/api/admin/calendars/*`) currently restrict to `isSuperAdmin()` only
+- This mismatch is intentional and by design — RLS is permissive so that when group_admin calendar management is added, only the API route check needs to change (no migration required)
+- Do not "fix" this by aligning RLS down to super_admin-only or API up to is_admin — both are correct as-is
+
 ---
 
 ## Design System
@@ -451,12 +457,13 @@ Desktop-first design. Mobile is out of scope for now.
 | `016_group_description.sql` | Adds description column to groups table |
 | `017_dashboard_layouts.sql` | dashboard_layouts_default (org-level) + dashboard_layouts_user (per-user) tables for React Grid Layout persistence. RLS: members read org default, super_admin writes; users manage own layout |
 | `018_media_items.sql` | Replaces old `media` stub with full `media_items` table (category, storage_path, url, title, description, mime_type, file_size, tags, status, visibility, soft delete, download_count, tsvector search). Adds `storage_used_bytes` to groups. RLS: group-scoped read (non-deleted only), role-gated insert (not supporters), owner+admin update. `soft_delete_media_item()` and `increment_storage_used()` SECURITY DEFINER RPCs for atomic operations that cross RLS boundaries. |
-| `019_group_goals.sql` | `group_goals` table (one row per group): money_goal, money_budget, money_raised_offline, members_goal, supporters_goal, updated_by. UNIQUE(group_id). RLS: members read, admins (super_admin + group_admin) insert/update via `is_admin()`. Centralizes goal targets that feed Fundraising and Recruitment Goal dashboard widgets. |
+| `019_group_goals.sql` | `group_goals` table (one row per group): money_goal, money_budget, money_raised_offline, members_goal, supporters_goal, hours_goal, updated_by. UNIQUE(group_id). RLS: members read, admins (super_admin + group_admin) insert/update via `is_admin()`. Centralizes goal targets that feed Fundraising, Recruitment Goal, and Hours Volunteered dashboard widgets. `hours_goal` added via manual ALTER TABLE (no migration file). |
 | `020_actions.sql` | Full actions system: `actions` table (source, type, title, description, call_to_action, url, suggested_bot_slug, points_value, priority, assignment_scope, starts_at, ends_at, status, visibility), `action_assignments` (member + group targeting), `action_completions` (UNIQUE per member per action, snapshotted points), `member_points_ledger` (UNIQUE per completion, audit trail). `complete_action()` SECURITY DEFINER RPC for atomic completion + points. RLS on all 4 tables: group-scoped reads, admin-only writes, members see own completions/ledger only. Error code contract (P0002–P0005) documented in both migration and API route. |
 | `021_create_action_with_assignments.sql` | `create_action_with_assignments()` SECURITY DEFINER RPC: atomic action creation with optional targeted assignments. If either insert fails, both roll back. Replaces the two-step insert pattern in `/api/actions` POST. |
 | `022_org_integrations.sql` | `org_integrations` table (one row per org): RunPod endpoint URL, encrypted bearer token, connection status, last checked timestamp. RLS: super_admin only. Adds `model_id` column to `bots` table for per-bot model selection from RunPod endpoint. |
 | `023_image_tools.sql` | Extends `org_integrations` with image API columns (endpoint, encrypted token, credits allocated/used). Adds `image_tools_enabled` boolean to `bots` table (true for graphics-creation). Updates `media_items`: adds 'generated' category, 'private' visibility, updates `media_file_or_link` constraint, updates RLS SELECT to allow users to see own private items. Adds `increment_image_credits()` SECURITY DEFINER RPC. |
 | `024_energy_consumption.sql` | Adds `image_width` (integer), `image_height` (integer), `energy_wh` (double precision) nullable columns to `media_items`. Partial index on `(group_id) WHERE category='generated' AND energy_wh IS NOT NULL` for efficient aggregation. Energy is pre-computed at generation time using Stanford/AXA 2025 reference data. |
+| `025_calendar_sources_group_scope.sql` | Moves `calendar_sources` from org-level to group-level scope. Adds `group_id` (uuid FK, NOT NULL after backfill), index on `group_id`. Drops org-scoped RLS, creates group-scoped RLS using `get_my_group_id()` and `is_admin()`. Keeps `org_id` column for future use. |
 
 ---
 
@@ -578,7 +585,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `GroupProfile.tsx` | Group profile page: name, description, member count, quick links |
 | `GroupConversationOverlay.tsx` | Real-time group messaging overlay |
 | `LeadersChat.tsx` | Slide-in leaders & organizers chat panel |
-| `dashboard/*.tsx` | 11 extracted widget components (SignupsWidget, RecruitWidget, ConversationsWidget, ActionsWidget, FundraisingWidget, RecruitmentGoalWidget, RequestApprovalWidget, ConnectedSystemsWidget, HoursWidget, EventsWidget, DirectoryWidget) |
+| `dashboard/*.tsx` | 11 extracted widget components (SignupsWidget, RecruitWidget, ConversationsWidget, ActionsWidget, FundraisingWidget, RecruitmentGoalWidget, RequestApprovalWidget, ConnectedSystemsWidget, HoursWidget, EventsWidget, DirectoryWidget) + EventDetailSheet |
 
 ---
 
@@ -628,17 +635,17 @@ Desktop-first design. Mobile is out of scope for now.
 - In-app notification bar for signup assignments and approvals
 - **Super Admin Panel** — org settings, people management (roles, groups, inline name editing), DB-driven bot management, goals management, integrations
 - **Approval workflow** — submit, review, approve/request changes, resubmit, comment threads
-- **Calendar integration** — system-agnostic iCal/ICS feeds (Google Calendar, Outlook, Mobilize), managed in admin Integrations tab
-- **Upcoming Events widget** — pulls from connected calendar feeds, shows next 30 days
-- **Volunteer hours tracking** — log hours, view detail overlay with entries by date, dashboard widget with real totals
+- **Calendar integration** — group-scoped iCal/ICS feeds (Google Calendar, Outlook, Apple Calendar, Mobilize, any iCal source), managed in admin Integrations tab. Migration 025 moved from org-level to group-level scope.
+- **Upcoming Events widget** — pulls from connected calendar feeds, shows next 30 days. "Manage Calendars" button (super_admin only). Click event opens EventDetailSheet with title, date/time, location, source, description.
+- **Volunteer hours tracking** — log hours, view detail overlay with entries by date, dashboard widget with real totals. Widget shows unique member count, progress bar when hours_goal > 0, spark line chart. Detail overlay role-gated: admins see all member entries, non-admins see only their own.
 - **Dynamic top bar** — org name and group name fetched from DB, update when admin changes them
-- **Connected Systems widget** — dynamic: NB shows real status (Functional/Error/Not Connected), Calendar reflects live feed state, Action Network/Mobilize: Not Connected
+- **Connected Systems widget** — dynamic: NB shows real status (Functional/Error/Not Connected), Calendar reflects live feed state, Action Network/Mobilize: Not Connected. AI Models and Image API rows visible to super_admin only. "Manage Integrations" button (super_admin only) links to admin Integrations tab.
 - **Fundraising goals** — targets (money_goal, money_budget) stored in `group_goals` table, admin-editable via Goals tab in Admin Panel. Monthly amount_raised tracked in `fundraising_goals`. Offline fundraising offset (`money_raised_offline`) added to displayed totals. FundraisingWidget reads targets from `group_goals`, no longer has inline edit.
 - **Recruitment goals** — members_goal and supporters_goal in `group_goals` table, admin-editable via Goals tab. RecruitmentGoalWidget uses dynamic DB values instead of hardcoded targets. Handles goal=0 gracefully (shows raw count, hides percentage).
-- **Admin Goals tab** — visible to both super_admin and group_admin. Two sections: Fundraising Goals (monthly target, print budget, offline offset) and Recruitment Goals (member/supporter targets). Inline edit pattern matching OrgTab.
+- **Admin Goals tab** — visible to both super_admin and group_admin. Three sections: Fundraising Goals (monthly target, print budget, offline offset), Recruitment Goals (member/supporter targets), and Volunteer Hours Goals (group hours target). Inline edit pattern matching OrgTab.
 - **Reimbursement requests** — submit with amount/description/attachment, approval workflow (pending→approved/changes_requested→resubmit), notifications to super_admin
 - **Activity log** — unified chronological timeline in Settings > Activity tab showing hours, approvals, signups, reimbursements with type tags
-- **Notification bar** — handles multiple notification types simultaneously (signups, approvals, reimbursements), uses real signup_assignments count, clickable signup count opens lightbox
+- **Notification bar** — handles multiple notification types simultaneously (signups, approvals, reimbursements), uses real signup_assignments count, clickable signup count opens lightbox. Session-based dismiss via sessionStorage (scoped to groupId, clears when browser tab closes).
 - **Group profile page** — `/group` route showing group name, description, member count, quick links. Group pill in top bar is clickable link.
 - **Group descriptions** — admin can edit in Organization tab, visible on group profile page
 - **Sidebar role display** — shows dynamic user role instead of hardcoded "Settings"
@@ -652,6 +659,8 @@ Desktop-first design. Mobile is out of scope for now.
 - **Media Library thumbnails**: Image and generated items show actual image thumbnails. Select mode with bulk delete.
 - **Energy consumption indicator** — estimated energy cost per AI-generated image based on Stanford/AXA "Energy Scaling Laws for Diffusion Models" (2025). Captures image dimensions from Railway API response (with fallback to request params). Displays collapsible "Energy estimate" below each generated image in bot chat and Media Library detail view. Shows Wh value, toggleable human-readable comparisons (Google searches, smartphone charging, LED bulb time), and research disclaimer. Pre-computed `energy_wh` stored in `media_items` for efficient aggregation. Migration 024.
 - **Notification bar follow-up guidance** — signup notification now reads "Follow up with them or reassign to another member in the next 48 hours" instead of just listing the count.
+- **Calendar sources group-scoped** — Migration 025 moved calendar_sources from org_id to group_id. All calendar API routes use `requireAuth()` + `group_id` filtering. `CalendarSource` type in `lib/types.ts`.
+- **Event detail sheet** — Clicking events in Upcoming Events widget opens EventDetailSheet (Shadcn Sheet) showing title, date/time, location, source, description. Fields hidden gracefully when empty.
 - Deployed on Railway with auto-deploy from `v2` branch
 
 ## What Still Needs Work (Prioritized)
@@ -742,7 +751,7 @@ Desktop-first design. Mobile is out of scope for now.
 - **Unconfigured bots** — Bots without a `model_id` return 503 `not_configured`. ChatView hides input and shows "This bot is not yet configured" message. No fallback.
 - **Connected Systems widget — AI Models** — Row added at top using Streamline `server-star-1` icon. Shows "Connected" / "Error" / "Not connected" based on `runpod_status` from `org_integrations`. Non-admin users see "Not connected" (403 from API handled gracefully).
 - **RightSidebar decomposition** — split into `RightSidebar.tsx` (529 lines: state, data fetching, layout management, modals) and `dashboard/WidgetGrid.tsx` (286 lines: grid rendering). All behavior preserved.
-- **requireAuth() migration status** — 3 routes use `requireAuth()` (actions, goals, reimbursements GET). 40 routes still use inline auth pattern. New routes should use `requireAuth()`. Incremental migration in future sessions.
+- **requireAuth() migration status** — 6 routes use `requireAuth()` (3 calendar routes, actions, goals, reimbursements GET). ~37 routes still use inline auth pattern. New routes should use `requireAuth()`. Incremental migration in future sessions.
 - **WelcomeHelper exhaustive-deps** — `src/components/WelcomeHelper.tsx:161` has eslint-disable for `react-hooks/exhaustive-deps`. Should be audited for stale closure bugs in a future session.
 - **⚠️ Image API token rotation required** — Token `sk-j6gKait8TE8ZkV3LrNPPYDHEAvM8zqVN` was exposed during testing. Must be rotated in Railway and the new token saved in org_integrations before production or demos. See `lib/image-tools.ts` header comment.
 - **Studio overlay one-way** — Members can edit images in the Railway Studio but results are not automatically saved back to the chat or Media Library. Requires a backend change on the Railway Studio side to support arbitrary callback URLs. When implemented, wire to a new POST `/api/image-tools/studio-callback` endpoint.
@@ -756,6 +765,16 @@ Desktop-first design. Mobile is out of scope for now.
 - **Both chat route and execute route store energy** — `/api/chat/route.ts` and `/api/image-tools/execute/route.ts` are two separate code paths that both call `executeImageTool()` and save to `media_items`. Both now capture dimensions + energy. If the save logic changes, update both.
 - **Bot model_id select bug fixed** — GET `/api/admin/bots` was missing `model_id` in its Supabase select. Bot Editor always showed "No model selected" even when a model was saved. Fixed — now includes `model_id` in both GET (list) and POST (create).
 - **All non-graphics bots set to ChangeAgent** — Done via direct SQL in Supabase: `UPDATE bots SET model_id = 'ChangeAgent' WHERE slug != 'graphics-creation'`.
+- **Image uploads not saved to Media Library** — User-uploaded reference images in chat (`/api/image-tools/upload` and chat route `preprocessMessages`) are no longer saved to `media_items`. Only AI-generated outputs (from `/api/image-tools/execute` and chat route tool execution) are saved. This prevents cluttering the Media Library with reference photos.
+- **Volunteer hours goal** — `hours_goal` integer column added to `group_goals` (via manual ALTER TABLE, no migration file). Admin-editable in Goals tab. Hours Volunteered widget shows progress bar when goal > 0, hidden when goal = 0. Progress bar uses `--widget-chart-hours` (#308C4F) with 20% opacity track.
+- **UserProfileContext includes groupId** — `groupId` now available in UserProfileContext, populated from `layout.tsx`. Used by NotificationBar for session-scoped dismiss. Other components can use it if needed.
+- **Hours detail overlay role-gated** — Non-admin users only see their own hour entries in the detail overlay. Admins (super_admin + group_admin) see all group member entries. Group totals visible to everyone.
+- **Directory widget "View All Members" button** — Links to `/members`, visible to all roles.
+- **temp-repo/** — Untracked directory containing a downloaded copy of the Railway Studio Next.js app. Causes build failures because Next.js picks up its `.tsx` files. Safe to delete.
+- **Calendar sources group-scoped (migration 025)** — `calendar_sources` now has `group_id` column. `org_id` column kept but no longer used as primary scope. All calendar API routes filter by `group_id`.
+- **Calendar RLS vs API role mismatch (intentional)** — RLS policies use `is_admin()` (super_admin + group_admin). API routes use `isSuperAdmin()` only. This is by design for future flexibility — documented in Conventions section. Do not "fix" by aligning them.
+- **Connected Systems widget "Google Calendar" label** — Hardcodes "Google Calendar" even though multiple calendar sources are supported. Should be renamed to "Calendar". One-line fix deferred to next session.
+- **EventDetailSheet has no "Open Event" button** — iCal parser (`lib/ical-parser.ts`) does not extract event URLs. If URL support is needed, the parser would need to handle the `URL` VEVENT property.
 
 ---
 

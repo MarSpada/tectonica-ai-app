@@ -1,6 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSuperAdmin } from "@/lib/constants/roles";
+import { requireAuth } from "@/lib/api-utils";
 
 // PATCH — update a calendar source (toggle enabled, rename, etc.)
 export async function PATCH(
@@ -9,20 +9,16 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { profile, supabase } = auth;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("org_id, role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.org_id || !isSuperAdmin(profile.role)) {
+    if (!isSuperAdmin(profile.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (!profile.group_id) {
+      return NextResponse.json({ error: "No group assigned" }, { status: 403 });
     }
 
     const body = await request.json();
@@ -37,7 +33,7 @@ export async function PATCH(
       .from("calendar_sources")
       .update(updates)
       .eq("id", id)
-      .eq("org_id", profile.org_id);
+      .eq("group_id", profile.group_id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });
@@ -54,27 +50,23 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { profile, supabase } = auth;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("org_id, role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.org_id || !isSuperAdmin(profile.role)) {
+    if (!isSuperAdmin(profile.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (!profile.group_id) {
+      return NextResponse.json({ error: "No group assigned" }, { status: 403 });
     }
 
     const { error } = await supabase
       .from("calendar_sources")
       .delete()
       .eq("id", id)
-      .eq("org_id", profile.org_id);
+      .eq("group_id", profile.group_id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });
