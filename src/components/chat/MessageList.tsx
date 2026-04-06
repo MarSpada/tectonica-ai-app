@@ -135,6 +135,15 @@ function ThinkingIndicator() {
   );
 }
 
+/** Strip [CREATIVE BRIEF IN PROGRESS] and [REQ:...] tags from visible text */
+function stripBriefTags(text: string): string {
+  return text
+    .replace(/\[CREATIVE BRIEF IN PROGRESS\]/g, "")
+    .replace(/\[REQ:[^\]]*\]/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 /** Strip markdown table syntax that leaks from gallery responses */
 function stripMarkdownTableSyntax(text: string): string {
   return text
@@ -380,7 +389,7 @@ export default function MessageList({
                 }}
               >
                 {msg.role === "assistant"
-                  ? renderContent(msg.content, onOpenStudio, onStyleSelect)
+                  ? renderContent(stripBriefTags(msg.content), onOpenStudio, onStyleSelect)
                   : msg.content}
                 {msg.role === "assistant" &&
                   isStreaming &&

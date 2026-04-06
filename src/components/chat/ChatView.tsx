@@ -10,6 +10,7 @@ import ChatInput from "./ChatInput";
 import RecentConversations from "./RecentConversations";
 import StudioOverlay from "./StudioOverlay";
 import { Icon } from "@/components/ui/icon";
+import { parseRequirements } from "./CreativeBrief";
 
 interface ChatViewProps {
   bot: Bot;
@@ -314,6 +315,7 @@ export default function ChatView({
         currentConversationId={conversationId}
         onSelect={loadConversation}
         onNewChat={startNewChat}
+        briefRequirements={parseRequirements(messages)}
       />
 
       {/* Studio overlay */}

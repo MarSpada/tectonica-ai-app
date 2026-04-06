@@ -1,10 +1,13 @@
 "use client";
 
+import CreativeBrief, { type BriefRequirement } from "./CreativeBrief";
+
 interface RecentConversationsProps {
   conversations: Array<{ id: string; title: string; updated_at: string }>;
   currentConversationId: string | null;
   onSelect: (conversationId: string) => void;
   onNewChat: () => void;
+  briefRequirements?: BriefRequirement[];
 }
 
 export default function RecentConversations({
@@ -12,6 +15,7 @@ export default function RecentConversations({
   currentConversationId,
   onSelect,
   onNewChat,
+  briefRequirements = [],
 }: RecentConversationsProps) {
   return (
     <aside className="w-[260px] border-l border-card-stroke bg-card-bg/50 backdrop-blur-md flex flex-col h-full">
@@ -26,6 +30,9 @@ export default function RecentConversations({
           New Chat
         </button>
       </div>
+
+      {/* Creative Brief — shown when requirements are being tracked */}
+      <CreativeBrief requirements={briefRequirements} />
 
       <div className="flex-1 overflow-y-auto">
         {conversations.length === 0 ? (
