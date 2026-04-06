@@ -315,6 +315,9 @@ export default function ChatView({
               onStyleSelect={isImageBot ? (styleName) => {
                 sendMessage(`I'd like the ${styleName} style`);
               } : undefined}
+              onTryAgain={isImageBot ? () => {
+                sendMessage("Generate another version of this image");
+              } : undefined}
             />
             <ChatInput
               value={input}

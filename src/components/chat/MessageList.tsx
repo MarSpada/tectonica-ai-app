@@ -13,6 +13,7 @@ interface MessageListProps {
   isGeneratingImage?: boolean;
   onOpenStudio?: (imageUrl: string) => void;
   onStyleSelect?: (styleName: string) => void;
+  onTryAgain?: () => void;
 }
 
 // Parse image markdown: ![alt](url)
@@ -27,7 +28,7 @@ interface ParsedImage {
 // Gallery marker pattern: __GALLERY__{...}__END_GALLERY__
 const GALLERY_REGEX = /__GALLERY__([\s\S]*?)__END_GALLERY__/g;
 
-function renderContent(content: string, onOpenStudio?: (imageUrl: string) => void, onStyleSelect?: (styleName: string) => void) {
+function renderContent(content: string, onOpenStudio?: (imageUrl: string) => void, onStyleSelect?: (styleName: string) => void, onTryAgain?: () => void) {
   const parts: React.ReactNode[] = [];
 
   // Check for gallery markers first (sent as special SSE events)
@@ -112,6 +113,7 @@ function renderContent(content: string, onOpenStudio?: (imageUrl: string) => voi
         url={match[2]}
         alt={match[1]}
         onOpenStudio={onOpenStudio}
+        onTryAgain={onTryAgain}
       />
     );
 
@@ -290,10 +292,12 @@ function ImageMessage({
   url,
   alt,
   onOpenStudio,
+  onTryAgain,
 }: {
   url: string;
   alt: string;
   onOpenStudio?: (imageUrl: string) => void;
+  onTryAgain?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -311,14 +315,27 @@ function ImageMessage({
             loading="lazy"
           />
         </button>
-        {onOpenStudio && (
-          <button
-            onClick={() => onOpenStudio(url)}
-            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-accent-purple/10 text-accent-purple hover:bg-accent-purple/20 transition-colors"
-          >
-            <Icon name="bot-graphics" size={14} />
-            Open in Studio
-          </button>
+        {(onOpenStudio || onTryAgain) && (
+          <div className="flex items-center gap-2 mt-2">
+            {onOpenStudio && (
+              <button
+                onClick={() => onOpenStudio(url)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-accent-purple/10 text-accent-purple hover:bg-accent-purple/20 transition-colors"
+              >
+                <Icon name="bot-graphics" size={14} />
+                Open in Studio
+              </button>
+            )}
+            {onTryAgain && (
+              <button
+                onClick={onTryAgain}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-black/5 text-text-secondary hover:bg-black/10 transition-colors"
+              >
+                <Icon name="refresh" size={14} />
+                Try again
+              </button>
+            )}
+          </div>
         )}
       </div>
       {expanded && (
@@ -351,6 +368,7 @@ export default function MessageList({
   isGeneratingImage,
   onOpenStudio,
   onStyleSelect,
+  onTryAgain,
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -407,7 +425,7 @@ export default function MessageList({
                 }}
               >
                 {msg.role === "assistant"
-                  ? renderContent(stripBriefTags(msg.content), onOpenStudio, onStyleSelect)
+                  ? renderContent(stripBriefTags(msg.content), onOpenStudio, onStyleSelect, onTryAgain)
                   : renderUserContent(msg.content)}
                 {msg.role === "assistant" &&
                   isStreaming &&
