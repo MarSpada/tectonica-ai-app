@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { type Message } from "@/lib/types";
 import { type Bot, categoryMeta } from "@/lib/bots";
 import { Icon } from "@/components/ui/icon";
@@ -14,6 +15,8 @@ interface MessageListProps {
   onOpenStudio?: (imageUrl: string) => void;
   onStyleSelect?: (styleName: string) => void;
   onTryAgain?: () => void;
+  onRequestApproval?: (imageUrl: string) => void;
+  onShareToChat?: (imageUrl: string) => void;
 }
 
 // Parse image markdown: ![alt](url)
@@ -28,7 +31,14 @@ interface ParsedImage {
 // Gallery marker pattern: __GALLERY__{...}__END_GALLERY__
 const GALLERY_REGEX = /__GALLERY__([\s\S]*?)__END_GALLERY__/g;
 
-function renderContent(content: string, onOpenStudio?: (imageUrl: string) => void, onStyleSelect?: (styleName: string) => void, onTryAgain?: () => void) {
+function renderContent(
+  content: string,
+  onOpenStudio?: (imageUrl: string) => void,
+  onStyleSelect?: (styleName: string) => void,
+  onTryAgain?: () => void,
+  onRequestApproval?: (imageUrl: string) => void,
+  onShareToChat?: (imageUrl: string) => void,
+) {
   const parts: React.ReactNode[] = [];
 
   // Check for gallery markers first (sent as special SSE events)
@@ -114,6 +124,8 @@ function renderContent(content: string, onOpenStudio?: (imageUrl: string) => voi
         alt={match[1]}
         onOpenStudio={onOpenStudio}
         onTryAgain={onTryAgain}
+        onRequestApproval={onRequestApproval}
+        onShareToChat={onShareToChat}
       />
     );
 
@@ -134,6 +146,32 @@ function ThinkingIndicator() {
       <div className="w-4 h-4 border-2 border-accent-purple/30 border-t-accent-purple rounded-full animate-spin" />
       <span className="text-xs">Thinking of recommended styles for your request...</span>
     </div>
+  );
+}
+
+function ImageActionButton({
+  icon,
+  label,
+  onClick,
+  variant = "default",
+}: {
+  icon: string;
+  label: string;
+  onClick: () => void;
+  variant?: "default" | "purple";
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-medium rounded-lg transition-colors whitespace-nowrap ${
+        variant === "purple"
+          ? "bg-accent-purple/10 text-accent-purple hover:bg-accent-purple/20"
+          : "bg-black/5 text-text-secondary hover:bg-black/10"
+      }`}
+    >
+      <Icon name={icon as import("@/lib/icon-map").IconName} size={12} />
+      {label}
+    </button>
   );
 }
 
@@ -293,59 +331,75 @@ function ImageMessage({
   alt,
   onOpenStudio,
   onTryAgain,
+  onRequestApproval,
+  onShareToChat,
 }: {
   url: string;
   alt: string;
   onOpenStudio?: (imageUrl: string) => void;
   onTryAgain?: () => void;
+  onRequestApproval?: (imageUrl: string) => void;
+  onShareToChat?: (imageUrl: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const hasActions = onOpenStudio || onTryAgain || onRequestApproval || onShareToChat;
 
   return (
     <>
-      <div className="my-2">
+      <div className={`my-2 ${hasActions ? "flex items-start gap-3" : ""}`}>
         <button
           onClick={() => setExpanded(true)}
-          className="block cursor-pointer"
+          className="block cursor-pointer shrink-0"
         >
           <img
             src={url}
             alt={alt || "Generated image"}
-            className="rounded-xl max-w-full max-h-80 border border-black/10 hover:shadow-lg transition-shadow"
+            className="rounded-xl max-h-72 border border-black/10 hover:shadow-lg transition-shadow"
             loading="lazy"
           />
         </button>
-        {(onOpenStudio || onTryAgain) && (
-          <div className="flex items-center gap-2 mt-2">
+        {hasActions && (
+          <div className="flex flex-col gap-1.5 pt-1">
             {onOpenStudio && (
-              <button
+              <ImageActionButton
+                icon="bot-graphics"
+                label="Studio"
                 onClick={() => onOpenStudio(url)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-accent-purple/10 text-accent-purple hover:bg-accent-purple/20 transition-colors"
-              >
-                <Icon name="bot-graphics" size={14} />
-                Open in Studio
-              </button>
+                variant="purple"
+              />
             )}
             {onTryAgain && (
-              <button
+              <ImageActionButton
+                icon="refresh"
+                label="Try again"
                 onClick={onTryAgain}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-black/5 text-text-secondary hover:bg-black/10 transition-colors"
-              >
-                <Icon name="refresh" size={14} />
-                Try again
-              </button>
+              />
+            )}
+            {onRequestApproval && (
+              <ImageActionButton
+                icon="widget-approval"
+                label="Request approval"
+                onClick={() => onRequestApproval(url)}
+              />
+            )}
+            {onShareToChat && (
+              <ImageActionButton
+                icon="share"
+                label="Share to group"
+                onClick={() => onShareToChat(url)}
+              />
             )}
           </div>
         )}
       </div>
-      {expanded && (
+      {expanded && createPortal(
         <div
-          className="fixed inset-0 z-40 bg-black/90 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
           onClick={() => setExpanded(false)}
         >
           <button
-            onClick={() => setExpanded(false)}
-            className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
+            onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
+            className="absolute top-4 right-4 z-[101] w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
           >
             <Icon name="close" size={24} color="#ffffff" />
           </button>
@@ -353,8 +407,10 @@ function ImageMessage({
             src={url}
             alt={alt || "Generated image"}
             className="max-w-[90vw] max-h-[90vh] object-contain rounded-xl"
+            onClick={(e) => e.stopPropagation()}
           />
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
@@ -369,6 +425,8 @@ export default function MessageList({
   onOpenStudio,
   onStyleSelect,
   onTryAgain,
+  onRequestApproval,
+  onShareToChat,
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -425,7 +483,7 @@ export default function MessageList({
                 }}
               >
                 {msg.role === "assistant"
-                  ? renderContent(stripBriefTags(msg.content), onOpenStudio, onStyleSelect, onTryAgain)
+                  ? renderContent(stripBriefTags(msg.content), onOpenStudio, onStyleSelect, onTryAgain, onRequestApproval, onShareToChat)
                   : renderUserContent(msg.content)}
                 {msg.role === "assistant" &&
                   isStreaming &&

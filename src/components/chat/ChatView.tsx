@@ -11,6 +11,7 @@ import RecentConversations from "./RecentConversations";
 import StudioOverlay from "./StudioOverlay";
 import { Icon } from "@/components/ui/icon";
 import { parseRequirements } from "./CreativeBrief";
+import CreateApprovalModal from "@/components/approvals/CreateApprovalModal";
 
 interface ChatViewProps {
   bot: Bot;
@@ -38,6 +39,7 @@ export default function ChatView({
   const [mostRecentImageUrl, setMostRecentImageUrl] = useState<string | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [showStudio, setShowStudio] = useState(false);
+  const [approvalImageUrl, setApprovalImageUrl] = useState<string | null>(null);
 
   const sendMessage = useCallback(async (messageContent?: string) => {
     const content = messageContent || input.trim();
@@ -249,6 +251,32 @@ export default function ChatView({
     }
   }
 
+  async function handleShareToChat(imageUrl: string) {
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("group_id")
+        .eq("id", user.id)
+        .single();
+      if (!profile?.group_id) return;
+
+      await supabase.from("group_messages").insert({
+        group_id: profile.group_id,
+        sender_id: user.id,
+        content: `![Shared from Graphics Creation](${imageUrl})`,
+      });
+
+      // Brief visual feedback
+      alert("Image shared to group chat!");
+    } catch {
+      alert("Failed to share image. Please try again.");
+    }
+  }
+
   async function handleDeleteConversation(convId: string) {
     try {
       const supabase = createClient();
@@ -318,6 +346,10 @@ export default function ChatView({
               onTryAgain={isImageBot ? () => {
                 sendMessage("Generate another version of this image");
               } : undefined}
+              onRequestApproval={isImageBot ? (imageUrl) => {
+                setApprovalImageUrl(imageUrl);
+              } : undefined}
+              onShareToChat={isImageBot ? handleShareToChat : undefined}
             />
             <ChatInput
               value={input}
@@ -342,6 +374,16 @@ export default function ChatView({
         briefRequirements={parseRequirements(messages)}
         isImageBot={isImageBot}
       />
+
+      {/* Approval modal — pre-filled with image */}
+      {approvalImageUrl && (
+        <CreateApprovalModal
+          onClose={() => setApprovalImageUrl(null)}
+          onCreated={() => setApprovalImageUrl(null)}
+          prefilledTitle={`Generated image — ${bot.name}`}
+          prefilledImageUrl={approvalImageUrl}
+        />
+      )}
 
       {/* Studio overlay */}
       {showStudio && (

@@ -33,6 +33,8 @@ interface PendingFile {
 interface CreateApprovalModalProps {
   onClose: () => void;
   onCreated: () => void;
+  prefilledTitle?: string;
+  prefilledImageUrl?: string;
 }
 
 const ALLOWED_TYPES = [
@@ -46,9 +48,11 @@ const ALLOWED_TYPES = [
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-export default function CreateApprovalModal({ onClose, onCreated }: CreateApprovalModalProps) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+export default function CreateApprovalModal({ onClose, onCreated, prefilledTitle, prefilledImageUrl }: CreateApprovalModalProps) {
+  const [title, setTitle] = useState(prefilledTitle || "");
+  const [description, setDescription] = useState(
+    prefilledImageUrl ? `Generated image for review:\n${prefilledImageUrl}` : ""
+  );
   const [reviewerId, setReviewerId] = useState("");
   const [reviewers, setReviewers] = useState<Reviewer[]>([]);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
@@ -193,6 +197,17 @@ export default function CreateApprovalModal({ onClose, onCreated }: CreateApprov
         <div className="space-y-4 max-h-[60vh] overflow-y-auto -mx-4 px-4">
           {error && (
             <div className="px-3 py-2 text-xs text-red-700 bg-red-50 rounded-lg">{error}</div>
+          )}
+
+          {/* Prefilled image preview */}
+          {prefilledImageUrl && (
+            <div className="rounded-lg overflow-hidden border border-black/10">
+              <img
+                src={prefilledImageUrl}
+                alt="Image for approval"
+                className="w-full max-h-48 object-contain bg-black/5"
+              />
+            </div>
           )}
 
           {/* Title */}
