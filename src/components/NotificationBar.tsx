@@ -105,9 +105,10 @@ export default function NotificationBar() {
                 >
                   {assignmentCount} new signup{assignmentCount !== 1 ? "s" : ""}
                 </button>
+                . Follow up with them or reassign to another member in the next 48 hours
               </>
             )}
-            {assignmentCount > 0 && (approvalCount > 0 || reimbursementCount > 0) && ", "}
+            {assignmentCount > 0 && (approvalCount > 0 || reimbursementCount > 0) && ". Also: "}
             {approvalCount > 0 && (
               <Link href="/settings?tab=approvals" className="underline hover:no-underline">
                 <strong>{approvalCount}</strong> approval update{approvalCount !== 1 ? "s" : ""}
