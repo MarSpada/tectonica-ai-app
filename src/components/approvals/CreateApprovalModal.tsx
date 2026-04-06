@@ -201,12 +201,17 @@ export default function CreateApprovalModal({ onClose, onCreated, prefilledTitle
 
           {/* Prefilled image preview */}
           {prefilledImageUrl && (
-            <div className="rounded-lg overflow-hidden border border-black/10">
-              <img
-                src={prefilledImageUrl}
-                alt="Image for approval"
-                className="w-full max-h-48 object-contain bg-black/5"
-              />
+            <div>
+              <label className="block text-xs font-semibold text-text-primary mb-1">
+                Asset
+              </label>
+              <div className="rounded-lg overflow-hidden border border-black/10 bg-black/5">
+                <img
+                  src={prefilledImageUrl}
+                  alt="Image for approval"
+                  className="w-full max-h-40 object-contain"
+                />
+              </div>
             </div>
           )}
 
@@ -224,16 +229,16 @@ export default function CreateApprovalModal({ onClose, onCreated, prefilledTitle
             />
           </div>
 
-          {/* Description */}
+          {/* Description / Notes */}
           <div>
             <label className="block text-xs font-semibold text-text-primary mb-1">
-              Description
+              {prefilledImageUrl ? "Notes" : "Description"}
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe your idea or asset..."
-              rows={4}
+              placeholder={prefilledImageUrl ? "Add any notes for the reviewer..." : "Describe your idea or asset..."}
+              rows={prefilledImageUrl ? 2 : 4}
               maxLength={2000}
               className="w-full px-3 py-2 text-sm border border-black/10 rounded-lg resize-none focus:outline-none focus:ring-1 focus:ring-accent-purple"
             />
@@ -286,8 +291,8 @@ export default function CreateApprovalModal({ onClose, onCreated, prefilledTitle
             </div>
           </div>
 
-          {/* File Upload */}
-          <div>
+          {/* File Upload — hidden when image is pre-filled */}
+          {!prefilledImageUrl && <div>
             <label className="block text-xs font-semibold text-text-primary mb-1">
               Attachments
             </label>
@@ -329,7 +334,7 @@ export default function CreateApprovalModal({ onClose, onCreated, prefilledTitle
                 ))}
               </div>
             )}
-          </div>
+          </div>}
         </div>
 
         <DialogFooter>
