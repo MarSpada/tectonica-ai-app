@@ -251,6 +251,8 @@ export default function ChatView({
     }
   }
 
+  const [shareConfirmUrl, setShareConfirmUrl] = useState<string | null>(null);
+
   async function handleShareToChat(imageUrl: string) {
     try {
       const supabase = createClient();
@@ -270,10 +272,11 @@ export default function ChatView({
         content: `![Shared from Graphics Creation](${imageUrl})`,
       });
 
-      // Brief visual feedback
-      alert("Image shared to group chat!");
+      // Show inline confirmation
+      setShareConfirmUrl(imageUrl);
+      setTimeout(() => setShareConfirmUrl(null), 3000);
     } catch {
-      alert("Failed to share image. Please try again.");
+      // Silently fail
     }
   }
 

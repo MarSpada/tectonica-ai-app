@@ -154,23 +154,37 @@ function ImageActionButton({
   label,
   onClick,
   variant = "default",
+  confirmLabel,
 }: {
   icon: string;
   label: string;
   onClick: () => void;
   variant?: "default" | "purple";
+  confirmLabel?: string;
 }) {
+  const [confirmed, setConfirmed] = useState(false);
+
+  function handleClick() {
+    onClick();
+    if (confirmLabel) {
+      setConfirmed(true);
+      setTimeout(() => setConfirmed(false), 3000);
+    }
+  }
+
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-medium rounded-lg transition-colors whitespace-nowrap ${
-        variant === "purple"
-          ? "bg-accent-purple/10 text-accent-purple hover:bg-accent-purple/20"
-          : "bg-black/5 text-text-secondary hover:bg-black/10"
+        confirmed
+          ? "bg-green-50 text-green-600"
+          : variant === "purple"
+            ? "bg-accent-purple/10 text-accent-purple hover:bg-accent-purple/20"
+            : "bg-black/5 text-text-secondary hover:bg-black/10"
       }`}
     >
-      <Icon name={icon as import("@/lib/icon-map").IconName} size={12} />
-      {label}
+      <Icon name={confirmed ? "check" as import("@/lib/icon-map").IconName : icon as import("@/lib/icon-map").IconName} size={12} />
+      {confirmed ? confirmLabel : label}
     </button>
   );
 }
@@ -386,6 +400,7 @@ function ImageMessage({
               <ImageActionButton
                 icon="share"
                 label="Share to group"
+                confirmLabel="Shared!"
                 onClick={() => onShareToChat(url)}
               />
             )}

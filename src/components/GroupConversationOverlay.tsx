@@ -1,22 +1,52 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { getAvatarColor, getInitials } from "@/lib/avatar";
 import type { GroupMessage } from "@/lib/types";
 import { Icon } from "@/components/ui/icon";
 
 const IMAGE_MD_REGEX = /^!\[([^\]]*)\]\(([^)]+)\)$/;
 
+function GroupImage({ src, alt }: { src: string; alt: string }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <>
+      <button onClick={() => setExpanded(true)} className="block cursor-pointer">
+        <img
+          src={src}
+          alt={alt || "Shared image"}
+          className="rounded-lg max-w-[240px] max-h-[180px] object-cover hover:shadow-lg transition-shadow"
+        />
+      </button>
+      {expanded && createPortal(
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setExpanded(false)}
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
+            className="absolute top-4 right-4 z-[101] w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
+          >
+            <Icon name="close" size={24} color="#ffffff" />
+          </button>
+          <img
+            src={src}
+            alt={alt || "Shared image"}
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
 function renderGroupMessageContent(content: string) {
   const match = content.match(IMAGE_MD_REGEX);
   if (match) {
-    return (
-      <img
-        src={match[2]}
-        alt={match[1] || "Shared image"}
-        className="rounded-lg max-w-[240px] max-h-[180px] object-cover"
-      />
-    );
+    return <GroupImage src={match[2]} alt={match[1]} />;
   }
   return content;
 }
