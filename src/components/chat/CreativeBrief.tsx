@@ -104,7 +104,9 @@ export default function CreativeBrief({ requirements }: CreativeBriefProps) {
             ({requirements.length})
           </span>
         </h2>
-        <Icon name={collapsed ? "arrow-down" : "arrow-up"} size={10} className="opacity-40" />
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className={`transition-transform opacity-40 ${collapsed ? "" : "rotate-180"}`}>
+          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </button>
       {!collapsed && (
         <div className="px-4 pb-3 space-y-2">

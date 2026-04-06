@@ -2,6 +2,20 @@
 
 import { useState } from "react";
 import { Icon } from "@/components/ui/icon";
+
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 10 10"
+      fill="none"
+      className={`transition-transform ${open ? "rotate-180" : ""}`}
+    >
+      <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 import CreativeBrief, { SavedBriefs, type BriefRequirement } from "./CreativeBrief";
 
 const MAX_VISIBLE = 10;
@@ -84,7 +98,7 @@ export default function RecentConversations({
                 Past Chats
                 <span className="font-normal ml-1">({conversations.length})</span>
               </h3>
-              <Icon name={chatsExpanded ? "arrow-up" : "arrow-down"} size={10} className="opacity-40" />
+              <Chevron open={chatsExpanded} />
             </button>
             {chatsExpanded && visibleConversations.map((conv) => (
               <div
@@ -99,7 +113,7 @@ export default function RecentConversations({
                   onClick={() => onSelect(conv.id)}
                   className="flex-1 text-left px-4 py-2.5"
                 >
-                  <p className="text-xs font-semibold text-text-primary truncate pr-6">
+                  <p className="text-xs font-semibold text-text-primary truncate pr-8">
                     {conv.title || "Untitled"}
                   </p>
                   <p className="text-[10px] text-text-muted mt-0.5">
