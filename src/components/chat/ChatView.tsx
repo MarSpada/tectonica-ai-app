@@ -249,6 +249,25 @@ export default function ChatView({
     }
   }
 
+  async function handleDeleteConversation(convId: string) {
+    try {
+      const supabase = createClient();
+      // Delete messages first (FK constraint), then conversation
+      await supabase.from("messages").delete().eq("conversation_id", convId);
+      await supabase.from("conversations").delete().eq("id", convId);
+      // Remove from local state
+      setConversations((prev) => prev.filter((c) => c.id !== convId));
+      // If the deleted conversation is the current one, start fresh
+      if (conversationId === convId) {
+        setMessages([]);
+        setConversationId(null);
+        setMostRecentImageUrl(null);
+      }
+    } catch {
+      // Silently fail — conversation may already be gone
+    }
+  }
+
   function startNewChat() {
     setMessages([]);
     setConversationId(null);
@@ -315,7 +334,9 @@ export default function ChatView({
         currentConversationId={conversationId}
         onSelect={loadConversation}
         onNewChat={startNewChat}
+        onDeleteConversation={handleDeleteConversation}
         briefRequirements={parseRequirements(messages)}
+        isImageBot={isImageBot}
       />
 
       {/* Studio overlay */}

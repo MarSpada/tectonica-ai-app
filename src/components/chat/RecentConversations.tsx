@@ -1,13 +1,19 @@
 "use client";
 
-import CreativeBrief, { type BriefRequirement } from "./CreativeBrief";
+import { useState } from "react";
+import { Icon } from "@/components/ui/icon";
+import CreativeBrief, { SavedBriefs, type BriefRequirement } from "./CreativeBrief";
+
+const MAX_VISIBLE = 10;
 
 interface RecentConversationsProps {
   conversations: Array<{ id: string; title: string; updated_at: string }>;
   currentConversationId: string | null;
   onSelect: (conversationId: string) => void;
   onNewChat: () => void;
+  onDeleteConversation?: (conversationId: string) => void;
   briefRequirements?: BriefRequirement[];
+  isImageBot?: boolean;
 }
 
 export default function RecentConversations({
@@ -15,8 +21,32 @@ export default function RecentConversations({
   currentConversationId,
   onSelect,
   onNewChat,
+  onDeleteConversation,
   briefRequirements = [],
+  isImageBot = false,
 }: RecentConversationsProps) {
+  const [showAll, setShowAll] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const visibleConversations = showAll
+    ? conversations
+    : conversations.slice(0, MAX_VISIBLE);
+  const hasMore = conversations.length > MAX_VISIBLE;
+
+  function handleDelete(e: React.MouseEvent, convId: string) {
+    e.stopPropagation();
+    if (deletingId === convId) {
+      // Second click = confirm
+      onDeleteConversation?.(convId);
+      setDeletingId(null);
+    } else {
+      // First click = show confirm state
+      setDeletingId(convId);
+      // Auto-reset after 3 seconds
+      setTimeout(() => setDeletingId((prev) => (prev === convId ? null : prev)), 3000);
+    }
+  }
+
   return (
     <aside className="w-[260px] border-l border-card-stroke bg-card-bg/50 backdrop-blur-md flex flex-col h-full">
       <div className="px-4 py-3 border-b border-card-stroke flex items-center justify-between">
@@ -31,9 +61,13 @@ export default function RecentConversations({
         </button>
       </div>
 
-      {/* Creative Brief — shown when requirements are being tracked */}
+      {/* Creative Brief — live from [REQ:] tags */}
       <CreativeBrief requirements={briefRequirements} />
 
+      {/* Saved Briefs — only for image-capable bots */}
+      <SavedBriefs isImageBot={isImageBot} />
+
+      {/* Conversation list */}
       <div className="flex-1 overflow-y-auto">
         {conversations.length === 0 ? (
           <p className="px-4 py-6 text-xs text-text-muted text-center">
@@ -41,24 +75,51 @@ export default function RecentConversations({
           </p>
         ) : (
           <div className="py-1">
-            {conversations.map((conv) => (
-              <button
+            {visibleConversations.map((conv) => (
+              <div
                 key={conv.id}
-                onClick={() => onSelect(conv.id)}
-                className={`w-full text-left px-4 py-2.5 transition-colors ${
+                className={`group relative flex items-center transition-colors ${
                   conv.id === currentConversationId
                     ? "bg-accent-purple/10"
                     : "hover:bg-black/3"
                 }`}
               >
-                <p className="text-xs font-semibold text-text-primary truncate">
-                  {conv.title || "Untitled"}
-                </p>
-                <p className="text-[10px] text-text-muted mt-0.5">
-                  {formatRelativeTime(conv.updated_at)}
-                </p>
-              </button>
+                <button
+                  onClick={() => onSelect(conv.id)}
+                  className="flex-1 text-left px-4 py-2.5"
+                >
+                  <p className="text-xs font-semibold text-text-primary truncate pr-6">
+                    {conv.title || "Untitled"}
+                  </p>
+                  <p className="text-[10px] text-text-muted mt-0.5">
+                    {formatRelativeTime(conv.updated_at)}
+                  </p>
+                </button>
+                {/* Delete button — visible on hover */}
+                {onDeleteConversation && (
+                  <button
+                    onClick={(e) => handleDelete(e, conv.id)}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex items-center justify-center transition-all ${
+                      deletingId === conv.id
+                        ? "bg-red-100 text-red-600 opacity-100"
+                        : "opacity-0 group-hover:opacity-100 hover:bg-red-50 text-text-muted hover:text-red-500"
+                    }`}
+                    title={deletingId === conv.id ? "Click again to confirm" : "Delete conversation"}
+                  >
+                    <Icon name={deletingId === conv.id ? "check" : "close"} size={12} />
+                  </button>
+                )}
+              </div>
             ))}
+            {/* Show all / Show less */}
+            {hasMore && (
+              <button
+                onClick={() => setShowAll(!showAll)}
+                className="w-full px-4 py-2 text-[10px] font-medium text-accent-purple hover:underline text-center"
+              >
+                {showAll ? "Show less" : `Show all ${conversations.length} conversations`}
+              </button>
+            )}
           </div>
         )}
       </div>
