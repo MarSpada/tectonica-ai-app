@@ -46,21 +46,30 @@ function renderContent(content: string, onOpenStudio?: (imageUrl: string) => voi
   );
 
   if (isStyleGallery) {
-    // Render text before the first image
-    const textBefore = content.slice(0, images[0].index).trim();
-    if (textBefore) {
-      parts.push(<span key="text-before">{renderTextContent(textBefore)}</span>);
-    }
+    // Detect if this is a substyle gallery (title contains " — Substyles")
+    const isSubstyle = content.includes("— Substyles");
+    const galleryTitle = isSubstyle
+      ? "Choose a substyle:"
+      : "Choose a style for your image:";
+
+    // Strip the markdown table text before the images — replace with clean title
+    parts.push(
+      <span key="gallery-title" className="block text-sm font-medium text-text-primary mb-2">
+        {galleryTitle}
+      </span>
+    );
 
     // Render images as a style gallery grid
     parts.push(
       <StyleGallery key="gallery" images={images} onSelect={onStyleSelect} />
     );
 
-    // Render text after the last image
+    // Render only the text AFTER all images, stripping markdown table remnants
     const lastImg = images[images.length - 1];
     const lastImgEnd = content.indexOf(")", lastImg.index) + 1;
-    const textAfter = content.slice(lastImgEnd).trim();
+    let textAfter = content.slice(lastImgEnd).trim();
+    // Strip leftover markdown table syntax (pipes, dashes, newlines)
+    textAfter = textAfter.replace(/^[\s|*\-_\n]+/, "").trim();
     if (textAfter) {
       parts.push(<span key="text-after">{renderTextContent(textAfter)}</span>);
     }
@@ -115,21 +124,49 @@ function renderTextContent(text: string): React.ReactNode {
 
 function StyleGallery({ images, onSelect }: { images: ParsedImage[]; onSelect?: (styleName: string) => void }) {
   const [selected, setSelected] = useState<string | null>(null);
+  const [loadedCount, setLoadedCount] = useState(0);
+  const allLoaded = loadedCount >= images.length;
+
+  // Preload all images
+  useEffect(() => {
+    setLoadedCount(0);
+    images.forEach((img) => {
+      const image = new Image();
+      image.onload = () => setLoadedCount((c) => c + 1);
+      image.onerror = () => setLoadedCount((c) => c + 1);
+      image.src = img.url;
+    });
+  }, [images]);
+
+  // Determine grid columns based on image count
+  const cols = images.length <= 3 ? "grid-cols-3" : images.length <= 4 ? "grid-cols-4" : "grid-cols-5";
+
+  if (!allLoaded) {
+    return (
+      <div className="my-3">
+        <div className={`grid ${cols} gap-2.5`}>
+          {images.map((_, i) => (
+            <div key={i} className="rounded-xl aspect-[4/3] bg-black/5 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="my-3">
-      <div className="grid grid-cols-5 gap-2">
+      <div className={`grid ${cols} gap-2.5`}>
         {images.map((img, i) => {
           const isSelected = selected === img.alt;
           return (
             <button
               key={i}
-              className={`group relative rounded-xl overflow-hidden aspect-square bg-black/5 transition-all ${
+              className={`group relative rounded-xl overflow-hidden aspect-[4/3] bg-black/5 transition-all duration-200 ${
                 isSelected
-                  ? "ring-2 ring-accent-purple scale-[1.03] shadow-lg"
+                  ? "ring-2 ring-accent-purple shadow-lg scale-[1.02]"
                   : selected
-                    ? "opacity-50 hover:opacity-80"
-                    : "hover:ring-2 hover:ring-accent-purple/50"
+                    ? "opacity-40 hover:opacity-70"
+                    : "hover:shadow-md hover:scale-[1.01]"
               }`}
               onClick={() => {
                 setSelected(img.alt);
@@ -140,27 +177,21 @@ function StyleGallery({ images, onSelect }: { images: ParsedImage[]; onSelect?: 
                 src={img.url}
                 alt={img.alt}
                 className="w-full h-full object-cover"
-                loading="lazy"
               />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
-                <p className="text-[10px] font-bold text-white uppercase leading-tight">
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-2.5 pb-2 pt-8">
+                <p className="text-[11px] font-semibold text-white leading-tight drop-shadow-sm">
                   {img.alt}
                 </p>
               </div>
               {isSelected && (
-                <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-accent-purple flex items-center justify-center">
-                  <Icon name="check" size={12} color="#ffffff" />
+                <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-accent-purple flex items-center justify-center shadow-md">
+                  <Icon name="check" size={14} color="#ffffff" />
                 </div>
               )}
             </button>
           );
         })}
       </div>
-      {selected && (
-        <p className="text-xs text-accent-purple font-medium mt-2">
-          Selected: {selected}
-        </p>
-      )}
     </div>
   );
 }
