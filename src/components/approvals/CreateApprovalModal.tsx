@@ -292,50 +292,51 @@ export default function CreateApprovalModal({ onClose, onCreated, prefilledTitle
           </div>
 
           {/* File Upload — hidden when image is pre-filled */}
-          {!prefilledImageUrl && <div>
-            <label className="block text-xs font-semibold text-text-primary mb-1">
-              Attachments
-            </label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept=".jpg,.jpeg,.png,.webp,.pdf,.docx,.txt"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-3 border-2 border-dashed border-black/10 rounded-lg text-xs text-text-muted hover:border-accent-purple hover:text-accent-purple transition-colors"
-            >
-              <Icon name="upload" size={18} />
-              Click to attach files (images, PDFs, docs — max 5MB each)
-            </button>
+          {!prefilledImageUrl && (
+            <div>
+              <label className="block text-xs font-semibold text-text-primary mb-1">
+                Attachments
+              </label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".jpg,.jpeg,.png,.webp,.pdf,.docx,.txt"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-3 border-2 border-dashed border-black/10 rounded-lg text-xs text-text-muted hover:border-accent-purple hover:text-accent-purple transition-colors"
+              >
+                <Icon name="upload" size={18} />
+                Click to attach files (images, PDFs, docs — max 5MB each)
+              </button>
 
-            {pendingFiles.length > 0 && (
-              <div className="mt-2 space-y-1">
-                {pendingFiles.map((pf, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg"
-                  >
-                    <Icon name={pf.type.startsWith("image/") ? "file-image" : "file-document"} size={16} className="opacity-60" />
-                    <span className="text-xs text-text-primary truncate flex-1">{pf.name}</span>
-                    <span className="text-[10px] text-text-muted shrink-0">
-                      {(pf.size / 1024).toFixed(0)} KB
-                    </span>
-                    <button
-                      onClick={() => removeFile(i)}
-                      className="p-0.5 rounded hover:bg-black/10 transition-colors"
+              {pendingFiles.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {pendingFiles.map((pf, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg"
                     >
-                      <Icon name="close" size={14} className="opacity-60" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          }
+                      <Icon name={pf.type.startsWith("image/") ? "file-image" : "file-document"} size={16} className="opacity-60" />
+                      <span className="text-xs text-text-primary truncate flex-1">{pf.name}</span>
+                      <span className="text-[10px] text-text-muted shrink-0">
+                        {(pf.size / 1024).toFixed(0)} KB
+                      </span>
+                      <button
+                        onClick={() => removeFile(i)}
+                        className="p-0.5 rounded hover:bg-black/10 transition-colors"
+                      >
+                        <Icon name="close" size={14} className="opacity-60" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <DialogFooter>
