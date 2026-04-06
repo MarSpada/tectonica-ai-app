@@ -200,74 +200,86 @@ const SAVED_BRIEFS: SavedBrief[] = [
 
 interface SavedBriefsProps {
   isImageBot: boolean;
+  onUseBrief?: (briefContent: string) => void;
 }
 
-export function SavedBriefs({ isImageBot }: SavedBriefsProps) {
+/** Format a brief's fields into a readable text block for injection into chat */
+function formatBriefForInjection(brief: SavedBrief): string {
+  const lines = [`Creative Brief: ${brief.title}\n`];
+  for (const field of brief.fields) {
+    const label = FIELD_LABELS[field.key] || field.key;
+    lines.push(`${label}: ${field.value}`);
+  }
+  return lines.join("\n");
+}
+
+export function SavedBriefs({ isImageBot, onUseBrief }: SavedBriefsProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (!isImageBot) return null;
 
   return (
     <div className="border-t border-card-stroke">
-      <div className="px-4 py-3 border-b border-card-stroke">
+      <div className="px-4 py-3">
         <h2 className="text-xs font-bold text-text-primary uppercase tracking-wider flex items-center gap-1.5">
           <Icon name="file-document" size={12} />
           Saved Briefs
         </h2>
       </div>
-      <div className="py-1">
+      <div className="pb-2">
         {SAVED_BRIEFS.map((brief) => {
           const isExpanded = expandedId === brief.id;
+          const styleField = brief.fields.find((f) => f.key === "STYLE")?.value || "";
           return (
-            <div key={brief.id}>
-              <button
-                onClick={() => setExpandedId(isExpanded ? null : brief.id)}
-                className={`w-full text-left px-4 py-2.5 transition-colors ${
-                  isExpanded ? "bg-accent-purple/5" : "hover:bg-black/3"
+            <div key={brief.id} className="mx-3 mb-1.5">
+              <div
+                className={`rounded-lg border transition-colors ${
+                  isExpanded
+                    ? "border-accent-purple/20 bg-accent-purple/5"
+                    : "border-black/5 bg-white/50 hover:border-black/10"
                 }`}
               >
-                <div className="flex items-start gap-2.5">
-                  {brief.thumbnail && (
-                    <img
-                      src={brief.thumbnail}
-                      alt=""
-                      className="w-8 h-8 rounded-md object-cover shrink-0"
-                    />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-text-primary truncate">
-                      {brief.title}
-                    </p>
-                    <p className="text-[10px] text-text-muted mt-0.5">
-                      {new Date(brief.date).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                      {" · "}
-                      {brief.fields.find((f) => f.key === "STYLE")?.value || ""}
-                    </p>
+                {/* Brief header */}
+                <div className="px-3 py-2">
+                  <p className="text-[11px] font-semibold text-text-primary leading-tight">
+                    {brief.title}
+                  </p>
+                  <p className="text-[10px] text-text-muted mt-0.5">
+                    {styleField}
+                  </p>
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <button
+                      onClick={() => onUseBrief?.(formatBriefForInjection(brief))}
+                      className="text-[10px] font-medium text-accent-purple hover:text-accent-purple/80 transition-colors"
+                    >
+                      Use in chat
+                    </button>
+                    <span className="text-text-muted text-[10px]">·</span>
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : brief.id)}
+                      className="text-[10px] font-medium text-text-muted hover:text-text-secondary transition-colors"
+                    >
+                      {isExpanded ? "Hide details" : "View details"}
+                    </button>
                   </div>
-                  <Icon
-                    name={isExpanded ? "arrow-up" : "arrow-down"}
-                    size={12}
-                    className="opacity-40 shrink-0 mt-1"
-                  />
                 </div>
-              </button>
-              {isExpanded && (
-                <div className="px-4 py-2.5 bg-accent-purple/5 space-y-1.5 border-b border-card-stroke">
-                  {brief.fields.map((req) => (
-                    <div key={req.key} className="flex items-start gap-2">
-                      <span className="text-[9px] font-semibold text-accent-purple uppercase shrink-0 w-14 pt-0.5">
-                        {FIELD_LABELS[req.key] || req.key}
-                      </span>
-                      <span className="text-[10px] text-text-secondary leading-tight">
-                        {req.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+                {/* Expanded details */}
+                {isExpanded && (
+                  <div className="px-3 pb-2.5 pt-1 border-t border-black/5 space-y-1.5">
+                    {brief.fields.map((req) => (
+                      <div key={req.key} className="flex items-start gap-2">
+                        <span className="text-[9px] font-semibold text-accent-purple uppercase shrink-0 w-14 pt-0.5">
+                          {FIELD_LABELS[req.key] || req.key}
+                        </span>
+                        <span className="text-[10px] text-text-secondary leading-tight">
+                          {req.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}

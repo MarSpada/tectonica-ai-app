@@ -12,6 +12,7 @@ interface RecentConversationsProps {
   onSelect: (conversationId: string) => void;
   onNewChat: () => void;
   onDeleteConversation?: (conversationId: string) => void;
+  onUseBrief?: (briefContent: string) => void;
   briefRequirements?: BriefRequirement[];
   isImageBot?: boolean;
 }
@@ -22,6 +23,7 @@ export default function RecentConversations({
   onSelect,
   onNewChat,
   onDeleteConversation,
+  onUseBrief,
   briefRequirements = [],
   isImageBot = false,
 }: RecentConversationsProps) {
@@ -65,7 +67,16 @@ export default function RecentConversations({
       <CreativeBrief requirements={briefRequirements} />
 
       {/* Saved Briefs — only for image-capable bots */}
-      <SavedBriefs isImageBot={isImageBot} />
+      <SavedBriefs isImageBot={isImageBot} onUseBrief={onUseBrief} />
+
+      {/* Conversation list header */}
+      {isImageBot && conversations.length > 0 && (
+        <div className="px-4 py-2 border-t border-card-stroke">
+          <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
+            Past Chats
+          </h3>
+        </div>
+      )}
 
       {/* Conversation list */}
       <div className="flex-1 overflow-y-auto">

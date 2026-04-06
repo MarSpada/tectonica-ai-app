@@ -335,6 +335,7 @@ export default function ChatView({
         onSelect={loadConversation}
         onNewChat={startNewChat}
         onDeleteConversation={handleDeleteConversation}
+        onUseBrief={(briefContent) => sendMessage(briefContent)}
         briefRequirements={parseRequirements(messages)}
         isImageBot={isImageBot}
       />
