@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
 import type { MediaItem } from "@/lib/types";
 import type { IconName } from "@/lib/icon-map";
+import EnergyEstimate from "./EnergyEstimate";
 
 interface MediaDetailSheetProps {
   mediaId: string | null;
@@ -186,6 +187,18 @@ export default function MediaDetailSheet({
                 </div>
               )}
             </div>
+
+            {/* Energy estimate (generated images only) */}
+            {item.category === "generated" &&
+              item.energy_wh != null &&
+              item.image_width != null &&
+              item.image_height != null && (
+                <EnergyEstimate
+                  width={item.image_width}
+                  height={item.image_height}
+                  energyWh={item.energy_wh}
+                />
+              )}
 
             {/* Actions */}
             <div className="flex gap-2 pt-2">

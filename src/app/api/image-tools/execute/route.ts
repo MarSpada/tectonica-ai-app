@@ -4,8 +4,10 @@ import {
   getOrgImageCredentials,
   executeImageTool,
   incrementImageCredits,
+  resolveDimensions,
   ImageToolError,
 } from "@/lib/image-tools";
+import { calculateEnergyWh } from "@/lib/energy";
 import type { ImageToolName } from "@/lib/types";
 
 const VALID_TOOLS: ImageToolName[] = [
@@ -66,11 +68,32 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { url } = await executeImageTool(
+    const imageResult = await executeImageTool(
       tool as ImageToolName,
       params ?? {},
       credentials
     );
+
+    // Resolve dimensions: prefer Railway response, fall back to request params
+    let imageWidth = imageResult.width;
+    let imageHeight = imageResult.height;
+    if (!imageWidth || !imageHeight) {
+      const fallback = resolveDimensions(
+        params?.platform,
+        params?.publication_type,
+        params?.aspect_ratio
+      );
+      if (fallback) {
+        imageWidth = fallback.width;
+        imageHeight = fallback.height;
+      }
+    }
+
+    // Calculate energy from dimensions
+    const energyWh =
+      imageWidth && imageHeight
+        ? calculateEnergyWh(imageWidth, imageHeight)
+        : null;
 
     // Increment credits
     await incrementImageCredits(profile.org_id);
@@ -84,10 +107,13 @@ export async function POST(req: Request) {
         uploaded_by: user.id,
         category: "generated",
         file_name: `${tool}-${Date.now()}.png`,
-        url,
+        url: imageResult.url,
         title: `${toolLabel} — ${new Date().toLocaleDateString()}`,
         status: "ready",
         visibility: "private",
+        image_width: imageWidth ?? null,
+        image_height: imageHeight ?? null,
+        energy_wh: energyWh,
       })
       .select("id")
       .single();
@@ -97,7 +123,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({
-      url,
+      url: imageResult.url,
       mediaItemId: mediaItem?.id ?? null,
     });
   } catch (err) {

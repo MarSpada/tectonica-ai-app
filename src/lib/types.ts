@@ -251,6 +251,9 @@ export interface MediaItem {
   download_count: number;
   deleted_at: string | null;
   created_at: string;
+  image_width?: number | null;
+  image_height?: number | null;
+  energy_wh?: number | null;
   // Joined fields from API
   uploader_name?: string;
   uploader_avatar?: string | null;

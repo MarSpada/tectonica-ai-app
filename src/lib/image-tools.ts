@@ -150,7 +150,7 @@ export async function incrementImageCredits(orgId: string): Promise<void> {
 // Size resolution
 // ────────────────────────────────────────────────────────────
 
-function resolveDimensions(
+export function resolveDimensions(
   platform?: string,
   publicationType?: string,
   aspectRatio?: string
@@ -251,11 +251,21 @@ async function callRailway(
   return res.json() as Promise<Record<string, unknown>>;
 }
 
-function extractImageUrl(result: Record<string, unknown>): string {
+interface ImageResult {
+  url: string;
+  width?: number;
+  height?: number;
+}
+
+function extractImageResult(result: Record<string, unknown>): ImageResult {
   // Railway API returns images array: { images: [{ url, width, height }] }
-  const images = result.images as Array<{ url: string }> | undefined;
+  const images = result.images as Array<{ url: string; width?: number; height?: number }> | undefined;
   if (images && images.length > 0 && images[0].url) {
-    return images[0].url;
+    return {
+      url: images[0].url,
+      width: images[0].width,
+      height: images[0].height,
+    };
   }
 
   // Fallback: try other common fields
@@ -268,7 +278,7 @@ function extractImageUrl(result: Record<string, unknown>): string {
   if (!url || typeof url !== "string") {
     throw new ImageToolError("api_error", "No image URL in Railway response");
   }
-  return url;
+  return { url };
 }
 
 // ────────────────────────────────────────────────────────────
@@ -282,13 +292,13 @@ export async function uploadImageToRailway(
   const result = await callRailway(credentials, RAILWAY_ENDPOINTS.upload, {
     image: base64,
   });
-  return { url: extractImageUrl(result) };
+  return { url: extractImageResult(result).url };
 }
 
 export async function generateImage(
   params: GenerateImageParams,
   credentials: OrgImageCredentials
-): Promise<{ url: string }> {
+): Promise<ImageResult> {
   const imageSize = resolveImageSize(
     params.platform,
     params.publication_type,
@@ -310,13 +320,13 @@ export async function generateImage(
     RAILWAY_ENDPOINTS.generate,
     body
   );
-  return { url: extractImageUrl(result) };
+  return extractImageResult(result);
 }
 
 export async function editImage(
   params: EditImageParams,
   credentials: OrgImageCredentials
-): Promise<{ url: string }> {
+): Promise<ImageResult> {
   const imageSize = resolveImageSize(undefined, undefined, params.aspect_ratio);
 
   const body: Record<string, unknown> = {
@@ -329,13 +339,13 @@ export async function editImage(
   };
 
   const result = await callRailway(credentials, RAILWAY_ENDPOINTS.edit, body);
-  return { url: extractImageUrl(result) };
+  return extractImageResult(result);
 }
 
 export async function fuseImages(
   params: FuseImagesParams,
   credentials: OrgImageCredentials
-): Promise<{ url: string }> {
+): Promise<ImageResult> {
   const imageSize = resolveImageSize(undefined, undefined, params.aspect_ratio);
 
   const body: Record<string, unknown> = {
@@ -350,13 +360,13 @@ export async function fuseImages(
   };
 
   const result = await callRailway(credentials, RAILWAY_ENDPOINTS.fuse, body);
-  return { url: extractImageUrl(result) };
+  return extractImageResult(result);
 }
 
 export async function applyBranding(
   params: ApplyBrandingParams,
   credentials: OrgImageCredentials
-): Promise<{ url: string }> {
+): Promise<ImageResult> {
   const imageSize = resolveImageSize(undefined, undefined, params.aspect_ratio);
 
   const body: Record<string, unknown> = {
@@ -369,7 +379,7 @@ export async function applyBranding(
   };
 
   const result = await callRailway(credentials, RAILWAY_ENDPOINTS.brand, body);
-  return { url: extractImageUrl(result) };
+  return extractImageResult(result);
 }
 
 // ────────────────────────────────────────────────────────────
@@ -380,7 +390,7 @@ export async function executeImageTool(
   toolName: ImageToolName,
   toolArgs: Record<string, unknown>,
   credentials: OrgImageCredentials
-): Promise<{ url: string }> {
+): Promise<ImageResult> {
   switch (toolName) {
     case "generate_image":
       return generateImage(

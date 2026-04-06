@@ -5,6 +5,13 @@ import { createPortal } from "react-dom";
 import { type Message } from "@/lib/types";
 import { type Bot, categoryMeta } from "@/lib/bots";
 import { Icon } from "@/components/ui/icon";
+import EnergyEstimate from "@/components/media/EnergyEstimate";
+
+export interface ImageEnergyInfo {
+  energyWh: number;
+  width: number;
+  height: number;
+}
 
 interface MessageListProps {
   messages: Message[];
@@ -18,6 +25,7 @@ interface MessageListProps {
   onRequestApproval?: (imageUrl: string) => void;
   onShareToChat?: (imageUrl: string) => void;
   approvedImageUrls?: Map<string, string>;
+  imageEnergyData?: Map<string, ImageEnergyInfo>;
 }
 
 // Parse image markdown: ![alt](url)
@@ -40,6 +48,7 @@ function renderContent(
   onRequestApproval?: (imageUrl: string) => void,
   onShareToChat?: (imageUrl: string) => void,
   approvedImageUrls?: Map<string, string>,
+  imageEnergyData?: Map<string, ImageEnergyInfo>,
 ) {
   const parts: React.ReactNode[] = [];
 
@@ -129,6 +138,7 @@ function renderContent(
         onRequestApproval={onRequestApproval}
         onShareToChat={onShareToChat}
         isApproved={approvedImageUrls?.has(match[2])}
+        energyInfo={imageEnergyData?.get(match[2])}
       />
     );
 
@@ -351,6 +361,7 @@ function ImageMessage({
   onRequestApproval,
   onShareToChat,
   isApproved,
+  energyInfo,
 }: {
   url: string;
   alt: string;
@@ -359,6 +370,7 @@ function ImageMessage({
   onRequestApproval?: (imageUrl: string) => void;
   onShareToChat?: (imageUrl: string) => void;
   isApproved?: boolean;
+  energyInfo?: ImageEnergyInfo;
 }) {
   const [expanded, setExpanded] = useState(false);
   const hasActions = onOpenStudio || onTryAgain || onRequestApproval || onShareToChat;
@@ -421,6 +433,15 @@ function ImageMessage({
           </div>
         )}
       </div>
+      {energyInfo && (
+        <div className="mt-1.5 max-w-[380px]">
+          <EnergyEstimate
+            width={energyInfo.width}
+            height={energyInfo.height}
+            energyWh={energyInfo.energyWh}
+          />
+        </div>
+      )}
       {expanded && createPortal(
         <div
           className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
@@ -457,6 +478,7 @@ export default function MessageList({
   onRequestApproval,
   onShareToChat,
   approvedImageUrls,
+  imageEnergyData,
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -513,7 +535,7 @@ export default function MessageList({
                 }}
               >
                 {msg.role === "assistant"
-                  ? renderContent(stripBriefTags(msg.content), onOpenStudio, onStyleSelect, onTryAgain, onRequestApproval, onShareToChat, approvedImageUrls)
+                  ? renderContent(stripBriefTags(msg.content), onOpenStudio, onStyleSelect, onTryAgain, onRequestApproval, onShareToChat, approvedImageUrls, imageEnergyData)
                   : renderUserContent(msg.content)}
                 {msg.role === "assistant" &&
                   isStreaming &&

@@ -17,8 +17,10 @@ import {
   executeImageTool,
   incrementImageCredits,
   uploadImageToRailway,
+  resolveDimensions,
   ImageToolError,
 } from "@/lib/image-tools";
+import { calculateEnergyWh } from "@/lib/energy";
 import type { ImageToolName } from "@/lib/types";
 import { getStyleGalleryResponse } from "@/lib/style-gallery-data";
 
@@ -336,11 +338,33 @@ export async function POST(req: Request) {
 
           try {
             // Execute the image tool
-            const { url: imageUrl } = await executeImageTool(
+            const imageResult = await executeImageTool(
               toolName,
               toolArgs,
               imageCredentials
             );
+            const imageUrl = imageResult.url;
+
+            // Resolve dimensions: prefer Railway response, fall back to request params
+            let imageWidth = imageResult.width;
+            let imageHeight = imageResult.height;
+            if (!imageWidth || !imageHeight) {
+              const fallback = resolveDimensions(
+                toolArgs.platform as string | undefined,
+                toolArgs.publication_type as string | undefined,
+                toolArgs.aspect_ratio as string | undefined
+              );
+              if (fallback) {
+                imageWidth = fallback.width;
+                imageHeight = fallback.height;
+              }
+            }
+
+            // Calculate energy from dimensions
+            const energyWh =
+              imageWidth && imageHeight
+                ? calculateEnergyWh(imageWidth, imageHeight)
+                : null;
 
             // Increment credits
             await incrementImageCredits(profile.org_id);
@@ -358,14 +382,25 @@ export async function POST(req: Request) {
                 title: `${toolLabel} — ${new Date().toLocaleDateString()}`,
                 status: "ready",
                 visibility: "private",
+                image_width: imageWidth ?? null,
+                image_height: imageHeight ?? null,
+                energy_wh: energyWh,
               })
               .select("id")
               .single();
 
-            // Send image result to client
+            // Send image result to client (include energy data)
             controller.enqueue(
               encoder.encode(
-                `data: ${JSON.stringify({ image: { url: imageUrl, mediaItemId: mediaItem?.id ?? null } })}\n\n`
+                `data: ${JSON.stringify({
+                  image: {
+                    url: imageUrl,
+                    mediaItemId: mediaItem?.id ?? null,
+                    energyWh: energyWh,
+                    imageWidth: imageWidth ?? null,
+                    imageHeight: imageHeight ?? null,
+                  },
+                })}\n\n`
               )
             );
 

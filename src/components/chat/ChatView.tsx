@@ -41,6 +41,7 @@ export default function ChatView({
   const [showStudio, setShowStudio] = useState(false);
   const [approvalImageUrl, setApprovalImageUrl] = useState<string | null>(null);
   const [approvedImages, setApprovedImages] = useState<Map<string, string>>(new Map()); // imageUrl → approvalId
+  const [imageEnergyData, setImageEnergyData] = useState<Map<string, { energyWh: number; width: number; height: number }>>(new Map());
 
   const sendMessage = useCallback(async (messageContent?: string) => {
     const content = messageContent || input.trim();
@@ -160,6 +161,18 @@ export default function ChatView({
             if (parsed.image) {
               setIsGeneratingImage(false);
               setMostRecentImageUrl(parsed.image.url);
+              // Store energy data if available
+              if (parsed.image.energyWh != null && parsed.image.imageWidth && parsed.image.imageHeight) {
+                setImageEnergyData((prev) => {
+                  const next = new Map(prev);
+                  next.set(parsed.image.url, {
+                    energyWh: parsed.image.energyWh,
+                    width: parsed.image.imageWidth,
+                    height: parsed.image.imageHeight,
+                  });
+                  return next;
+                });
+              }
               // Insert image markdown into assistant message
               setMessages((prev) => {
                 const updated = [...prev];
@@ -376,6 +389,7 @@ export default function ChatView({
               } : undefined}
               approvedImageUrls={approvedImages}
               onShareToChat={isImageBot ? handleShareToChat : undefined}
+              imageEnergyData={imageEnergyData}
             />
             <ChatInput
               value={input}
