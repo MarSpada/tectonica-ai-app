@@ -224,10 +224,6 @@ export async function POST(req: Request) {
                   profile.org_id,
                   profile.group_id,
                   user.id,
-                  chatMessages,
-                  endpointUrl,
-                  modelId,
-                  token,
                   controller,
                   encoder,
                 );
@@ -650,10 +646,6 @@ async function executeLandingPageTool(
   orgId: string,
   groupId: string | null,
   userId: string,
-  chatMessages: Array<{ role: string; content: string | null; tool_calls?: unknown[]; tool_call_id?: string }>,
-  endpointUrl: string,
-  modelId: string,
-  token: string,
   controller: ReadableStreamDefaultController,
   encoder: TextEncoder,
 ): Promise<string> {
@@ -771,68 +763,9 @@ async function executeLandingPageTool(
       )
     );
 
-    // Make second request to model with tool result for natural language response
-    const followUpMessages = [
-      ...chatMessages,
-      {
-        role: "assistant" as const,
-        content: null,
-        tool_calls: [
-          {
-            id: toolCall.id,
-            type: "function",
-            function: {
-              name: toolCall.function.name,
-              arguments: toolCall.function.arguments,
-            },
-          },
-        ],
-      },
-      {
-        role: "tool" as const,
-        tool_call_id: toolCall.id,
-        content: JSON.stringify({
-          success: true,
-          url: publicUrl,
-          headline,
-          type,
-        }),
-      },
-    ];
-
-    const followUpRes = await fetch(
-      `${endpointUrl}/v1/chat/completions`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          model: modelId,
-          stream: true,
-          messages: followUpMessages,
-        }),
-      }
-    );
-
-    if (followUpRes.ok) {
-      const followUpResult = await streamModelResponse(
-        followUpRes,
-        controller,
-        encoder
-      );
-      return followUpResult.content;
-    } else {
-      // If follow-up fails, still confirm the page was created
-      const fallbackMsg = `\n\nYour landing page is ready: ${publicUrl}`;
-      controller.enqueue(
-        encoder.encode(
-          `data: ${JSON.stringify({ content: fallbackMsg })}\n\n`
-        )
-      );
-      return fallbackMsg;
-    }
+    // No follow-up model request — landing page uses text pattern detection,
+    // not function calling. The landingPage SSE event provides the link to the client.
+    return `Landing page generated: ${publicUrl}`;
   } catch (err) {
     const errorMessage = err instanceof Error
       ? `Landing page generation failed: ${err.message}`

@@ -256,13 +256,14 @@ export default function ChatView({
               setIsGeneratingLandingPage(false);
               const { url, headline, type } = parsed.landingPage;
               const label = type === "donate" ? "Donate Page" : "Signup Page";
-              const markdownLink = `\n\n**Your ${label} is ready:** [${headline}](${url})\n`;
+              const markdownLink = `\n\n**[${headline} — ${label}](${url})**\n`;
               setMessages((prev) => {
                 const updated = [...prev];
                 const last = updated[updated.length - 1];
+                // Replace all content with just the link — strip any trigger text that was streamed
                 updated[updated.length - 1] = {
                   ...last,
-                  content: last.content + markdownLink,
+                  content: markdownLink,
                 };
                 return updated;
               });
