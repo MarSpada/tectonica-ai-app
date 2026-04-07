@@ -5,7 +5,7 @@ import { fetchProfileMap } from "@/lib/api-utils";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-/* GET /api/approvals — list approval requests */
+/* GET /api/approvals — list approval requests scoped to user's group */
 export async function GET(req: Request) {
   const supabase = await createClient();
   const {
@@ -13,12 +13,23 @@ export async function GET(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("group_id")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile?.group_id) {
+    return NextResponse.json({ error: "No group assigned" }, { status: 400 });
+  }
+
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
 
   let query = supabase
     .from("approval_requests")
     .select("*")
+    .eq("group_id", profile.group_id)
     .order("created_at", { ascending: false });
 
   if (status && status !== "all") {

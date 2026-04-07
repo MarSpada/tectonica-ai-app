@@ -5,14 +5,24 @@ import { getSystemPrompt as getHardcodedPrompt } from "./bots-prompts";
 /**
  * Reads bots from the database first, falls back to hardcoded bots.ts.
  * Used in server contexts (API routes, Server Components).
+ *
+ * @param orgId — if provided, only returns bots belonging to this org (plus global bots).
+ *                When omitted, returns all bots (backwards-compatible, used by page.tsx
+ *                which fetches profile separately).
  */
-export async function getBots(): Promise<Bot[]> {
+export async function getBots(orgId?: string): Promise<Bot[]> {
   try {
     const supabase = await createClient();
-    const { data: dbBots } = await supabase
+    let query = supabase
       .from("bots")
       .select("slug, name, icon, category, description")
       .order("name");
+
+    if (orgId) {
+      query = query.or(`org_id.eq.${orgId},org_id.is.null`);
+    }
+
+    const { data: dbBots } = await query;
 
     if (dbBots && dbBots.length > 0) {
       // Merge: use DB names/descriptions but keep hardcoded icons as fallback
@@ -53,15 +63,22 @@ export async function getBots(): Promise<Bot[]> {
 /**
  * Gets the system prompt for a bot. Checks DB first (where admins may have
  * customized it), falls back to the hardcoded prompts in bots-prompts.ts.
+ *
+ * @param orgId — if provided, scopes the lookup to this org's bots (plus global).
  */
-export async function getSystemPrompt(botId: string): Promise<string> {
+export async function getSystemPrompt(botId: string, orgId?: string): Promise<string> {
   try {
     const supabase = await createClient();
-    const { data } = await supabase
+    let query = supabase
       .from("bots")
       .select("system_prompt")
-      .eq("slug", botId)
-      .single();
+      .eq("slug", botId);
+
+    if (orgId) {
+      query = query.or(`org_id.eq.${orgId},org_id.is.null`);
+    }
+
+    const { data } = await query.single();
 
     if (data?.system_prompt) {
       return data.system_prompt;

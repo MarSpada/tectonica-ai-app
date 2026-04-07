@@ -29,8 +29,19 @@ export default async function Home() {
     }
   }
 
+  // Fetch user's org_id for scoping bot list
+  let orgId: string | undefined;
+  if (user) {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("org_id")
+      .eq("id", user.id)
+      .single();
+    orgId = prof?.org_id ?? undefined;
+  }
+
   // Fetch bots from DB (admin-editable names), fallback to hardcoded
-  const dbBots = await getBots();
+  const dbBots = await getBots(orgId);
 
   return (
     <DashboardShell

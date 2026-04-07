@@ -3,13 +3,9 @@ import { requireAuth } from "@/lib/api-utils";
 import {
   getOrgImageCredentials,
   executeImageTool,
-  incrementImageCredits,
-  resolveDimensions,
-  downloadAndStoreImage,
   ImageToolError,
 } from "@/lib/image-tools";
-import { getSignedUrl } from "@/lib/media-storage";
-import { calculateEnergyWh } from "@/lib/energy";
+import { saveGeneratedImage } from "@/lib/image-save-utils";
 import type { ImageToolName } from "@/lib/types";
 
 const VALID_TOOLS: ImageToolName[] = [
@@ -61,8 +57,11 @@ export async function POST(req: Request) {
     );
   }
 
-  // Check credit limit
-  if (credentials.creditsUsed >= credentials.creditsAllocated) {
+  // Atomically check and consume one credit (prevents TOCTOU race condition)
+  const { data: creditOk } = await supabase.rpc("check_and_increment_image_credits", {
+    p_org_id: profile.org_id,
+  });
+  if (!creditOk) {
     return NextResponse.json(
       { error: "no_credits" },
       { status: 402 }
@@ -76,76 +75,24 @@ export async function POST(req: Request) {
       credentials
     );
 
-    // Resolve dimensions: prefer Railway response, fall back to request params
-    let imageWidth = imageResult.width;
-    let imageHeight = imageResult.height;
-    if (!imageWidth || !imageHeight) {
-      const fallback = resolveDimensions(
-        params?.platform,
-        params?.publication_type,
-        params?.aspect_ratio
-      );
-      if (fallback) {
-        imageWidth = fallback.width;
-        imageHeight = fallback.height;
-      }
-    }
+    // Credit already consumed atomically above via check_and_increment_image_credits
 
-    // Calculate energy from dimensions
-    const energyWh =
-      imageWidth && imageHeight
-        ? calculateEnergyWh(imageWidth, imageHeight)
-        : null;
-
-    // Increment credits
-    await incrementImageCredits(profile.org_id);
-
-    // Download from FAL and store in Supabase Storage
-    let storagePath: string | null = null;
-    let fileSize: number | null = null;
-    let displayUrl = imageResult.url; // fallback to FAL URL
-    if (profile.group_id) try {
-      const stored = await downloadAndStoreImage(
-        imageResult.url,
-        supabase,
-        profile.group_id
-      );
-      storagePath = stored.storagePath;
-      fileSize = stored.fileSize;
-      displayUrl = await getSignedUrl(supabase, storagePath);
-    } catch (err) {
-      console.warn("Failed to store image in Supabase Storage, using FAL URL as fallback:", err);
-    }
-
-    // Save to media_items as private generated image
-    const toolLabel = (tool as string).replace(/_/g, " ");
-    const { data: mediaItem, error: insertError } = await supabase
-      .from("media_items")
-      .insert({
-        group_id: profile.group_id,
-        uploaded_by: user.id,
-        category: "generated",
-        file_name: `${tool}-${Date.now()}.jpg`,
-        url: imageResult.url, // keep FAL URL as fallback
-        storage_path: storagePath,
-        file_size: fileSize,
-        title: `${toolLabel} — ${new Date().toLocaleDateString()}`,
-        status: "ready",
-        visibility: "private",
-        image_width: imageWidth ?? null,
-        image_height: imageHeight ?? null,
-        energy_wh: energyWh,
-      })
-      .select("id")
-      .single();
-
-    if (insertError) {
-      console.warn("Failed to save generated image to media_items:", insertError.message);
-    }
+    const saved = await saveGeneratedImage(
+      {
+        externalUrl: imageResult.url,
+        toolName: tool as ImageToolName,
+        toolArgs: params ?? {},
+        responseWidth: imageResult.width,
+        responseHeight: imageResult.height,
+      },
+      supabase,
+      user.id,
+      profile.group_id
+    );
 
     return NextResponse.json({
-      url: displayUrl,
-      mediaItemId: mediaItem?.id ?? null,
+      url: saved.displayUrl,
+      mediaItemId: saved.mediaItemId,
     });
   } catch (err) {
     if (err instanceof ImageToolError) {

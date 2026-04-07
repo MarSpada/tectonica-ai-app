@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import AdminView from "@/components/admin/AdminView";
+import { isAdminRole } from "@/lib/constants/roles";
 import type { UserRole } from "@/lib/types";
 
 export default async function AdminPage() {
@@ -19,7 +20,7 @@ export default async function AdminPage() {
     .single();
 
   const role = profile?.role as UserRole;
-  if (role !== "super_admin" && role !== "group_admin") {
+  if (!isAdminRole(role)) {
     redirect("/");
   }
 

@@ -29,6 +29,7 @@ export async function GET(
     .from("bots")
     .select("id, slug, name, icon, category, description, system_prompt, model_id")
     .eq("id", botId)
+    .or(`org_id.eq.${profile.org_id},org_id.is.null`)
     .single();
 
   if (!bot) return NextResponse.json({ error: "Bot not found" }, { status: 404 });
@@ -58,7 +59,8 @@ export async function PUT(
   const { error } = await supabase
     .from("bots")
     .update(updates)
-    .eq("id", botId);
+    .eq("id", botId)
+    .eq("org_id", profile.org_id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
@@ -76,7 +78,8 @@ export async function DELETE(
   const { error } = await supabase
     .from("bots")
     .delete()
-    .eq("id", botId);
+    .eq("id", botId)
+    .eq("org_id", profile.org_id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });

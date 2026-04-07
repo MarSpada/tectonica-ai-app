@@ -342,7 +342,7 @@ function StyleGallery({ images, onSelect }: { images: ParsedImage[]; onSelect?: 
               </div>
               {isSelected && (
                 <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-accent-purple flex items-center justify-center shadow-md">
-                  <Icon name="check" size={14} color="#ffffff" />
+                  <Icon name="check" size={14} color="var(--card-bg)" />
                 </div>
               )}
             </button>
@@ -451,7 +451,7 @@ function ImageMessage({
             onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
             className="absolute top-4 right-4 z-[101] w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
           >
-            <Icon name="close" size={24} color="#ffffff" />
+            <Icon name="close" size={24} color="var(--card-bg)" />
           </button>
           <img
             src={url}

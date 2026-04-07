@@ -50,7 +50,7 @@ export default function StudioOverlay({
         className="absolute top-4 right-4 z-[51] w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
         title="Close Studio (Esc)"
       >
-        <Icon name="close" size={24} color="#ffffff" />
+        <Icon name="close" size={24} color="var(--card-bg)" />
       </button>
 
       {/* Studio iframe */}

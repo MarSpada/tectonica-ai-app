@@ -30,7 +30,6 @@ export const RAILWAY_ENDPOINTS = {
   edit: "/api/external/flux-2-pro-edit-edit",
   fuse: "/api/external/flux-2-pro-edit-combine",
   brand: "/api/external/flux-2-pro-edit-apply",
-  upload: "/api/external/upload-image",
 } as const;
 
 /** Platform + publication type → { width, height } */
@@ -358,16 +357,6 @@ export async function uploadBase64ToStorage(
 // ────────────────────────────────────────────────────────────
 // Public API functions
 // ────────────────────────────────────────────────────────────
-
-export async function uploadImageToRailway(
-  base64: string,
-  credentials: OrgImageCredentials
-): Promise<{ url: string }> {
-  const result = await callRailway(credentials, RAILWAY_ENDPOINTS.upload, {
-    image: base64,
-  });
-  return { url: extractImageResult(result).url };
-}
 
 export async function generateImage(
   params: GenerateImageParams,
