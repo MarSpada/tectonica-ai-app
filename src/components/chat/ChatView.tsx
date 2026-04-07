@@ -18,9 +18,20 @@ import { useUserProfile } from "@/lib/UserProfileContext";
 const stripLandingPageTrigger = (content: string): string => {
   const triggerIndex = content.indexOf("GENERATE_LANDING_PAGE");
   if (triggerIndex === -1) return content;
-  const jsonEnd = content.lastIndexOf("}");
-  if (jsonEnd === -1) return content.slice(0, triggerIndex);
-  return content.slice(0, triggerIndex) + content.slice(jsonEnd + 1);
+  const jsonStart = content.indexOf("{", triggerIndex);
+  if (jsonStart === -1) return content.slice(0, triggerIndex).trimEnd();
+  // Find matching closing brace via brace counting
+  let depth = 0;
+  let jsonEnd = -1;
+  for (let i = jsonStart; i < content.length; i++) {
+    if (content[i] === "{") depth++;
+    else if (content[i] === "}") {
+      depth--;
+      if (depth === 0) { jsonEnd = i; break; }
+    }
+  }
+  if (jsonEnd === -1) return content.slice(0, triggerIndex).trimEnd();
+  return (content.slice(0, triggerIndex) + content.slice(jsonEnd + 1)).trimEnd();
 };
 
 interface ChatViewProps {

@@ -225,6 +225,7 @@ function renderUserContent(content: string): React.ReactNode {
 function stripBriefTags(text: string): string {
   return text
     .replace(/\[CREATIVE BRIEF IN PROGRESS\]/g, "")
+    .replace(/\[LANDING PAGE BRIEF IN PROGRESS\]/g, "")
     .replace(/\[REQ:[^\]]*\]/g, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
