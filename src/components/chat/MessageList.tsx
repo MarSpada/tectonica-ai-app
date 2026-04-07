@@ -265,6 +265,24 @@ function renderTextContent(text: string): React.ReactNode {
       </>
     );
   }
+  if (text.includes("__LANDING_PAGE__")) {
+    const match = text.match(/__LANDING_PAGE__([^_]+(?:__[^_]*)*)__([^_]+(?:__[^_]*)*)__$/);
+    if (match) {
+      const [, url, headline] = match;
+      return (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm text-white no-underline transition-opacity hover:opacity-90"
+          style={{ backgroundColor: "var(--accent-purple, #422D8F)" }}
+        >
+          <Icon name="external-link" size={16} />
+          See your landing page
+        </a>
+      );
+    }
+  }
   if (text.includes("✓ Saved to your Media Library")) {
     const [before, after] = text.split("✓ Saved to your Media Library");
     return (

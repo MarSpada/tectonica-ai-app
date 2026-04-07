@@ -254,16 +254,16 @@ export default function ChatView({
             // Landing page result
             if (parsed.landingPage) {
               setIsGeneratingLandingPage(false);
-              const { url, headline, type } = parsed.landingPage;
-              const label = type === "donate" ? "Donate Page" : "Signup Page";
-              const markdownLink = `\n\n**[${headline} — ${label}](${url})**\n`;
+              const { url, headline } = parsed.landingPage;
+              // Use a marker that renderTextContent in MessageList will detect and render as a clickable link
+              const marker = `__LANDING_PAGE__${url}__${headline}__`;
               setMessages((prev) => {
                 const updated = [...prev];
                 const last = updated[updated.length - 1];
-                // Replace all content with just the link — strip any trigger text that was streamed
+                // Replace all content with just the link marker — strip any trigger text that was streamed
                 updated[updated.length - 1] = {
                   ...last,
-                  content: markdownLink,
+                  content: marker,
                 };
                 return updated;
               });
