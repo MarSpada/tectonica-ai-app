@@ -409,7 +409,7 @@ export async function POST(req: Request) {
               .select("id")
               .single();
 
-            // Send image result to client (include energy data)
+            // Send image result to client (include energy data + tool info for retry)
             controller.enqueue(
               encoder.encode(
                 `data: ${JSON.stringify({
@@ -419,6 +419,8 @@ export async function POST(req: Request) {
                     energyWh: energyWh,
                     imageWidth: imageWidth ?? null,
                     imageHeight: imageHeight ?? null,
+                    toolName: toolName,
+                    toolArgs: toolArgs,
                   },
                 })}\n\n`
               )

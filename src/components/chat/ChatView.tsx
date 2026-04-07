@@ -42,6 +42,7 @@ export default function ChatView({
   const [approvalImageUrl, setApprovalImageUrl] = useState<string | null>(null);
   const [approvedImages, setApprovedImages] = useState<Map<string, string>>(new Map()); // imageUrl → approvalId
   const [imageEnergyData, setImageEnergyData] = useState<Map<string, { energyWh: number; width: number; height: number }>>(new Map());
+  const [imageToolData, setImageToolData] = useState<Map<string, { toolName: string; toolArgs: Record<string, unknown> }>>(new Map());
 
   const sendMessage = useCallback(async (messageContent?: string) => {
     const content = messageContent || input.trim();
@@ -169,6 +170,17 @@ export default function ChatView({
                     energyWh: parsed.image.energyWh,
                     width: parsed.image.imageWidth,
                     height: parsed.image.imageHeight,
+                  });
+                  return next;
+                });
+              }
+              // Store tool call data for retry
+              if (parsed.image.toolName && parsed.image.toolArgs) {
+                setImageToolData((prev) => {
+                  const next = new Map(prev);
+                  next.set(parsed.image.url, {
+                    toolName: parsed.image.toolName,
+                    toolArgs: parsed.image.toolArgs,
                   });
                   return next;
                 });
@@ -376,8 +388,60 @@ export default function ChatView({
               onStyleSelect={isImageBot ? (styleName) => {
                 sendMessage(`I'd like the ${styleName} style`);
               } : undefined}
-              onTryAgain={isImageBot ? () => {
-                sendMessage("Generate another version of this image");
+              onTryAgain={isImageBot ? (imageUrl?: string) => {
+                // If we have stored tool data for this image, re-execute directly
+                const toolData = imageUrl ? imageToolData.get(imageUrl) : undefined;
+                if (toolData) {
+                  // Direct re-execution — bypass model, same parameters
+                  (async () => {
+                    setIsStreaming(true);
+                    setIsGeneratingImage(true);
+                    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+                    try {
+                      const res = await fetch("/api/image-tools/execute", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          tool: toolData.toolName,
+                          params: toolData.toolArgs,
+                          botId: bot.id,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || "Generation failed");
+                      setIsGeneratingImage(false);
+                      setMostRecentImageUrl(data.url);
+                      // Store tool data for the new image too
+                      setImageToolData((prev) => {
+                        const next = new Map(prev);
+                        next.set(data.url, toolData);
+                        return next;
+                      });
+                      setMessages((prev) => {
+                        const updated = [...prev];
+                        updated[updated.length - 1] = {
+                          role: "assistant",
+                          content: `![Generated Image](${data.url})\n\n✓ New version generated and saved to your Media Library`,
+                        };
+                        return updated;
+                      });
+                    } catch (err) {
+                      setIsGeneratingImage(false);
+                      setMessages((prev) => {
+                        const updated = [...prev];
+                        updated[updated.length - 1] = {
+                          role: "assistant",
+                          content: err instanceof Error ? err.message : "Regeneration failed. Please try again.",
+                        };
+                        return updated;
+                      });
+                    }
+                    setIsStreaming(false);
+                  })();
+                } else {
+                  // Fallback: send as chat message
+                  sendMessage("Generate another version of this image");
+                }
               } : undefined}
               onRequestApproval={isImageBot ? (imageUrl) => {
                 if (approvedImages.has(imageUrl)) {
@@ -398,6 +462,9 @@ export default function ChatView({
               isStreaming={isStreaming}
               isImageBot={isImageBot}
               onImageUpload={handleImageUpload}
+              onFileAttach={isImageBot ? (content: string) => {
+                sendMessage(content);
+              } : undefined}
             />
           </>
         )}

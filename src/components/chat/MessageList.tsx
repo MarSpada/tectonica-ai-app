@@ -21,7 +21,7 @@ interface MessageListProps {
   isGeneratingImage?: boolean;
   onOpenStudio?: (imageUrl: string) => void;
   onStyleSelect?: (styleName: string) => void;
-  onTryAgain?: () => void;
+  onTryAgain?: (imageUrl?: string) => void;
   onRequestApproval?: (imageUrl: string) => void;
   onShareToChat?: (imageUrl: string) => void;
   approvedImageUrls?: Map<string, string>;
@@ -366,7 +366,7 @@ function ImageMessage({
   url: string;
   alt: string;
   onOpenStudio?: (imageUrl: string) => void;
-  onTryAgain?: () => void;
+  onTryAgain?: (imageUrl?: string) => void;
   onRequestApproval?: (imageUrl: string) => void;
   onShareToChat?: (imageUrl: string) => void;
   isApproved?: boolean;
@@ -403,7 +403,7 @@ function ImageMessage({
               <ImageActionButton
                 icon="refresh"
                 label="Try again"
-                onClick={onTryAgain}
+                onClick={() => onTryAgain(url)}
               />
             )}
             {onRequestApproval && (

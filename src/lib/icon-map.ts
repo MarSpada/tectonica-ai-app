@@ -111,6 +111,7 @@ export const ICON_MAP = {
   'chevron-right': `${ICON_BASE}/arrows-diagrams/arrow-right.svg`,
   'arrow-forward': `${ICON_BASE}/arrows-diagrams/arrow-right.svg`,
   'attachment': `${ICON_BASE}/interface-essential/attachment.svg`,
+  'file-attachment': `${ICON_BASE}/interface-essential/attachment.svg`,
   'phone-call': `${ICON_BASE}/phones-mobile-devices/phone-circle.svg`,
   'email-action': `${ICON_BASE}/emails/envelope-letter.svg`,
   'check-circle': `${ICON_BASE}/interface-essential/check-badge.svg`,
