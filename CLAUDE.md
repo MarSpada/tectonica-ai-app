@@ -465,6 +465,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `023_image_tools.sql` | Extends `org_integrations` with image API columns (endpoint, encrypted token, credits allocated/used). Adds `image_tools_enabled` boolean to `bots` table (true for graphics-creation). Updates `media_items`: adds 'generated' category, 'private' visibility, updates `media_file_or_link` constraint, updates RLS SELECT to allow users to see own private items. Adds `increment_image_credits()` SECURITY DEFINER RPC. |
 | `024_energy_consumption.sql` | Adds `image_width` (integer), `image_height` (integer), `energy_wh` (double precision) nullable columns to `media_items`. Partial index on `(group_id) WHERE category='generated' AND energy_wh IS NOT NULL` for efficient aggregation. Energy is pre-computed at generation time using Stanford/AXA 2025 reference data. |
 | `025_calendar_sources_group_scope.sql` | Moves `calendar_sources` from org-level to group-level scope. Adds `group_id` (uuid FK, NOT NULL after backfill), index on `group_id`. Drops org-scoped RLS, creates group-scoped RLS using `get_my_group_id()` and `is_admin()`. Keeps `org_id` column for future use. |
+| `026_generated_storage_path.sql` | Relaxes `media_file_or_link` constraint so generated images can have `storage_path` (Supabase Storage) in addition to or instead of `url` (external FAL URL). Supports the FAL → Supabase Storage migration. |
 
 ---
 
@@ -516,7 +517,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `/auth/callback` | GET | OAuth/email confirmation callback — signs out after confirmation, redirects to login |
 | `/api/admin/integrations/runpod` | GET/POST | GET: RunPod config (URL, status, lastChecked — never token). POST: save URL + encrypted token, test connection, return status + models. Super admin only. |
 | `/api/admin/integrations/runpod/models` | GET | Fetch available models from RunPod endpoint using stored encrypted credentials. Super admin only. |
-| `/api/image-tools/upload` | POST | Upload base64 image to Railway, save to media_items as private generated image |
+| `/api/image-tools/upload` | POST | Upload base64 image to Supabase Storage, return signed URL (1hr TTL). No media_items insert — used for chat reference images only. |
 | `/api/image-tools/execute` | POST | Execute image tool (generate/edit/fuse/brand), validates bot has image_tools_enabled, checks credits, saves result to media_items |
 | `/api/image-tools/credentials-status` | GET | Image API status — super_admin sees credits, other roles see configured boolean only |
 | `/api/admin/integrations/image-api` | GET/POST | GET: image API config (never token). POST: save endpoint + encrypted token (super_admin only) |
@@ -540,7 +541,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `DashboardShell.tsx` | Dashboard layout container |
 | `chat/ChatView.tsx` | Bot chat with streaming, conversation persistence, image tool SSE handling (gallery/image/status events), Studio overlay state, approval + share workflows |
 | `chat/ChatHeader.tsx` | Bot name, status, back button, "Open in Studio" button (image bots only) |
-| `chat/ChatInput.tsx` | Message input with send button, image attachment upload (image bots only) |
+| `chat/ChatInput.tsx` | Message input with send button. Image bots: separate image + file attachment buttons. Text files read client-side as context. Mic hidden. |
 | `chat/MessageList.tsx` | Message history with image markdown rendering, style gallery grid, image action buttons (Studio/Try again/Request approval/Share to group), creative brief tag stripping, per-image energy estimate display |
 | `chat/RecentConversations.tsx` | Sidebar: saved briefs (image bots), creative brief (live REQ tags), past chats (collapsible, 10-limit, deletable) |
 | `chat/CreativeBrief.tsx` | Live creative brief from [REQ:] tags + saved briefs section with 4 hardcoded example briefs |
@@ -599,7 +600,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `lib/bots-prompts.ts` | Bot system prompts mapped by bot ID, falls back to generic prompt |
 | `lib/bot-resolver.ts` | getBots() (DB-first, fallback to hardcoded), getSystemPrompt() (DB-first, fallback to bots-prompts.ts) |
 | `lib/encryption.ts` | AES-256-GCM encrypt/decrypt utility for RunPod bearer token. Uses `ENCRYPTION_KEY` env var (32-byte hex). Node.js `crypto` module, no dependencies. |
-| `lib/image-tools.ts` | **Only file that calls the Railway image API.** Upload, generate, edit, fuse, brand images. Credential fetch + decryption, credit tracking, platform size lookup, dimension capture from Railway response. Mirrors `lib/media-storage.ts` pattern. |
+| `lib/image-tools.ts` | **Only file that calls the Railway image API.** Generate, edit, fuse, brand images. Credential fetch + decryption, credit tracking, platform size lookup, dimension capture. Also contains `downloadAndStoreImage()` (FAL → Supabase Storage) and `uploadBase64ToStorage()` (base64 → Supabase Storage). |
 | `lib/energy.ts` | Energy consumption estimation for AI-generated images. Pure calculation library based on Stanford/AXA 2025 research. Named constants, linear interpolation formula, 3 human-readable comparison formatters (Google searches, phone charge, LED bulb), disclaimer text. |
 | `lib/image-tool-definitions.ts` | OpenAI-compatible tool definitions array for ChangeAgent. Passed via `tools` parameter — never injected into system prompt. 4 tools: generate_image, edit_image, fuse_images, apply_branding. |
 | `lib/style-gallery-data.ts` | Style gallery data for Graphics Creation bot. Main gallery (10 styles) + 10 substyle galleries with fal.ai CDN image URLs. Used by chat route to respond to model's `style_galery` tool calls. |
@@ -662,6 +663,11 @@ Desktop-first design. Mobile is out of scope for now.
 - **Notification bar follow-up guidance** — signup notification now reads "Follow up with them or reassign to another member in the next 48 hours" instead of just listing the count.
 - **Calendar sources group-scoped** — Migration 025 moved calendar_sources from org_id to group_id. All calendar API routes use `requireAuth()` + `group_id` filtering. `CalendarSource` type in `lib/types.ts`.
 - **Event detail sheet** — Clicking events in Upcoming Events widget opens EventDetailSheet (Shadcn Sheet) showing title, date/time, location, source, description. Fields hidden gracefully when empty.
+- **Generated images stored in Supabase Storage** — all generated images now downloaded from FAL and stored in Supabase Storage (`media` bucket). Chat reference uploads also go to Supabase Storage. Railway storage dependency eliminated. Migration script (`scripts/migrate-generated-images.ts`) moved 10 existing FAL images. FAL URLs kept as fallback in `url` column. Migration 026 relaxed `media_file_or_link` constraint.
+- **Image regeneration (Try Again)** — "Try again" button now re-executes the same image tool call directly via `/api/image-tools/execute` instead of sending a chat message. Chat route includes `toolName` and `toolArgs` in SSE image events. ChatView stores these per image URL for instant retry.
+- **Text file attachments in chat** — ChatInput accepts text files (.txt, .md, .csv, .json, .xml, .html, .yml, .py, .js, .ts, etc.) alongside images. Text content read client-side and sent as message context. Image bots show separate image (🖼) and file (📎) buttons. Mic button hidden until voice input is implemented.
+- **Past Chats real count** — sidebar shows actual total conversation count from DB (via `select count: exact`) instead of capping at the 20-item fetch limit.
+- **Dashboard layout save reliability** — unmount auto-save uses `keepalive: true` so requests survive page navigation/logout. Save buttons await completion before exiting edit mode.
 - Deployed on Railway with auto-deploy from `v2` branch
 
 ## What Still Needs Work (Prioritized)
@@ -779,6 +785,11 @@ Desktop-first design. Mobile is out of scope for now.
 - **`uploadImageToRailway()` is dead code** — `lib/image-tools.ts` still exports this function but it is no longer imported anywhere. Remove in next cleanup session.
 - **`preprocessMessages` URL regex broadened** — `src/app/api/chat/route.ts` `preprocessMessages` was changed from hardcoded `fal.media` pattern to a generic image URL pattern (`https://....(jpg|jpeg|png|webp)...`). Review in next fresh-eyes audit for edge cases.
 - **`tsx` and `dotenv` dev dependencies** — Added for the one-time migration script (`scripts/migrate-generated-images.ts`). Can be removed in next cleanup session if no other scripts need them.
+- **FAL URLs kept as fallback** — Migrated generated images have both `url` (FAL) and `storage_path` (Supabase) set. A future cleanup pass can null out `url` on rows with confirmed `storage_path`.
+- **Generated images not counted in group storage quota** — `incrementStorageUsed()` is not called during generation (private images by design). The migration backfilled `storage_used_bytes` manually. Future: decide if private generated images should count against quota.
+- **Chat file attachments text-only** — PDF and Word (.docx) files require server-side text extraction and are not currently supported. Only plain text formats accepted.
+- **Dashboard layout auto-save uses keepalive** — `keepalive: true` on unmount fetch. Has a 64KB body size limit per browser spec. Dashboard layouts are well under this. If layouts grow very large, consider switching to `navigator.sendBeacon`.
+- **Past Chats shows max 20 items** — The fetch limit is 20 (`.limit(20)` in page.tsx). The count is real via `count: "exact"`. "Show all" text shows real count but can only display the 20 fetched items. Future: paginated loading.
 
 ---
 
