@@ -31,7 +31,7 @@ The path to full launch involves connecting external action source adapters (Nat
 - Volunteer hours tracking with dashboard widget (spark chart + progress bar when goal set), detail overlay (role-gated: admins see all, non-admins see own hours)
 - Fundraising, recruitment, and volunteer hours goals (admin-editable, DB-driven, displayed in dashboard widgets)
 - Reimbursement requests with approval workflow and in-app notifications
-- Super Admin Panel (Organization, People, Goals, Bots, Integrations, Billing tabs)
+- Super Admin Panel with sidebar navigation (People, Hours, Goals, Organization, Bots, Branding, Landing Pages, Integrations, Billing). Team hours overview with per-member aggregation and detail sheets.
 - Configurable dashboard grid (React Grid Layout, role-aware save, per-widget size constraints)
 - Calendar integration (group-scoped iCal/ICS feeds from Google Calendar, Outlook, Apple Calendar, Mobilize, any iCal source) with event detail sheet
 - Actions system (internal actions with types, points, deadlines, assignment scoping, self-reported completion tracking, points ledger)

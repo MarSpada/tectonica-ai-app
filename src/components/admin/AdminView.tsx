@@ -1,11 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { UserRole } from "@/lib/types";
 import { ROLES } from "@/lib/constants/roles";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
+import type { IconName } from "@/lib/icon-map";
 import OrgTab from "./OrgTab";
 import PeopleTab from "./PeopleTab";
 import BotsTab from "./BotsTab";
@@ -14,10 +15,14 @@ import GoalsTab from "./GoalsTab";
 import BillingTab from "./BillingTab";
 import BrandingTab from "./BrandingTab";
 import LandingPagesTab from "./LandingPagesTab";
+import HoursTab from "./HoursTab";
+
+/* ── URL param ↔ tab key mapping ── */
 
 const TAB_PARAM_MAP: Record<string, string> = {
   organization: "Organization",
   people: "People",
+  hours: "Hours",
   goals: "Goals",
   bots: "Bots",
   integrations: "Integrations",
@@ -25,6 +30,49 @@ const TAB_PARAM_MAP: Record<string, string> = {
   branding: "Branding",
   "landing-pages": "Landing Pages",
 };
+
+/* ── Sidebar nav structure ── */
+
+interface NavItem {
+  key: string;       // matches TAB_PARAM_MAP display name
+  label: string;
+  icon: IconName;
+  superOnly: boolean;
+}
+
+interface NavGroup {
+  heading: string;
+  items: NavItem[];
+}
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    heading: "Manage",
+    items: [
+      { key: "People", label: "People", icon: "members", superOnly: false },
+      { key: "Hours", label: "Hours", icon: "log-hours", superOnly: false },
+      { key: "Goals", label: "Goals", icon: "nav-goals", superOnly: false },
+      { key: "Organization", label: "Organization", icon: "nav-organization", superOnly: true },
+    ],
+  },
+  {
+    heading: "Tools",
+    items: [
+      { key: "Bots", label: "Bots", icon: "nav-bots", superOnly: true },
+      { key: "Branding", label: "Branding", icon: "nav-branding", superOnly: false },
+      { key: "Landing Pages", label: "Landing Pages", icon: "bot-landing-page", superOnly: false },
+    ],
+  },
+  {
+    heading: "Settings",
+    items: [
+      { key: "Integrations", label: "Integrations", icon: "widget-connected-systems", superOnly: true },
+      { key: "Billing", label: "Billing", icon: "widget-fundraising", superOnly: true },
+    ],
+  },
+];
+
+/* ── Component ── */
 
 interface AdminViewProps {
   role: UserRole;
@@ -36,76 +84,105 @@ export default function AdminView({ role, orgId, groupId }: AdminViewProps) {
   const searchParams = useSearchParams();
   const isSuperAdmin = role === ROLES.SUPER_ADMIN;
 
-  const tabs = isSuperAdmin
-    ? (["Organization", "People", "Goals", "Bots", "Integrations", "Billing", "Branding", "Landing Pages"] as const)
-    : (["People", "Goals", "Branding", "Landing Pages"] as const);
+  // Build flat list of accessible tab keys for this role
+  const accessibleTabs = NAV_GROUPS
+    .flatMap((g) => g.items)
+    .filter((item) => !item.superOnly || isSuperAdmin)
+    .map((item) => item.key);
 
+  // Resolve initial tab from URL param
   const tabParam = searchParams.get("tab")?.toLowerCase() || "";
   const requestedTab = TAB_PARAM_MAP[tabParam];
-  const defaultTab = requestedTab && (tabs as readonly string[]).includes(requestedTab)
-    ? requestedTab
-    : tabs[0];
+  const initialTab =
+    requestedTab && accessibleTabs.includes(requestedTab)
+      ? requestedTab
+      : accessibleTabs[0] || "People";
+
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-content-bg">
-      <Tabs defaultValue={defaultTab} className="flex-1 flex flex-col gap-0 overflow-hidden">
+    <div className="flex-1 flex min-h-0 overflow-hidden bg-content-bg">
+      {/* ── Sidebar navigation ── */}
+      <aside className="w-[220px] shrink-0 border-r border-card-stroke bg-card-bg flex flex-col overflow-y-auto">
         {/* Header */}
-        <div className="px-6 pt-5 pb-0">
-          <div className="flex items-center gap-3 mb-4">
-            <Icon name="admin" size={28} />
-            <h1 className="text-2xl font-bold text-foreground">Admin Panel</h1>
-            {!isSuperAdmin && (
-              <Badge variant="secondary" className="bg-purple-100 text-purple-700">
-                Group Admin
-              </Badge>
-            )}
-          </div>
-
-          <TabsList variant="line" className="w-full justify-start border-b border-border">
-            {tabs.map((tab) => (
-              <TabsTrigger key={tab} value={tab}>
-                {tab}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        <div className="px-3 py-4 flex items-center gap-2">
+          <Icon name="admin" size={16} />
+          <span className="text-sm font-semibold text-text-primary">Admin Panel</span>
+          {!isSuperAdmin && (
+            <Badge variant="secondary" className="bg-purple-100 text-purple-700 ml-auto text-[10px]">
+              Group Admin
+            </Badge>
+          )}
         </div>
 
-        {/* Tab content */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
-          {isSuperAdmin && (
-            <TabsContent value="Organization">
-              <OrgTab orgId={orgId} />
-            </TabsContent>
-          )}
-          <TabsContent value="People">
-            <PeopleTab role={role} orgId={orgId} groupId={groupId} />
-          </TabsContent>
-          <TabsContent value="Goals">
-            <GoalsTab groupId={groupId} />
-          </TabsContent>
-          {isSuperAdmin && (
-            <TabsContent value="Bots">
-              <BotsTab orgId={orgId} />
-            </TabsContent>
-          )}
-          {isSuperAdmin && (
-            <TabsContent value="Integrations">
-              <IntegrationsTab />
-            </TabsContent>
-          )}
-          {isSuperAdmin && (
-            <TabsContent value="Billing">
-              <BillingTab groupId={groupId} />
-            </TabsContent>
-          )}
-          <TabsContent value="Branding">
-            <BrandingTab role={role} groupId={groupId} orgId={orgId} />
-          </TabsContent>
-          <TabsContent value="Landing Pages">
-            <LandingPagesTab role={role} groupId={groupId} />
-          </TabsContent>
-        </div>
-      </Tabs>
+        {/* Nav groups */}
+        <nav className="flex-1 px-1.5 pb-4">
+          {NAV_GROUPS.map((group) => {
+            const visibleItems = group.items.filter(
+              (item) => !item.superOnly || isSuperAdmin
+            );
+            if (visibleItems.length === 0) return null;
+
+            return (
+              <div key={group.heading}>
+                <p className="text-xs font-semibold uppercase tracking-wide text-text-muted px-3 mb-1 mt-4">
+                  {group.heading}
+                </p>
+                {visibleItems.map((item) => {
+                  const isActive = activeTab === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={() => setActiveTab(item.key)}
+                      className={`
+                        w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors
+                        ${isActive
+                          ? "bg-[var(--accent-purple)]/10 text-[var(--accent-purple)] font-medium border-l-2 border-[var(--accent-purple)] -ml-px"
+                          : "text-text-secondary hover:text-text-primary hover:bg-black/[0.02]"
+                        }
+                      `}
+                    >
+                      <Icon name={item.icon} size={16} />
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </nav>
+      </aside>
+
+      {/* ── Content area ── */}
+      <div className="flex-1 overflow-y-auto p-6 min-w-0">
+        {activeTab === "Organization" && isSuperAdmin && (
+          <OrgTab orgId={orgId} />
+        )}
+        {activeTab === "People" && (
+          <PeopleTab role={role} orgId={orgId} groupId={groupId} />
+        )}
+        {activeTab === "Hours" && (
+          <HoursTab groupId={groupId} />
+        )}
+        {activeTab === "Goals" && (
+          <GoalsTab groupId={groupId} />
+        )}
+        {activeTab === "Bots" && isSuperAdmin && (
+          <BotsTab orgId={orgId} />
+        )}
+        {activeTab === "Integrations" && isSuperAdmin && (
+          <IntegrationsTab />
+        )}
+        {activeTab === "Billing" && isSuperAdmin && (
+          <BillingTab groupId={groupId} />
+        )}
+        {activeTab === "Branding" && (
+          <BrandingTab role={role} groupId={groupId} orgId={orgId} />
+        )}
+        {activeTab === "Landing Pages" && (
+          <LandingPagesTab role={role} groupId={groupId} />
+        )}
+      </div>
     </div>
   );
 }

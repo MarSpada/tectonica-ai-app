@@ -1,20 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { ProgressCircle } from "@/components/tremor/ProgressCircle";
+import { isAdminRole } from "@/lib/constants/roles";
+import type { UserRole } from "@/lib/types";
 
 interface RecruitmentGoalWidgetProps {
   memberCount: number;
   supporterCount: number;
   membersGoal: number;
   supportersGoal: number;
+  role: UserRole;
 }
 
-export default function RecruitmentGoalWidget({ memberCount, supporterCount, membersGoal, supportersGoal }: RecruitmentGoalWidgetProps) {
+export default function RecruitmentGoalWidget({ memberCount, supporterCount, membersGoal, supportersGoal, role }: RecruitmentGoalWidgetProps) {
   const memberPct = membersGoal > 0 ? Math.min(Math.round((memberCount / membersGoal) * 100), 100) : 0;
   const supporterPct = supportersGoal > 0 ? Math.min(Math.round((supporterCount / supportersGoal) * 100), 100) : 0;
 
   return (
-    <div className="h-full overflow-auto p-5">
+    <div className="h-full overflow-auto p-5 flex flex-col">
       <h3 className="font-bold mb-4" style={{ fontSize: "var(--widget-title-size)", color: "var(--widget-text-color)" }}>Recruitment Goals</h3>
       <div className="flex gap-8 justify-center">
         <div className="flex flex-col items-center">
@@ -40,6 +44,15 @@ export default function RecruitmentGoalWidget({ memberCount, supporterCount, mem
           )}
         </div>
       </div>
+      {isAdminRole(role) && (
+        <Link
+          href="/admin?tab=goals"
+          className="widget-cta-btn mt-auto w-full rounded-sm text-white font-semibold text-center block cursor-pointer"
+          style={{ backgroundColor: "var(--widget-btn-recruitment)", fontSize: "var(--widget-btn-label-size)", padding: "8px 0" }}
+        >
+          Set Goals
+        </Link>
+      )}
     </div>
   );
 }

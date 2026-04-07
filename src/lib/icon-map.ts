@@ -45,6 +45,12 @@ export const ICON_MAP = {
   'bot-group-decision': `${ICON_BASE}/interface-essential/hierarchy-5-organize.svg`,
   'bot-welcome': `${ICON_BASE}/computers-devices-electronics/laptop-smiley-1.svg`,
 
+  // ── Admin Navigation ──
+  'nav-goals': `${ICON_BASE}/business-products/target-center-monitor.svg`,
+  'nav-organization': `${ICON_BASE}/work-office-companies/office-building-tall-2.svg`,
+  'nav-bots': `${ICON_BASE}/computers-devices-electronics/computer-chip-core.svg`,
+  'nav-branding': `${ICON_BASE}/design/color-palette.svg`,
+
   // ── UI Actions ──
   'search': `${ICON_BASE}/interface-essential/search-circle-alternate.svg`,
   'settings': `${ICON_BASE}/interface-essential/cog.svg`,

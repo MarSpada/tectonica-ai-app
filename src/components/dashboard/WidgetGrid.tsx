@@ -203,6 +203,7 @@ export default function WidgetGrid({
             supporterCount={supporterCount}
             membersGoal={groupGoals?.members_goal || 0}
             supportersGoal={groupGoals?.supporters_goal || 0}
+            role={role}
           />
         );
       case "request_approval":

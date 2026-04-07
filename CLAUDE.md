@@ -312,8 +312,10 @@ Main bot grid + right sidebar dashboard. Body has no special class.
 
 ### 7. Super Admin Panel (`/admin`)
 - Role-guarded (super_admin only, group_admin gets limited access)
-- 8 tabs (super admin): Organization, People, Goals, Bots, Integrations, Billing, Branding, Landing Pages
-- 4 tabs (group admin): People, Goals, Branding, Landing Pages
+- Sidebar navigation (220px) with 3 groups: Manage, Tools, Settings
+- 9 sections (super admin): People, Hours, Goals, Organization, Bots, Branding, Landing Pages, Integrations, Billing
+- 5 sections (group admin): People, Hours, Goals, Branding, Landing Pages
+- **Hours tab**: Team volunteer hours summary (KPI cards: total hours, this month, active volunteers), member table sorted by activity, detail sheet per member with full log entries
 - **Organization tab**: Edit org name, manage groups (rename)
 - **People tab**: List all org members, change roles (super_admin/group_admin/member/supporter), reassign groups, remove members, inline name editing
 - **Bots tab**: DB-driven bot management (create, edit, delete), system prompt editor, category/icon picker
@@ -497,6 +499,8 @@ Desktop-first design. Mobile is out of scope for now.
 | `/api/notifications/read` | POST | Mark notifications as read (by IDs or "all") |
 | `/api/events` | GET | Fetches enabled calendar sources for user's org, parses ICS feeds, returns next 30 days of events (max 20) |
 | `/api/hours` | GET/POST | GET: list group volunteer hours with totals. POST: log hours for current user |
+| `/api/admin/hours` | GET | Team volunteer hours summary: per-member aggregation (total, this month, last logged), KPI totals. Admin only. |
+| `/api/admin/hours/[userId]` | GET | Individual member's volunteer hour entries with totals. Validates user belongs to admin's group. Admin only. |
 | `/api/admin/org` | GET/PATCH | View/edit organization settings (super_admin) |
 | `/api/admin/groups` | GET/PATCH | List/manage groups (super_admin) |
 | `/api/admin/members` | GET | List all org members (super_admin) or group members (group_admin) |
@@ -590,7 +594,8 @@ Desktop-first design. Mobile is out of scope for now.
 | `members/OrgChartView.tsx` | D3 radial/snowflake org chart. Role-based hierarchy, pill labels, avatar rendering, zoom/pan, click → MemberDetailModal. |
 | `members/MemberDetailModal.tsx` | Member detail popup (used by both list click navigation and org chart node click) |
 | `members/MemberProfile.tsx` | Member profile card |
-| `admin/AdminView.tsx` | Main admin tab container with role guard (8 tabs for super_admin, 4 for group_admin) |
+| `admin/AdminView.tsx` | Admin panel with sidebar navigation (3 groups: Manage, Tools, Settings). Controlled tab state with `?tab=` deep linking. Role guard (9 sections for super_admin, 5 for group_admin). |
+| `admin/HoursTab.tsx` | Team volunteer hours: KPI summary cards, member table sorted by activity, detail sheet per member. Fetches from `/api/admin/hours`. |
 | `admin/OrgTab.tsx` | Organization settings (name, details) |
 | `admin/GoalsTab.tsx` | Admin-editable group goals: fundraising (money_goal, money_budget, money_raised_offline) and recruitment (members_goal, supporters_goal). Inline edit pattern matching OrgTab. |
 | `admin/PeopleTab.tsx` | Member management with role/group changes, inline name editing |
@@ -672,7 +677,7 @@ Desktop-first design. Mobile is out of scope for now.
 - Interactive NB signup assignments (click → modal → contact/call/assign)
 - Email notifications via Resend (signups, approvals, status changes)
 - In-app notification bar for signup assignments and approvals
-- **Super Admin Panel** — org settings, people management (roles, groups, inline name editing), DB-driven bot management, goals management, integrations
+- **Super Admin Panel** — sidebar navigation (3 groups: Manage, Tools, Settings), org settings, people management (roles, groups, inline name editing), team hours overview, DB-driven bot management, goals management, integrations, billing, branding, landing pages
 - **Approval workflow** — submit, review, approve/request changes, resubmit, comment threads
 - **Calendar integration** — group-scoped iCal/ICS feeds (Google Calendar, Outlook, Apple Calendar, Mobilize, any iCal source), managed in admin Integrations tab. Migration 025 moved from org-level to group-level scope.
 - **Upcoming Events widget** — pulls from connected calendar feeds, shows next 30 days. "Manage Calendars" button (super_admin only). Click event opens EventDetailSheet with title, date/time, location, source, description.
@@ -853,7 +858,9 @@ Desktop-first design. Mobile is out of scope for now.
 - **`form_embed_html` injected raw** — The form embed HTML from group_branding is not escaped — it's trusted admin-provided content. The amber warning in the Branding tab is the only safeguard. Can contain `<script>` tags (e.g., HubSpot embeds).
 - **Google Fonts requires internet** — Generated landing pages load custom fonts via Google Fonts CDN. Offline viewing falls back to system fonts.
 - **`docs/changeagent/` reference files** — Contains `landing_page_system_prompt.md` (system prompt for Open WebUI) and `landing_page_bot_insert.sql` (bot DB insert). The Python tool file (`landing_page_tools.py`) was deleted — it was for the ChangeAgent approach that was replaced by native text pattern detection.
-- **Admin Panel now has 8 tabs** (super admin) / 4 tabs (group admin) — Organization, People, Goals, Bots, Integrations, Billing, Branding, Landing Pages. Group admin sees People, Goals, Branding, Landing Pages.
+- **Admin Panel uses sidebar navigation** — replaced horizontal tabs with a 220px sidebar organized into 3 groups (Manage, Tools, Settings). 9 sections for super admin (People, Hours, Goals, Organization, Bots, Branding, Landing Pages, Integrations, Billing), 5 for group admin (People, Hours, Goals, Branding, Landing Pages). Uses controlled `useState` with conditional rendering instead of Shadcn Tabs. `?tab=` URL param deep linking preserved. `TAB_PARAM_MAP` includes `hours: "Hours"`.
+- **Hours tab in Admin Panel** — Team volunteer hours view. KPI summary cards (total hours, this month, active volunteers), member table sorted by this_month_hours DESC, detail sheet per member with full log entries. Uses existing `volunteer_hours` table — no new migrations. Null guard: if `groupId` is null, renders "No group assigned" and skips API call.
+- **Recruitment Goals widget "Set Goals" button** — visible to admins only (`isAdminRole`), navigates to `/admin?tab=goals`. Uses `--widget-btn-recruitment` CSS variable (#422D8F). `RecruitmentGoalWidget` now requires `role` prop, passed from `WidgetGrid`.
 - **`requireApiKey()` in `lib/api-utils.ts`** — Validates Bearer token against `CHANGE_AGENT_API_KEY` for external endpoints. Currently only used by the dormant `/api/tools/generate-landing-page` route.
 
 ---
