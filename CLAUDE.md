@@ -312,7 +312,8 @@ Main bot grid + right sidebar dashboard. Body has no special class.
 
 ### 7. Super Admin Panel (`/admin`)
 - Role-guarded (super_admin only, group_admin gets limited access)
-- 4 tabs: Organization, People, Bots, Integrations
+- 8 tabs (super admin): Organization, People, Goals, Bots, Integrations, Billing, Branding, Landing Pages
+- 4 tabs (group admin): People, Goals, Branding, Landing Pages
 - **Organization tab**: Edit org name, manage groups (rename)
 - **People tab**: List all org members, change roles (super_admin/group_admin/member/supporter), reassign groups, remove members, inline name editing
 - **Bots tab**: DB-driven bot management (create, edit, delete), system prompt editor, category/icon picker
@@ -435,7 +436,8 @@ Desktop-first design. Mobile is out of scope for now.
 | `NATIONBUILDER_SLUG` | NationBuilder subdomain slug |
 | `RESEND_API_KEY` | Resend email API key |
 | `RESEND_FROM_EMAIL` | Sender email address for Resend transactional emails |
-| `SUPABASE_SERVICE_ROLE_KEY` | Only required for running migration scripts. Never import or use in application code, components, or API routes — it bypasses RLS entirely. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Required for migration scripts and `lib/supabase/service.ts` (external API endpoints with no user session). Bypasses RLS — use only where documented. |
+| `CHANGE_AGENT_API_KEY` | Static Bearer token for the `/api/tools/generate-landing-page` external endpoint. Currently dormant — landing pages are generated natively via the chat route. Only needed if enabling external API access. |
 
 ---
 
@@ -473,6 +475,10 @@ Desktop-first design. Mobile is out of scope for now.
 | `030_group_billing_topups.sql` | `group_billing_topups` table: append-only audit trail for credit top-ups. Records amount_usd, note, added_by_user_id. RLS: super_admin SELECT + INSERT only (no UPDATE/DELETE). |
 | `031_image_generation_log.sql` | `image_generation_log` table: per-generation cost tracking with output dimensions, input image count, MP total, cost_usd. Index on (group_id, created_at) for monthly aggregation. RLS: super_admin SELECT + INSERT. |
 | `032_debit_image_credit_rpc.sql` | `debit_image_credit()` SECURITY DEFINER RPC: atomic insert into image_generation_log + upsert group_billing (decrement credit_balance_usd). Creates row with negative balance if none exists. Returns updated balance. Callable by any authenticated user. |
+| `033_group_branding.sql` | `group_branding` table (one row per group): logo_url, hero_image_url, primary_color, secondary_color, default_cta_url, social_facebook/instagram/twitter/bluesky, font_family, form_embed_html. UNIQUE(group_id). RLS: super_admin full CRUD via `is_super_admin()` + `get_my_org_id()`, all group members read-only via `get_my_group_id()`. |
+| `034_group_landing_pages.sql` | `group_landing_pages` table: tracks generated landing pages with headline, type (signup/donate), public_url, status (live/archived), nullable created_by (FK to profiles, ON DELETE SET NULL — nullable for external service generation). RLS: super_admin full CRUD, group members SELECT, authenticated INSERT. Public anon SELECT for live pages (added separately). |
+| `035_landing_page_tools_enabled.sql` | Adds `landing_page_tools_enabled` boolean column to `bots` table (default false). Enables native landing page generation via text pattern detection in the chat route. Set to true for `landing-page-creator` bot only. |
+| `036_group_branding_font_and_form.sql` | Adds `font_family` (text) and `form_embed_html` (text) columns to `group_branding`. Font is applied via Google Fonts CDN on generated landing pages. Form embed replaces CTA button when set. |
 
 ---
 
@@ -533,6 +539,13 @@ Desktop-first design. Mobile is out of scope for now.
 | `/api/admin/billing/topups` | GET | Top-up history for group (super_admin). 20 most recent, enriched with added_by_name. |
 | `/api/admin/billing/rates` | PATCH | Update generation rates or platform fee (super_admin). Body: { cost_per_mp_base?, cost_per_mp_extra?, platform_fee_percentage? }. Upserts group_billing. |
 | `/auth/reset-callback` | GET | Password reset callback — exchanges PKCE code, redirects to /reset-password |
+| `/api/admin/branding` | GET/PATCH | GET: group branding (logo, hero, colors, CTA URL, social links, font, form embed). Returns all-null fields if no row. PATCH: super admin upsert of text fields. |
+| `/api/admin/branding/logo` | POST | Super admin. Multipart upload (JPEG/PNG/WebP, 2MB max). Stores in `branding` Storage bucket at `{group_id}/logo.{ext}`. |
+| `/api/admin/branding/hero` | POST | Super admin. Same as logo but for hero image at `{group_id}/hero.{ext}`. |
+| `/api/admin/landing-pages` | GET | List all landing pages for user's group. Admin only (super_admin + group_admin). Enriched with created_by_name. |
+| `/api/admin/landing-pages/[id]` | PATCH | Archive a landing page (super admin only). Body: `{ status: "archived" }`. |
+| `/api/landing-pages/[id]/view` | GET | Public — no auth. Proxy route that downloads HTML from Storage and serves with `Content-Type: text/html`. Returns 404/410 for missing/archived pages. |
+| `/api/tools/generate-landing-page` | POST | External endpoint for ChangeAgent. Bearer token auth via `CHANGE_AGENT_API_KEY`. Fetches branding, renders HTML, uploads to Storage, inserts DB row. Currently dormant — landing pages generated natively via chat route instead. |
 
 ---
 
@@ -574,7 +587,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `members/OrgChartView.tsx` | D3 radial/snowflake org chart. Role-based hierarchy, pill labels, avatar rendering, zoom/pan, click → MemberDetailModal. |
 | `members/MemberDetailModal.tsx` | Member detail popup (used by both list click navigation and org chart node click) |
 | `members/MemberProfile.tsx` | Member profile card |
-| `admin/AdminView.tsx` | Main admin tab container with role guard (5 tabs for super_admin, 2 for group_admin) |
+| `admin/AdminView.tsx` | Main admin tab container with role guard (8 tabs for super_admin, 4 for group_admin) |
 | `admin/OrgTab.tsx` | Organization settings (name, details) |
 | `admin/GoalsTab.tsx` | Admin-editable group goals: fundraising (money_goal, money_budget, money_raised_offline) and recruitment (members_goal, supporters_goal). Inline edit pattern matching OrgTab. |
 | `admin/PeopleTab.tsx` | Member management with role/group changes, inline name editing |
@@ -582,6 +595,8 @@ Desktop-first design. Mobile is out of scope for now.
 | `admin/BotEditor.tsx` | Bot form (slug, name, icon, category, description, system prompt) |
 | `admin/IntegrationsTab.tsx` | Calendar source management + integration status |
 | `admin/BillingTab.tsx` | Credit balance + month spend, add credits form, top-up history, generation rates inline edit, platform fee inline edit. Super admin only. |
+| `admin/BrandingTab.tsx` | Group branding management: logo upload, hero image upload, color pickers, default CTA URL, social media links, font selection (Google Fonts), form embed HTML. Super admin can edit, group admin read-only. |
+| `admin/LandingPagesTab.tsx` | Landing pages list: headline, type badge, status badge, created by, date, View button (external link), Archive button (super admin). Both super admin and group admin can view. |
 | `admin/RoleChangeModal.tsx` | Modal to change member role |
 | `admin/GroupReassignModal.tsx` | Modal to reassign member to different group |
 | `approvals/ApprovalsView.tsx` | Approval requests list |
@@ -630,8 +645,10 @@ Desktop-first design. Mobile is out of scope for now.
 | `lib/dashboard-widgets.ts` | Widget IDs, role-based visibility permissions, labels, size constraints, system default layout, and layout utility functions (getVisibleWidgets, filterLayoutToRole, mergeLayoutWithDefaults) |
 | `lib/chat-utils.ts` | Chat route utilities: `preprocessMessages()` (base64 image upload, URL extraction) and `persistConversation()` (save messages to Supabase). Extracted from `app/api/chat/route.ts`. |
 | `lib/stream-utils.ts` | OpenAI-compatible SSE streaming: `streamModelResponse()` (stream to client, accumulate tool call deltas, strip reasoning field) and `collectModelResponse()` (collect without streaming, used for gallery follow-ups). |
+| `lib/landing-page-utils.ts` | Landing page HTML renderer. `LandingPageBrief` interface + `renderLandingPage()` function. Self-contained HTML with Google Fonts (when font selected), conditional logo/hero/urgency/social, form embed replaces CTA button when configured. |
 | `lib/supabase/server.ts` | Server-side Supabase client factory using cookies |
 | `lib/supabase/client.ts` | Client-side Supabase client factory |
+| `lib/supabase/service.ts` | Service role Supabase client (bypasses RLS). Uses `SUPABASE_SERVICE_ROLE_KEY`. Only for external API endpoints with no user session (e.g., `/api/tools/generate-landing-page`). Currently dormant — landing pages use the regular server client via the chat route. |
 
 ---
 
@@ -685,6 +702,8 @@ Desktop-first design. Mobile is out of scope for now.
 - **Text file attachments in chat** — ChatInput accepts text files (.txt, .md, .csv, .json, .xml, .html, .yml, .py, .js, .ts, etc.) alongside images. Text content read client-side and sent as message context. Image bots show separate image (🖼) and file (📎) buttons. Mic button hidden until voice input is implemented.
 - **Past Chats real count** — sidebar shows actual total conversation count from DB (via `select count: exact`) instead of capping at the 20-item fetch limit.
 - **Dashboard layout save reliability** — unmount auto-save uses `keepalive: true` so requests survive page navigation/logout. Save buttons await completion before exiting edit mode.
+- **Group Branding** — admin tab for managing group brand assets: logo upload, hero image upload, primary/secondary colors with color pickers, default CTA URL, social media links (Facebook, Instagram, Twitter/X, Bluesky), font selection (8 Google Fonts + system default), form embed HTML (replaces CTA button on landing pages). Super admin can edit all fields, group admin sees read-only. Stored in `group_branding` table (one row per group). Storage bucket `branding` (public) for logo/hero images.
+- **Landing Page Creator bot** — native tool in the chat route using text pattern detection (not OpenAI function calling). The model outputs `GENERATE_LANDING_PAGE` followed by a JSON block, which the chat route detects, renders as HTML via `renderLandingPage()`, uploads to Supabase Storage, and returns via SSE event. The generated page uses the group's branding (colors, logo, hero, social links, font, form embed) automatically. Pages served via proxy route (`/api/landing-pages/[id]/view`) since Supabase Storage forces `text/plain` on HTML files. Admin Landing Pages tab shows all generated pages with archive capability.
 - Deployed on Railway with auto-deploy from `v2` branch
 
 ## What Still Needs Work (Prioritized)
@@ -823,6 +842,16 @@ Desktop-first design. Mobile is out of scope for now.
 - **`platform_fee_percentage` stored but not applied** — The field is stored in `group_billing` and editable in the admin Billing tab, but `calculateImageCost()` in `lib/billing-utils.ts` does not factor it into the cost. Wire it when Stripe integration begins.
 - **SSE `creditBalance` event timing** — The `debit_image_credit` RPC runs fire-and-forget after generation. If the RPC is slow, the `{ creditBalance: number }` SSE event may arrive after the stream closes. The topbar would show stale balance until the next generation. In practice the RPC is a single SQL transaction and is fast.
 - **Migrations 029–032 required** — Must be run in Supabase SQL Editor in order (029 → 030 → 031 → 032) before the billing system is functional. Without them, billing API routes return defaults and debit calls fail silently.
+- **Migrations 033–036 required** — Must be run in Supabase SQL Editor in order (033 → 034 → 035 → 036) for branding and landing page features. Without them, branding tab shows empty state and landing page generation fails.
+- **Storage buckets `branding` and `landing-pages`** — Both must be created as PUBLIC buckets in Supabase dashboard. `branding` stores logo/hero images. `landing-pages` stores generated HTML files. Storage RLS policies must be added separately (INSERT for authenticated users, SELECT for public).
+- **Landing page text pattern detection** — The Landing Page Creator bot uses text pattern detection, not OpenAI function calling. The model outputs `GENERATE_LANDING_PAGE` followed by a JSON block. The chat route detects this in the accumulated streamed content (gated by `landingPageToolsEnabled`). The trigger keyword must match exactly between the system prompt and `route.ts`. Image tool flow is completely separate and unaffected.
+- **Landing page trigger text stripped client-side** — `stripLandingPageTrigger()` in ChatView.tsx uses brace counting to strip the trigger block from rendered content. The `parsed.landingPage` SSE event replaces all message content with a styled "See your landing page" button link.
+- **Landing page proxy route** — Supabase Storage forces `text/plain` + `sandbox` CSP on HTML files. Landing pages are served via `/api/landing-pages/[id]/view` which downloads from Storage and returns with `Content-Type: text/html`. This is a public route — no auth required.
+- **`form_embed_html` injected raw** — The form embed HTML from group_branding is not escaped — it's trusted admin-provided content. The amber warning in the Branding tab is the only safeguard. Can contain `<script>` tags (e.g., HubSpot embeds).
+- **Google Fonts requires internet** — Generated landing pages load custom fonts via Google Fonts CDN. Offline viewing falls back to system fonts.
+- **`docs/changeagent/` reference files** — Contains `landing_page_system_prompt.md` (system prompt for Open WebUI) and `landing_page_bot_insert.sql` (bot DB insert). The Python tool file (`landing_page_tools.py`) was deleted — it was for the ChangeAgent approach that was replaced by native text pattern detection.
+- **Admin Panel now has 8 tabs** (super admin) / 4 tabs (group admin) — Organization, People, Goals, Bots, Integrations, Billing, Branding, Landing Pages. Group admin sees People, Goals, Branding, Landing Pages.
+- **`requireApiKey()` in `lib/api-utils.ts`** — Validates Bearer token against `CHANGE_AGENT_API_KEY` for external endpoints. Currently only used by the dormant `/api/tools/generate-landing-page` route.
 
 ---
 

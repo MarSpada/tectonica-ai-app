@@ -44,6 +44,8 @@ The path to full launch involves connecting external action source adapters (Nat
 - Image credit billing system: per-group credit pools, cost calculation based on megapixels, generation logging, admin Billing tab (balance, top-ups, rates, platform fee), real-time credit display in chat topbar
 - Energy consumption indicator per AI-generated image (Stanford/AXA 2025 research, collapsible display in chat and Media Library)
 - GSAP entrance animations throughout
+- Group branding system (logo, hero image, colors, CTA URL, social links, font selection, form embed) with admin Branding tab
+- Landing Page Creator bot — native tool in chat route via text pattern detection, generates branded HTML landing pages, admin Landing Pages tab for management
 - Deployed on Railway with auto-deploy from `v2` branch
 
 ### In progress
@@ -127,16 +129,19 @@ The following must be configured manually in the Supabase dashboard:
    - `approvals` — 5MB limit for approval request attachments
    - `media` — for Media Library files. Setup instructions are in the header comment of `src/lib/media-storage.ts`
    - `reimbursements` — for reimbursement request attachments
-2. **Storage RLS policies** — Storage bucket policies are separate from table-level RLS and must be configured in the Supabase dashboard
-3. **All SQL migrations** (in `supabase/migrations/`, numbered 001–032) must be run in order in the Supabase SQL Editor. Migrations 029–032 add the image credit billing system (group_billing, group_billing_topups, image_generation_log tables + debit_image_credit RPC).
-4. **Manual schema addition**: `ALTER TABLE group_goals ADD COLUMN hours_goal integer NOT NULL DEFAULT 0;` (no migration file — run directly in SQL Editor)
+   - `branding` — public bucket for group logos and hero images (used in landing pages)
+   - `landing-pages` — public bucket for generated HTML landing page files
+2. **Storage RLS policies** — Storage bucket policies are separate from table-level RLS and must be configured in the Supabase dashboard. For `branding` and `landing-pages` buckets, add policies for authenticated INSERT and public SELECT.
+3. **All SQL migrations** (in `supabase/migrations/`, numbered 001–036) must be run in order in the Supabase SQL Editor. Migrations 029–032 add the image credit billing system. Migrations 033–036 add group branding, landing pages, landing page tool flag, and font/form embed fields.
+4. **Landing pages public RLS policy** — Run separately: `CREATE POLICY "Public can view live landing pages" ON group_landing_pages FOR SELECT TO anon USING (status = 'live');`
+5. **Manual schema addition**: `ALTER TABLE group_goals ADD COLUMN hours_goal integer NOT NULL DEFAULT 0;` (no migration file — run directly in SQL Editor)
 
 ### Test accounts
 
 | Email | Role | Useful for |
 |---|---|---|
 | `mar@tectonica.co` | super_admin | Full admin panel access, org-wide operations |
-| `ned@tectonica.co` | group_admin | Group-scoped admin (People + Goals tabs only) |
+| `ned@tectonica.co` | group_admin | Group-scoped admin (People, Goals, Branding, Landing Pages tabs) |
 | `production@tectonica.co` | group_admin | Second group admin for testing multi-admin scenarios |
 | `mar.isabel.spada@gmail.com` | member | Standard member experience, no admin access |
 | `tectonica-ai-test1@maildrop.cc` | supporter | Lowest privilege, created manually in Supabase (auto-confirmed) |
@@ -227,8 +232,9 @@ src/
     ├── constants/
     │   └── roles.ts        # Role constants (ROLES, VALID_ROLES), helpers (isAdminRole, isSuperAdmin)
     ├── action-adapters/    # Action source adapter scaffold (future: NB, Action Network, ActBlue, Sosha)
-    ├── api-utils.ts        # Shared API route utilities: requireAuth(), fetchProfileMap()
+    ├── api-utils.ts        # Shared API route utilities: requireAuth(), requireApiKey(), fetchProfileMap()
     ├── billing-utils.ts    # Image generation cost calculation, input image counting, credit formatting
+    ├── landing-page-utils.ts # Landing page HTML renderer (LandingPageBrief + renderLandingPage)
     ├── media-storage.ts    # Storage abstraction (only file that imports Supabase Storage for media)
     ├── signup-utils.ts     # NationBuilder API utilities
     ├── dashboard-widgets.ts # Widget IDs, permissions, constraints, layouts
@@ -237,9 +243,13 @@ src/
     ├── icon-map.ts         # Streamline icon path mapping
     ├── design-tokens.ts    # Design token definitions
     ├── UserProfileContext.tsx # React Context for user profile data (role, orgName, groupName, name, avatar)
+    ├── supabase/
+    │   ├── server.ts       # Server-side Supabase client factory
+    │   ├── client.ts       # Client-side Supabase client factory
+    │   └── service.ts      # Service role client (bypasses RLS, for external API endpoints)
     └── utils.ts            # General utilities
 supabase/
-└── migrations/             # SQL migration files (001–032), run manually in Supabase SQL Editor
+└── migrations/             # SQL migration files (001–036), run manually in Supabase SQL Editor
 ```
 
 ### Key architectural patterns
