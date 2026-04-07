@@ -456,8 +456,8 @@ async function executeToolAndContinue(
         inputCount,
       );
       // fal_request_id not yet captured — wire in a future session by extending ImageResult.
-      supabase
-        .rpc("debit_image_credit", {
+      Promise.resolve(
+        supabase.rpc("debit_image_credit", {
           p_group_id: groupId,
           p_org_id: orgId,
           p_user_id: userId,
@@ -469,6 +469,7 @@ async function executeToolAndContinue(
           p_mp_total: cost.outputMp + cost.inputMp,
           p_cost_usd: cost.totalCost,
         })
+      )
         .then(({ data: newBalance, error: debitErr }) => {
           if (debitErr) {
             console.error("debit_image_credit failed:", debitErr.message);

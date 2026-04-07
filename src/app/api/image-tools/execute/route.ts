@@ -91,8 +91,8 @@ export async function POST(req: Request) {
         inputCount,
       );
       // fal_request_id not yet captured — wire in a future session by extending ImageResult.
-      supabase
-        .rpc("debit_image_credit", {
+      Promise.resolve(
+        supabase.rpc("debit_image_credit", {
           p_group_id: profile.group_id,
           p_org_id: profile.org_id,
           p_user_id: user.id,
@@ -104,6 +104,7 @@ export async function POST(req: Request) {
           p_mp_total: cost.outputMp + cost.inputMp,
           p_cost_usd: cost.totalCost,
         })
+      )
         .then(({ error: debitErr }) => {
           if (debitErr) {
             console.error("debit_image_credit failed:", debitErr.message);
