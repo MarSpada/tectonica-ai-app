@@ -132,7 +132,7 @@ The following must be configured manually in the Supabase dashboard:
    - `branding` — public bucket for group logos and hero images (used in landing pages)
    - `landing-pages` — public bucket for generated HTML landing page files
 2. **Storage RLS policies** — Storage bucket policies are separate from table-level RLS and must be configured in the Supabase dashboard. For `branding` and `landing-pages` buckets, add policies for authenticated INSERT and public SELECT.
-3. **All SQL migrations** (in `supabase/migrations/`, numbered 001–036) must be run in order in the Supabase SQL Editor. Migrations 029–032 add the image credit billing system. Migrations 033–036 add group branding, landing pages, landing page tool flag, and font/form embed fields.
+3. **All SQL migrations** (in `supabase/migrations/`, numbered 001–039) must be run in order in the Supabase SQL Editor. Migrations 029–032 add the image credit billing system. Migrations 033–037 add group branding, landing pages, landing page tool flag, font/form embed, and hero images. Migration 038 adds public RLS for live landing pages. Migration 039 creates storage buckets (branding + landing-pages).
 4. **Landing pages public RLS policy** — Run separately: `CREATE POLICY "Public can view live landing pages" ON group_landing_pages FOR SELECT TO anon USING (status = 'live');`
 5. **Manual schema addition**: `ALTER TABLE group_goals ADD COLUMN hours_goal integer NOT NULL DEFAULT 0;` (no migration file — run directly in SQL Editor)
 
@@ -249,7 +249,7 @@ src/
     │   └── service.ts      # Service role client (bypasses RLS, for external API endpoints)
     └── utils.ts            # General utilities
 supabase/
-└── migrations/             # SQL migration files (001–036), run manually in Supabase SQL Editor
+└── migrations/             # SQL migration files (001–039), run manually in Supabase SQL Editor
 ```
 
 ### Key architectural patterns
