@@ -167,21 +167,42 @@ export default function ChatInput({
       )}
 
       <div className="flex items-end gap-3 max-w-3xl mx-auto">
-        {/* Attachment button — for image bots, accepts images + text files */}
-        {isImageBot && (onImageUpload || onFileAttach) && (
+        {/* Image upload button — image bots only */}
+        {isImageBot && onImageUpload && (
+          <>
+            <button
+              onClick={() => imageInputRef.current?.click()}
+              disabled={isStreaming}
+              className="w-10 h-10 rounded-full flex items-center justify-center text-text-muted hover:bg-white/30 transition-colors disabled:opacity-40"
+              title="Attach image"
+            >
+              <Icon name="file-image" size={20} className="opacity-60" />
+            </button>
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
+          </>
+        )}
+
+        {/* File attachment button — image bots get both buttons, other bots get just this */}
+        {(onFileAttach || (!isImageBot && onImageUpload)) && (
           <>
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isStreaming}
               className="w-10 h-10 rounded-full flex items-center justify-center text-text-muted hover:bg-white/30 transition-colors disabled:opacity-40"
-              title="Attach file or image"
+              title="Attach file"
             >
               <Icon name="file-attachment" size={20} className="opacity-60" />
             </button>
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,.txt,.md,.csv,.json,.xml,.html,.yml,.yaml,.toml,.log,.js,.ts,.jsx,.tsx,.py,.rb,.java,.go,.rs,.css,.scss,.sql"
+              accept=".txt,.md,.csv,.json,.xml,.html,.yml,.yaml,.toml,.log,.js,.ts,.jsx,.tsx,.py,.rb,.java,.go,.rs,.css,.scss,.sql"
               onChange={handleFileSelect}
               className="hidden"
             />
@@ -197,13 +218,6 @@ export default function ChatInput({
           rows={1}
           className="flex-1 resize-none rounded-xl border border-black/10 bg-white/70 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-purple/50 placeholder:text-text-muted"
         />
-        {/* Mic button */}
-        <button
-          className="w-10 h-10 rounded-full flex items-center justify-center text-text-muted hover:bg-white/30 transition-colors"
-          title="Voice input"
-        >
-          <Icon name="microphone" size={20} className="opacity-60" />
-        </button>
         {/* Send button — gradient purple circle */}
         <button
           onClick={handleSend}
