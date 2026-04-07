@@ -256,9 +256,12 @@ interface ImageResult {
   url: string;
   width?: number;
   height?: number;
+  requestId?: string;
 }
 
 function extractImageResult(result: Record<string, unknown>): ImageResult {
+  const requestId = typeof result.request_id === "string" ? result.request_id : undefined;
+
   // Railway API returns images array: { images: [{ url, width, height }] }
   const images = result.images as Array<{ url: string; width?: number; height?: number }> | undefined;
   if (images && images.length > 0 && images[0].url) {
@@ -266,6 +269,7 @@ function extractImageResult(result: Record<string, unknown>): ImageResult {
       url: images[0].url,
       width: images[0].width,
       height: images[0].height,
+      requestId,
     };
   }
 
@@ -279,7 +283,7 @@ function extractImageResult(result: Record<string, unknown>): ImageResult {
   if (!url || typeof url !== "string") {
     throw new ImageToolError("api_error", "No image URL in Railway response");
   }
-  return { url };
+  return { url, requestId };
 }
 
 // ────────────────────────────────────────────────────────────

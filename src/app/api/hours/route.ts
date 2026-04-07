@@ -1,21 +1,15 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/api-utils";
 import type { HourEntry } from "@/lib/types";
 
 // GET — list volunteer hours for the user's group
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { profile, supabase } = auth;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("group_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.group_id) return NextResponse.json({ entries: [], total: 0, thisWeek: 0 });
+    if (!profile.group_id) return NextResponse.json({ entries: [], total: 0, thisWeek: 0 });
 
     const url = new URL(request.url);
     const limit = parseInt(url.searchParams.get("limit") || "50");
@@ -75,17 +69,11 @@ export async function GET(request: Request) {
 // POST — log volunteer hours
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, profile, supabase } = auth;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("group_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.group_id) {
+    if (!profile.group_id) {
       return NextResponse.json({ error: "No group found" }, { status: 400 });
     }
 

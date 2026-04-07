@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/api-utils";
 
 /* POST /api/actions/[id]/self-assign — member self-assigns to an action */
 export async function POST(
@@ -7,18 +7,11 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, profile, supabase } = auth;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("group_id")
-    .eq("id", user.id)
-    .single();
-  if (!profile?.group_id) {
+  if (!profile.group_id) {
     return NextResponse.json({ error: "No group assigned" }, { status: 400 });
   }
 

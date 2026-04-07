@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { requireAuth } from "@/lib/api-utils";
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -13,11 +13,9 @@ export async function POST(
     const body = await request.json();
     const { description, attachments } = body;
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
     const { error } = await supabase.rpc("resubmit_approval_request", {
       p_request_id: id,

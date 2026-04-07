@@ -455,13 +455,12 @@ async function executeToolAndContinue(
         imageResult.height,
         inputCount,
       );
-      // fal_request_id not yet captured — wire in a future session by extending ImageResult.
       Promise.resolve(
         supabase.rpc("debit_image_credit", {
           p_group_id: groupId,
           p_org_id: orgId,
           p_user_id: userId,
-          p_fal_request_id: null,
+          p_fal_request_id: imageResult.requestId ?? null,
           p_endpoint: imageCredentials.endpoint,
           p_output_width: imageResult.width || 1024,
           p_output_height: imageResult.height || 1024,

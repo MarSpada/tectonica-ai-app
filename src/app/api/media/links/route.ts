@@ -1,22 +1,14 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/api-utils";
 import { ROLES } from "@/lib/constants/roles";
 
 /* POST /api/media/links — create a link-type media item */
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, profile, supabase } = auth;
 
-  // Check role — supporters blocked
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("group_id, role")
-    .eq("id", user.id)
-    .single();
-  if (!profile?.group_id) {
+  if (!profile.group_id) {
     return NextResponse.json({ error: "No group assigned" }, { status: 400 });
   }
   if (profile.role === ROLES.SUPPORTER) {

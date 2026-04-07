@@ -1,16 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/api-utils";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
     const { data } = await supabase
       .from("user_favorite_bots")
@@ -30,14 +25,9 @@ export async function GET() {
 export async function POST(req: Request) {
   const { botSlug, action, currentFavorites } = await req.json();
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
 
   try {
     // Check if user has any saved favorites

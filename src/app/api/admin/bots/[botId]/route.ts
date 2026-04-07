@@ -1,29 +1,19 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { requireAuth } from "@/lib/api-utils";
 import { isSuperAdmin } from "@/lib/constants/roles";
-
-async function getSuperAdminProfile(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!isSuperAdmin(profile?.role)) return null;
-  return profile;
-}
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ botId: string }> }
 ) {
   const { botId } = await params;
-  const supabase = await createClient();
-  const profile = await getSuperAdminProfile(supabase);
-  if (!profile) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { profile, supabase } = auth;
+
+  if (!isSuperAdmin(profile.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { data: bot } = await supabase
     .from("bots")
@@ -41,9 +31,13 @@ export async function PUT(
   { params }: { params: Promise<{ botId: string }> }
 ) {
   const { botId } = await params;
-  const supabase = await createClient();
-  const profile = await getSuperAdminProfile(supabase);
-  if (!profile) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { profile, supabase } = auth;
+
+  if (!isSuperAdmin(profile.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const body = await request.json();
   const { name, icon, category, description, system_prompt, model_id } = body;
@@ -71,9 +65,13 @@ export async function DELETE(
   { params }: { params: Promise<{ botId: string }> }
 ) {
   const { botId } = await params;
-  const supabase = await createClient();
-  const profile = await getSuperAdminProfile(supabase);
-  if (!profile) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { profile, supabase } = auth;
+
+  if (!isSuperAdmin(profile.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { error } = await supabase
     .from("bots")

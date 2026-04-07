@@ -1,16 +1,14 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { requireAuth } from "@/lib/api-utils";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { supabase } = auth;
 
   // Fetch request (RLS handles visibility)
   const { data: request, error } = await supabase

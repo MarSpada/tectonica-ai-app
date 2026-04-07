@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/api-utils";
 import { getSignedUrl } from "@/lib/media-storage";
 
 /* GET /api/media/[id]/download — increment download count + return signed URL */
@@ -8,11 +8,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { supabase } = auth;
 
   const { data: item, error } = await supabase
     .from("media_items")

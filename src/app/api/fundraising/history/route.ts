@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 // LEGACY — fundraising_goal in fundraising_goals is superseded by money_goal in group_goals.
 // This route still returns historical data for chart display. The goal field in the
 // response reflects the legacy per-month value, not the current group_goals target.
-import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/api-utils";
 
 /**
  * GET /api/fundraising/history
@@ -10,17 +10,11 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { profile, supabase } = auth;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("group_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.group_id) {
+    if (!profile.group_id) {
       return NextResponse.json({ history: [] });
     }
 

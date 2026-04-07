@@ -1,25 +1,15 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/api-utils";
 import { isSuperAdmin } from "@/lib/constants/roles";
 
-async function getAdminProfile(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!isSuperAdmin(profile?.role)) return null;
-  return profile;
-}
-
 export async function GET() {
-  const supabase = await createClient();
-  const profile = await getAdminProfile(supabase);
-  if (!profile) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { profile, supabase } = auth;
+
+  if (!isSuperAdmin(profile.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { data: org } = await supabase
     .from("organizations")
@@ -31,9 +21,13 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const supabase = await createClient();
-  const profile = await getAdminProfile(supabase);
-  if (!profile) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { profile, supabase } = auth;
+
+  if (!isSuperAdmin(profile.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { name } = await request.json();
   if (!name?.trim()) {

@@ -1,25 +1,16 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
-import { fetchProfileMap } from "@/lib/api-utils";
+import { requireAuth, fetchProfileMap } from "@/lib/api-utils";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 /* GET /api/approvals — list approval requests scoped to user's group */
 export async function GET(req: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { profile, supabase } = auth;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("group_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile?.group_id) {
+  if (!profile.group_id) {
     return NextResponse.json({ error: "No group assigned" }, { status: 400 });
   }
 
@@ -69,11 +60,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Title and reviewer are required" }, { status: 400 });
     }
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
     // Create request + notification atomically via RPC
     const { data: requestId, error } = await supabase.rpc("create_approval_request", {

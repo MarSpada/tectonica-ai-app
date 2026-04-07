@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { requireAuth } from "@/lib/api-utils";
 import { isSuperAdmin } from "@/lib/constants/roles";
 
 export async function PUT(
@@ -7,19 +7,12 @@ export async function PUT(
   { params }: { params: Promise<{ memberId: string }> }
 ) {
   const { memberId } = await params;
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { profile, supabase } = auth;
 
   // Only super_admin can reassign members to different groups
-  const { data: callerProfile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!isSuperAdmin(callerProfile?.role)) {
+  if (!isSuperAdmin(profile.role)) {
     return NextResponse.json({ error: "Only super admins can reassign groups" }, { status: 403 });
   }
 

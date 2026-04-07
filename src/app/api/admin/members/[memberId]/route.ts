@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { requireAuth } from "@/lib/api-utils";
 import { isAdminRole, isSuperAdmin } from "@/lib/constants/roles";
 
 // PATCH — update member profile (name, etc.)
@@ -8,18 +8,11 @@ export async function PATCH(
   { params }: { params: Promise<{ memberId: string }> }
 ) {
   const { memberId } = await params;
-  const supabase = await createClient();
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { profile, supabase } = auth;
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || !isAdminRole(profile.role)) {
+  if (!isAdminRole(profile.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -51,18 +44,11 @@ export async function DELETE(
   { params }: { params: Promise<{ memberId: string }> }
 ) {
   const { memberId } = await params;
-  const supabase = await createClient();
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, profile: callerProfile, supabase } = auth;
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!isSuperAdmin(profile?.role)) {
+  if (!isSuperAdmin(callerProfile.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

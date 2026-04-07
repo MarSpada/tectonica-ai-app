@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { requireAuth } from "@/lib/api-utils";
 import { isAdminRole, VALID_ROLES } from "@/lib/constants/roles";
 
 export async function PUT(
@@ -7,19 +7,12 @@ export async function PUT(
   { params }: { params: Promise<{ memberId: string }> }
 ) {
   const { memberId } = await params;
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { profile, supabase } = auth;
 
   // Only super_admin or group_admin can change roles
-  const { data: callerProfile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!isAdminRole(callerProfile?.role)) {
+  if (!isAdminRole(profile.role)) {
     return NextResponse.json({ error: "Only admins can change roles" }, { status: 403 });
   }
 

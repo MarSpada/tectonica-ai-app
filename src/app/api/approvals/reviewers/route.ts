@@ -1,13 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/api-utils";
 import { isAdminRole } from "@/lib/constants/roles";
 
 export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
 
   // Use get_group_members RPC (joins auth.users for email)
   const { data: members, error } = await supabase.rpc("get_group_members");

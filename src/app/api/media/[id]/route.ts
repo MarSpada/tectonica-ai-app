@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/api-utils";
 import { getSignedUrl, deleteFile } from "@/lib/media-storage";
 import { isAdminRole } from "@/lib/constants/roles";
 
@@ -9,11 +9,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { supabase } = auth;
 
   const { data: item, error } = await supabase
     .from("media_items")
@@ -67,18 +65,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  // Check role — only uploader or admins can delete
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("group_id, role")
-    .eq("id", user.id)
-    .single();
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, profile, supabase } = auth;
 
   const { data: item, error } = await supabase
     .from("media_items")

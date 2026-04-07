@@ -2,23 +2,16 @@ import { NextResponse } from "next/server";
 // LEGACY — fundraising_goal and print_budget in fundraising_goals are superseded by
 // money_goal and money_budget in group_goals. This route still tracks amount_raised
 // per month. Widgets read targets from /api/goals instead.
-import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/api-utils";
 import { isAdminRole } from "@/lib/constants/roles";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { profile, supabase } = auth;
 
-    // Get user's group
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("group_id, role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.group_id) {
+    if (!profile.group_id) {
       return NextResponse.json({ goal: null });
     }
 
@@ -51,18 +44,11 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { profile, supabase } = auth;
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("group_id, role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile || !isAdminRole(profile.role)) {
+    if (!isAdminRole(profile.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

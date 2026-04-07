@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/api-utils";
 import { ROLES } from "@/lib/constants/roles";
 import {
   ALLOWED_MIME_TYPES,
@@ -16,11 +16,9 @@ import {
 
 /* GET /api/media — list media items for the user's group */
 export async function GET(req: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { profile, supabase } = auth;
 
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category");
@@ -28,13 +26,7 @@ export async function GET(req: Request) {
   const page = Math.max(0, parseInt(searchParams.get("page") || "0", 10));
   const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "24", 10)));
 
-  // Get user's group
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("group_id")
-    .eq("id", user.id)
-    .single();
-  if (!profile?.group_id) {
+  if (!profile.group_id) {
     return NextResponse.json({ error: "No group assigned" }, { status: 400 });
   }
 
@@ -104,19 +96,11 @@ export async function GET(req: Request) {
 
 /* POST /api/media — upload a file */
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, profile, supabase } = auth;
 
-  // Check role — supporters blocked
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("group_id, role")
-    .eq("id", user.id)
-    .single();
-  if (!profile?.group_id) {
+  if (!profile.group_id) {
     return NextResponse.json({ error: "No group assigned" }, { status: 400 });
   }
   if (profile.role === ROLES.SUPPORTER) {

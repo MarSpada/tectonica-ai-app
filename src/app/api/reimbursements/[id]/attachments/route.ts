@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { requireAuth } from "@/lib/api-utils";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -15,10 +15,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
 
   // Verify the reimbursement request exists and belongs to this user
   const { data: reimbursement } = await supabase

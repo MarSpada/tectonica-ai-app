@@ -1,18 +1,13 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/api-utils";
 
 export async function POST(req: Request) {
   try {
     const { notificationIds } = await req.json();
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return new Response("Unauthorized", { status: 401 });
-    }
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
     if (notificationIds === "all") {
       await supabase
