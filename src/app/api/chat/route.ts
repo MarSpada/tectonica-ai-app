@@ -3,11 +3,12 @@
 // 1. Auth + bot resolution
 // 2. Credential fetch (RunPod + image API)
 // 3. Message preprocessing (lib/chat-utils.ts)
-// 4. Tool injection (Graphics Creation bot only)
+// 4. Tool injection (image tools only, via OpenAI function calling)
 // 5. First ChangeAgent request (lib/stream-utils.ts)
-// 6. Tool execution if finish_reason === "tool_calls" (executeToolAndContinue)
-// 7. Second ChangeAgent request with tool result (lib/stream-utils.ts)
-// 8. Conversation persistence (lib/chat-utils.ts)
+// 6. Post-stream: text pattern detection for landing page trigger (GENERATE_LANDING_PAGE)
+// 7. Tool execution if finish_reason === "tool_calls" (image tools → executeToolAndContinue)
+// 8. Second ChangeAgent request with tool result (lib/stream-utils.ts)
+// 9. Conversation persistence (lib/chat-utils.ts)
 //
 // Model provider: RunPod (OpenAI-compatible API).
 // Credentials stored in org_integrations table, encrypted at rest.
@@ -18,6 +19,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getBots, getSystemPrompt } from "@/lib/bot-resolver";
 import { decrypt } from "@/lib/encryption";
 import { IMAGE_TOOL_DEFINITIONS } from "@/lib/image-tool-definitions";
+import { renderLandingPage } from "@/lib/landing-page-utils";
+import type { LandingPageBrief } from "@/lib/landing-page-utils";
 import {
   getOrgImageCredentials,
   executeImageTool,
@@ -62,7 +65,7 @@ export async function POST(req: Request) {
   // Get bot's model_id and image_tools_enabled from DB — scoped to user's org
   const { data: botRow } = await supabase
     .from("bots")
-    .select("model_id, image_tools_enabled")
+    .select("model_id, image_tools_enabled, landing_page_tools_enabled")
     .eq("slug", botId)
     .or(`org_id.eq.${profile.org_id},org_id.is.null`)
     .single();
@@ -112,6 +115,7 @@ export async function POST(req: Request) {
   }
   // Old integer credit gate removed — billing now handled by debit_image_credit RPC after generation.
   const useImageTools = imageToolsEnabled && imageCredentials !== null;
+  const landingPageToolsEnabled = !!botRow?.landing_page_tools_enabled;
 
   // Get system prompt (DB-first, falls back to hardcoded) — scoped to user's org
   const systemPrompt = await getSystemPrompt(botId, profile.org_id);
@@ -191,6 +195,48 @@ export async function POST(req: Request) {
           encoder
         );
         fullContent = streamResult.content;
+
+        // Landing page tool: text pattern detection (not function calling —
+        // Open WebUI does not support native function definitions for this bot).
+        // The model outputs GENERATE_LANDING_PAGE followed by a JSON block.
+        // This runs ONLY for landing page bots — skip entirely for other bots.
+        const LANDING_PAGE_TRIGGER = "GENERATE_LANDING_PAGE";
+        if (landingPageToolsEnabled && streamResult.content) {
+          const triggerIndex = streamResult.content.indexOf(LANDING_PAGE_TRIGGER);
+          if (triggerIndex !== -1) {
+            const jsonStart = streamResult.content.indexOf("{", triggerIndex);
+            const jsonEnd = streamResult.content.lastIndexOf("}");
+            if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+              try {
+                const toolArgs = JSON.parse(
+                  streamResult.content.slice(jsonStart, jsonEnd + 1),
+                );
+                const syntheticToolCall = {
+                  id: `lp-${crypto.randomUUID()}`,
+                  function: {
+                    name: "generate_landing_page",
+                    arguments: JSON.stringify(toolArgs),
+                  },
+                };
+                fullContent = await executeLandingPageTool(
+                  syntheticToolCall,
+                  supabase,
+                  profile.org_id,
+                  profile.group_id,
+                  user.id,
+                  chatMessages,
+                  endpointUrl,
+                  modelId,
+                  token,
+                  controller,
+                  encoder,
+                );
+              } catch (e) {
+                console.error("Failed to parse landing page tool args:", e);
+              }
+            }
+          }
+        }
 
         // Handle tool calls if the model requested one
         const KNOWN_IMAGE_TOOLS = ["generate_image", "edit_image", "fuse_images", "apply_branding"];
@@ -585,6 +631,216 @@ async function executeToolAndContinue(
     } else {
       errorMessage = "Image generation failed. Please try again.";
     }
+    controller.enqueue(
+      encoder.encode(
+        `data: ${JSON.stringify({ content: errorMessage })}\n\n`
+      )
+    );
+    return errorMessage;
+  }
+}
+
+// ────────────────────────────────────────────────────────────
+// Landing page tool execution
+// ────────────────────────────────────────────────────────────
+
+async function executeLandingPageTool(
+  toolCall: { id: string; function: { name: string; arguments: string } },
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  orgId: string,
+  groupId: string | null,
+  userId: string,
+  chatMessages: Array<{ role: string; content: string | null; tool_calls?: unknown[]; tool_call_id?: string }>,
+  endpointUrl: string,
+  modelId: string,
+  token: string,
+  controller: ReadableStreamDefaultController,
+  encoder: TextEncoder,
+): Promise<string> {
+  let toolArgs: Record<string, unknown>;
+  try {
+    toolArgs = JSON.parse(toolCall.function.arguments);
+  } catch {
+    toolArgs = {};
+  }
+
+  if (!groupId) {
+    const errMsg = "Landing page generation requires a group assignment. Please contact your administrator.";
+    controller.enqueue(
+      encoder.encode(`data: ${JSON.stringify({ content: errMsg })}\n\n`)
+    );
+    return errMsg;
+  }
+
+  // Notify client that landing page generation is starting
+  controller.enqueue(
+    encoder.encode(
+      `data: ${JSON.stringify({ status: "generating_landing_page" })}\n\n`
+    )
+  );
+
+  try {
+    const headline = (toolArgs.headline as string) || "";
+    const type = (toolArgs.type as string) === "donate" ? "donate" : "signup";
+    const ctaLabel = (toolArgs.cta_label as string) || "";
+    const keyMessages = Array.isArray(toolArgs.key_messages)
+      ? (toolArgs.key_messages as string[]).filter((m) => typeof m === "string" && m.trim().length > 0)
+      : [];
+    const urgency = typeof toolArgs.urgency === "string" ? toolArgs.urgency : undefined;
+
+    // Fetch group branding
+    const { data: branding } = await supabase
+      .from("group_branding")
+      .select("*")
+      .eq("group_id", groupId)
+      .maybeSingle();
+
+    // cta_url falls back to '#' if default not configured — admin should set default_cta_url in Branding tab
+    const resolvedCtaUrl = branding?.default_cta_url || "#";
+
+    const brief: LandingPageBrief = {
+      headline,
+      type,
+      cta_label: ctaLabel,
+      cta_url: resolvedCtaUrl,
+      key_messages: keyMessages,
+      urgency,
+      branding: {
+        logo_url: branding?.logo_url ?? null,
+        hero_image_url: branding?.hero_image_url ?? null,
+        primary_color: branding?.primary_color ?? null,
+        secondary_color: branding?.secondary_color ?? null,
+        social_facebook: branding?.social_facebook ?? null,
+        social_instagram: branding?.social_instagram ?? null,
+        social_twitter: branding?.social_twitter ?? null,
+        social_bluesky: branding?.social_bluesky ?? null,
+      },
+    };
+
+    // Render HTML
+    const html = renderLandingPage(brief);
+
+    // Upload to Supabase Storage
+    const pageId = crypto.randomUUID();
+    const storagePath = `${groupId}/${pageId}.html`;
+
+    const { error: uploadErr } = await supabase.storage
+      .from("landing-pages")
+      .upload(storagePath, html, {
+        contentType: "text/html",
+        upsert: false,
+      });
+
+    if (uploadErr) {
+      throw new Error(`Upload failed: ${uploadErr.message}`);
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from("landing-pages")
+      .getPublicUrl(storagePath);
+
+    const publicUrl = urlData.publicUrl;
+
+    // Insert record into group_landing_pages
+    const { data: landingPage, error: dbError } = await supabase
+      .from("group_landing_pages")
+      .insert({
+        group_id: groupId,
+        org_id: orgId,
+        created_by: userId,
+        headline,
+        type,
+        public_url: publicUrl,
+        status: "live",
+      })
+      .select("id")
+      .single();
+
+    if (dbError) {
+      throw new Error(`DB insert failed: ${dbError.message}`);
+    }
+
+    // Send landing page result to client
+    controller.enqueue(
+      encoder.encode(
+        `data: ${JSON.stringify({
+          landingPage: {
+            url: publicUrl,
+            landing_page_id: landingPage.id,
+            headline,
+            type,
+          },
+        })}\n\n`
+      )
+    );
+
+    // Make second request to model with tool result for natural language response
+    const followUpMessages = [
+      ...chatMessages,
+      {
+        role: "assistant" as const,
+        content: null,
+        tool_calls: [
+          {
+            id: toolCall.id,
+            type: "function",
+            function: {
+              name: toolCall.function.name,
+              arguments: toolCall.function.arguments,
+            },
+          },
+        ],
+      },
+      {
+        role: "tool" as const,
+        tool_call_id: toolCall.id,
+        content: JSON.stringify({
+          success: true,
+          url: publicUrl,
+          headline,
+          type,
+        }),
+      },
+    ];
+
+    const followUpRes = await fetch(
+      `${endpointUrl}/v1/chat/completions`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          model: modelId,
+          stream: true,
+          messages: followUpMessages,
+        }),
+      }
+    );
+
+    if (followUpRes.ok) {
+      const followUpResult = await streamModelResponse(
+        followUpRes,
+        controller,
+        encoder
+      );
+      return followUpResult.content;
+    } else {
+      // If follow-up fails, still confirm the page was created
+      const fallbackMsg = `\n\nYour landing page is ready: ${publicUrl}`;
+      controller.enqueue(
+        encoder.encode(
+          `data: ${JSON.stringify({ content: fallbackMsg })}\n\n`
+        )
+      );
+      return fallbackMsg;
+    }
+  } catch (err) {
+    const errorMessage = err instanceof Error
+      ? `Landing page generation failed: ${err.message}`
+      : "Landing page generation failed. Please try again.";
     controller.enqueue(
       encoder.encode(
         `data: ${JSON.stringify({ content: errorMessage })}\n\n`

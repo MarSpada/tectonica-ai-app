@@ -12,6 +12,8 @@ import BotsTab from "./BotsTab";
 import IntegrationsTab from "./IntegrationsTab";
 import GoalsTab from "./GoalsTab";
 import BillingTab from "./BillingTab";
+import BrandingTab from "./BrandingTab";
+import LandingPagesTab from "./LandingPagesTab";
 
 const TAB_PARAM_MAP: Record<string, string> = {
   organization: "Organization",
@@ -20,6 +22,8 @@ const TAB_PARAM_MAP: Record<string, string> = {
   bots: "Bots",
   integrations: "Integrations",
   billing: "Billing",
+  branding: "Branding",
+  "landing-pages": "Landing Pages",
 };
 
 interface AdminViewProps {
@@ -33,8 +37,8 @@ export default function AdminView({ role, orgId, groupId }: AdminViewProps) {
   const isSuperAdmin = role === ROLES.SUPER_ADMIN;
 
   const tabs = isSuperAdmin
-    ? (["Organization", "People", "Goals", "Bots", "Integrations", "Billing"] as const)
-    : (["People", "Goals"] as const);
+    ? (["Organization", "People", "Goals", "Bots", "Integrations", "Billing", "Branding", "Landing Pages"] as const)
+    : (["People", "Goals", "Branding", "Landing Pages"] as const);
 
   const tabParam = searchParams.get("tab")?.toLowerCase() || "";
   const requestedTab = TAB_PARAM_MAP[tabParam];
@@ -94,6 +98,12 @@ export default function AdminView({ role, orgId, groupId }: AdminViewProps) {
               <BillingTab groupId={groupId} />
             </TabsContent>
           )}
+          <TabsContent value="Branding">
+            <BrandingTab role={role} groupId={groupId} orgId={orgId} />
+          </TabsContent>
+          <TabsContent value="Landing Pages">
+            <LandingPagesTab role={role} groupId={groupId} />
+          </TabsContent>
         </div>
       </Tabs>
     </div>

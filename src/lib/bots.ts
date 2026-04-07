@@ -149,6 +149,13 @@ export const bots: Bot[] = [
     category: "create",
     description: "Create video content for campaigns.",
   },
+  {
+    id: "landing-page-creator",
+    name: "Landing Page Creator",
+    icon: "bot-landing-page",
+    category: "create",
+    description: "Create professional campaign landing pages through a guided conversation. Just answer a few questions and get a ready-to-share page in minutes.",
+  },
 
   // Use Organizing Tools
   {

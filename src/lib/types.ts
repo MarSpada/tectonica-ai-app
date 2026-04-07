@@ -455,3 +455,34 @@ export interface OrgChartLink {
   source: string;
   target: string;
 }
+
+export interface GroupBranding {
+  id: string;
+  group_id: string;
+  org_id: string;
+  logo_url: string | null;
+  hero_image_url: string | null;
+  primary_color: string | null;
+  secondary_color: string | null;
+  default_cta_url: string | null;
+  social_facebook: string | null;
+  social_instagram: string | null;
+  social_twitter: string | null;
+  social_bluesky: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GroupLandingPage {
+  id: string;
+  group_id: string;
+  org_id: string;
+  created_by: string | null;
+  headline: string;
+  type: "signup" | "donate";
+  public_url: string;
+  status: "live" | "archived";
+  project_id: string | null;
+  created_at: string;
+  updated_at: string;
+}

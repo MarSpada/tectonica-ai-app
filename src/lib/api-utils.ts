@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
@@ -45,6 +45,40 @@ export async function requireAuth(): Promise<AuthResult | NextResponse> {
   }
 
   return { user, profile, supabase };
+}
+
+/**
+ * Validates a static Bearer token from the Authorization header.
+ * Used for external service endpoints (e.g., ChangeAgent) that authenticate
+ * via CHANGE_AGENT_API_KEY instead of a Supabase user session.
+ *
+ * Returns null if valid, or a NextResponse 401 on failure.
+ *
+ * Usage:
+ * ```ts
+ * const authError = requireApiKey(request);
+ * if (authError) return authError;
+ * ```
+ */
+export function requireApiKey(request: NextRequest): NextResponse | null {
+  const apiKey = process.env.CHANGE_AGENT_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: "API key not configured" },
+      { status: 500 },
+    );
+  }
+
+  const authHeader = request.headers.get("Authorization");
+  const token = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : null;
+
+  if (!token || token !== apiKey) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  return null;
 }
 
 /**

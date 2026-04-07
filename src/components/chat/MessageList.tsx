@@ -19,6 +19,7 @@ interface MessageListProps {
   userName: string;
   isStreaming: boolean;
   isGeneratingImage?: boolean;
+  isGeneratingLandingPage?: boolean;
   onOpenStudio?: (imageUrl: string) => void;
   onStyleSelect?: (styleName: string) => void;
   onTryAgain?: (imageUrl?: string) => void;
@@ -472,6 +473,7 @@ export default function MessageList({
   userName,
   isStreaming,
   isGeneratingImage,
+  isGeneratingLandingPage,
   onOpenStudio,
   onStyleSelect,
   onTryAgain,
@@ -484,7 +486,7 @@ export default function MessageList({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isGeneratingImage]);
+  }, [messages, isGeneratingImage, isGeneratingLandingPage]);
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
@@ -565,6 +567,22 @@ export default function MessageList({
             >
               <div className="w-5 h-5 border-2 border-accent-purple/30 border-t-accent-purple rounded-full animate-spin" />
               <span className="text-sm text-text-secondary">Generating image...</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Landing page generation loading indicator */}
+      {isGeneratingLandingPage && (
+        <div className="flex justify-start">
+          <div className="max-w-[720px]">
+            <p className="text-xs font-semibold text-accent-purple mb-1">{bot.name}</p>
+            <div
+              className="rounded-[4px_16px_16px_16px] px-4 py-3 backdrop-blur-sm flex items-center gap-3"
+              style={{ backgroundColor: "var(--msg-bot-bg)" }}
+            >
+              <div className="w-5 h-5 border-2 border-accent-purple/30 border-t-accent-purple rounded-full animate-spin" />
+              <span className="text-sm text-text-secondary">Generating landing page...</span>
             </div>
           </div>
         </div>

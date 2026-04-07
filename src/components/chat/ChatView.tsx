@@ -14,12 +14,22 @@ import { parseRequirements } from "./CreativeBrief";
 import CreateApprovalModal from "@/components/approvals/CreateApprovalModal";
 import { useUserProfile } from "@/lib/UserProfileContext";
 
+// Strip landing page trigger block from rendered content
+const stripLandingPageTrigger = (content: string): string => {
+  const triggerIndex = content.indexOf("GENERATE_LANDING_PAGE");
+  if (triggerIndex === -1) return content;
+  const jsonEnd = content.lastIndexOf("}");
+  if (jsonEnd === -1) return content.slice(0, triggerIndex);
+  return content.slice(0, triggerIndex) + content.slice(jsonEnd + 1);
+};
+
 interface ChatViewProps {
   bot: Bot;
   userName: string;
   recentConversations: Array<{ id: string; title: string; updated_at: string }>;
   totalConversationCount?: number;
   isImageBot?: boolean;
+  isLandingPageBot?: boolean;
   orgSlug?: string;
 }
 
@@ -29,6 +39,7 @@ export default function ChatView({
   recentConversations: initialConversations,
   totalConversationCount: initialTotalCount,
   isImageBot = false,
+  isLandingPageBot = false,
   orgSlug = "",
 }: ChatViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -46,6 +57,9 @@ export default function ChatView({
   const [approvedImages, setApprovedImages] = useState<Map<string, string>>(new Map()); // imageUrl → approvalId
   const [imageEnergyData, setImageEnergyData] = useState<Map<string, { energyWh: number; width: number; height: number }>>(new Map());
   const [imageToolData, setImageToolData] = useState<Map<string, { toolName: string; toolArgs: Record<string, unknown> }>>(new Map());
+
+  // Landing page state
+  const [isGeneratingLandingPage, setIsGeneratingLandingPage] = useState(false);
 
   // Credit balance state (image bots only)
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
@@ -220,6 +234,30 @@ export default function ChatView({
               continue;
             }
 
+            // Landing page generation status
+            if (parsed.status === "generating_landing_page") {
+              setIsGeneratingLandingPage(true);
+              continue;
+            }
+
+            // Landing page result
+            if (parsed.landingPage) {
+              setIsGeneratingLandingPage(false);
+              const { url, headline, type } = parsed.landingPage;
+              const label = type === "donate" ? "Donate Page" : "Signup Page";
+              const markdownLink = `\n\n**Your ${label} is ready:** [${headline}](${url})\n`;
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                updated[updated.length - 1] = {
+                  ...last,
+                  content: last.content + markdownLink,
+                };
+                return updated;
+              });
+              continue;
+            }
+
             // Credit balance update from debit_image_credit RPC
             if (parsed.creditBalance !== undefined) {
               setCreditBalance(parsed.creditBalance);
@@ -228,14 +266,16 @@ export default function ChatView({
 
             if (parsed.content) {
               setIsGeneratingImage(false);
+              setIsGeneratingLandingPage(false);
               setMessages((prev) => {
                 const updated = [...prev];
                 const last = updated[updated.length - 1];
                 // Remove thinking marker when real content arrives
                 const cleanedContent = last.content.replace("__THINKING_STYLES__", "");
+                const rawContent = cleanedContent + parsed.content;
                 updated[updated.length - 1] = {
                   ...last,
-                  content: cleanedContent + parsed.content,
+                  content: stripLandingPageTrigger(rawContent),
                 };
                 return updated;
               });
@@ -247,6 +287,7 @@ export default function ChatView({
       }
     } catch (err) {
       setIsGeneratingImage(false);
+      setIsGeneratingLandingPage(false);
       setMessages((prev) => {
         const updated = [...prev];
         updated[updated.length - 1] = {
@@ -411,6 +452,7 @@ export default function ChatView({
               userName={userName}
               isStreaming={isStreaming}
               isGeneratingImage={isGeneratingImage}
+              isGeneratingLandingPage={isGeneratingLandingPage}
               onOpenStudio={isImageBot ? (imageUrl) => {
                 setMostRecentImageUrl(imageUrl);
                 setShowStudio(true);

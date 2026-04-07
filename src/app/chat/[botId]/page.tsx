@@ -42,16 +42,18 @@ export default async function ChatPage({
     // Tables don't exist yet — that's fine
   }
 
-  // Check if this bot has image tools enabled (DB-driven)
+  // Check if this bot has image/landing-page tools enabled (DB-driven)
   let isImageBot = false;
+  let isLandingPageBot = false;
   let orgSlug = "";
   try {
     const { data: botRow } = await supabase
       .from("bots")
-      .select("image_tools_enabled")
+      .select("image_tools_enabled, landing_page_tools_enabled")
       .eq("slug", botId)
       .single();
     isImageBot = !!botRow?.image_tools_enabled;
+    isLandingPageBot = !!botRow?.landing_page_tools_enabled;
 
     if (isImageBot && user) {
       // Get org name/slug for Studio iframe user_id param
@@ -81,6 +83,7 @@ export default async function ChatPage({
         recentConversations={recentConversations}
         totalConversationCount={totalConversationCount}
         isImageBot={isImageBot}
+        isLandingPageBot={isLandingPageBot}
         orgSlug={orgSlug}
       />
     </AppShell>

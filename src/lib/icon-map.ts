@@ -131,6 +131,8 @@ export const ICON_MAP = {
   'link': `${ICON_BASE}/internet-networks-servers/network-browser.svg`,
   'trash': `${ICON_BASE}/interface-essential/bin-1.svg`,
   'location-pin': `${ICON_BASE}/maps-navigation/pin-2.svg`,
+  'external-link': `${ICON_BASE}/business-products/launch-go.svg`,
+  'bot-landing-page': `${ICON_BASE}/programing-apps-websites/programming-apps-websites/programming-browser-1.svg`,
 } as const;
 
 export type IconName = keyof typeof ICON_MAP;
