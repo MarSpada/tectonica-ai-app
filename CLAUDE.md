@@ -317,6 +317,7 @@ Main bot grid + right sidebar dashboard. Body has no special class.
 - **People tab**: List all org members, change roles (super_admin/group_admin/member/supporter), reassign groups, remove members, inline name editing
 - **Bots tab**: DB-driven bot management (create, edit, delete), system prompt editor, category/icon picker
 - **Integrations tab**: Calendar source management (add/remove iCal/Google/Mobilize feeds, toggle enable/disable, color coding), NationBuilder status, Action Network/Mobilize status
+- **Billing tab** (super_admin only): Credit balance + this month's spend, add credits form, top-up history (20 most recent), generation rates (cost_per_mp_base, cost_per_mp_extra) with inline edit, platform fee percentage with inline edit. All data from group_billing table via billing API routes.
 
 ### 8. Approvals Page (`/approvals`)
 - Submit items for admin/group_admin review (text + file attachments)
@@ -468,6 +469,10 @@ Desktop-first design. Mobile is out of scope for now.
 | `024_energy_consumption.sql` | Adds `image_width` (integer), `image_height` (integer), `energy_wh` (double precision) nullable columns to `media_items`. Partial index on `(group_id) WHERE category='generated' AND energy_wh IS NOT NULL` for efficient aggregation. Energy is pre-computed at generation time using Stanford/AXA 2025 reference data. |
 | `025_calendar_sources_group_scope.sql` | Moves `calendar_sources` from org-level to group-level scope. Adds `group_id` (uuid FK, NOT NULL after backfill), index on `group_id`. Drops org-scoped RLS, creates group-scoped RLS using `get_my_group_id()` and `is_admin()`. Keeps `org_id` column for future use. |
 | `026_generated_storage_path.sql` | Relaxes `media_file_or_link` constraint so generated images can have `storage_path` (Supabase Storage) in addition to or instead of `url` (external FAL URL). Supports the FAL → Supabase Storage migration. |
+| `029_group_billing.sql` | `group_billing` table (one row per group): credit_balance_usd, platform_fee_percentage, cost_per_mp_base, cost_per_mp_extra. UNIQUE(group_id). RLS: super_admin full access via `is_super_admin()` + `get_my_org_id()`, group members read-only via `get_my_group_id()`. |
+| `030_group_billing_topups.sql` | `group_billing_topups` table: append-only audit trail for credit top-ups. Records amount_usd, note, added_by_user_id. RLS: super_admin SELECT + INSERT only (no UPDATE/DELETE). |
+| `031_image_generation_log.sql` | `image_generation_log` table: per-generation cost tracking with output dimensions, input image count, MP total, cost_usd. Index on (group_id, created_at) for monthly aggregation. RLS: super_admin SELECT + INSERT. |
+| `032_debit_image_credit_rpc.sql` | `debit_image_credit()` SECURITY DEFINER RPC: atomic insert into image_generation_log + upsert group_billing (decrement credit_balance_usd). Creates row with negative balance if none exists. Returns updated balance. Callable by any authenticated user. |
 
 ---
 
@@ -523,6 +528,10 @@ Desktop-first design. Mobile is out of scope for now.
 | `/api/image-tools/execute` | POST | Execute image tool (generate/edit/fuse/brand), validates bot has image_tools_enabled, checks credits, saves result to media_items |
 | `/api/image-tools/credentials-status` | GET | Image API status — super_admin sees credits, other roles see configured boolean only |
 | `/api/admin/integrations/image-api` | GET/POST | GET: image API config (never token). POST: save endpoint + encrypted token (super_admin only) |
+| `/api/billing/balance` | GET | Credit balance + month spend for authenticated user's group. All roles. Returns credit_balance_usd (can be negative), rates, platform_fee_percentage, month_spend_usd. |
+| `/api/admin/billing/topup` | POST | Add credits to group balance (super_admin). Body: { amount_usd, note? }. Inserts audit row + increments balance. Returns updated group_billing row. |
+| `/api/admin/billing/topups` | GET | Top-up history for group (super_admin). 20 most recent, enriched with added_by_name. |
+| `/api/admin/billing/rates` | PATCH | Update generation rates or platform fee (super_admin). Body: { cost_per_mp_base?, cost_per_mp_extra?, platform_fee_percentage? }. Upserts group_billing. |
 | `/auth/reset-callback` | GET | Password reset callback — exchanges PKCE code, redirects to /reset-password |
 
 ---
@@ -572,6 +581,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `admin/BotsTab.tsx` | Bot CRUD management |
 | `admin/BotEditor.tsx` | Bot form (slug, name, icon, category, description, system prompt) |
 | `admin/IntegrationsTab.tsx` | Calendar source management + integration status |
+| `admin/BillingTab.tsx` | Credit balance + month spend, add credits form, top-up history, generation rates inline edit, platform fee inline edit. Super admin only. |
 | `admin/RoleChangeModal.tsx` | Modal to change member role |
 | `admin/GroupReassignModal.tsx` | Modal to reassign member to different group |
 | `approvals/ApprovalsView.tsx` | Approval requests list |
@@ -616,6 +626,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `lib/UserProfileContext.tsx` | React Context for user profile data (role, orgName, groupName, name, avatar) — consumed by TopBar, LeftSidebar, RightSidebar, etc. |
 | `lib/constants/roles.ts` | Role constants (`ROLES`), validation array (`VALID_ROLES`), and helper functions (`isAdminRole`, `isSuperAdmin`). Single source of truth for role strings. |
 | `lib/api-utils.ts` | Shared API route utilities: `requireAuth()` (auth + profile lookup), `fetchProfileMap()` (batch profile enrichment). New routes should use these. |
+| `lib/billing-utils.ts` | **Single source of truth for image generation cost calculation.** `calculateImageCost()` (MP-based cost with dimension fallback to 1024), `countInputImages()` (derives input count from tool args), `formatCredits()` (USD display). No other file should reimplement cost logic. |
 | `lib/dashboard-widgets.ts` | Widget IDs, role-based visibility permissions, labels, size constraints, system default layout, and layout utility functions (getVisibleWidgets, filterLayoutToRole, mergeLayoutWithDefaults) |
 | `lib/chat-utils.ts` | Chat route utilities: `preprocessMessages()` (base64 image upload, URL extraction) and `persistConversation()` (save messages to Supabase). Extracted from `app/api/chat/route.ts`. |
 | `lib/stream-utils.ts` | OpenAI-compatible SSE streaming: `streamModelResponse()` (stream to client, accumulate tool call deltas, strip reasoning field) and `collectModelResponse()` (collect without streaming, used for gallery follow-ups). |
@@ -807,6 +818,11 @@ Desktop-first design. Mobile is out of scope for now.
 - **Avatar hex colors shared source of truth** — `--avatar-color-*` CSS vars in `globals.css`, `AVATAR_HEX_COLORS` in `lib/avatar.ts`, and Tailwind classes in `AVATAR_COLORS` must stay in sync. If the palette changes, update all three.
 - **Org chart MemberDetailModal** — Node clicks open `MemberDetailModal` (Dialog). If a richer slide-in detail panel is wanted, consider converting to a Sheet in a future session.
 - **Org chart pill overlap detection not implemented** — The spec mentions hiding pills on overlap. Current implementation relies on D3 tree layout separation + dynamic ring radius to prevent overlap. If overlap occurs at scale (100+ members), add SVG bounding box collision checks.
+- **`fal_request_id` not yet captured** — `image_generation_log.fal_request_id` column exists but is always null. To wire it, extend `ImageResult` in `lib/image-tools.ts` to return the request ID from the Railway/fal.ai response. Both call sites in `chat/route.ts` and `image-tools/execute/route.ts` have comments marking the insertion point.
+- **Old credit system dormant** — `check_and_increment_image_credits` RPC and `org_integrations.image_api_credits_allocated` / `image_api_credits_used` columns are retained but no longer called. The new billing system uses `group_billing` table + `debit_image_credit` RPC. Old columns/RPCs marked for deprecation — safe to drop in a future cleanup session.
+- **`platform_fee_percentage` stored but not applied** — The field is stored in `group_billing` and editable in the admin Billing tab, but `calculateImageCost()` in `lib/billing-utils.ts` does not factor it into the cost. Wire it when Stripe integration begins.
+- **SSE `creditBalance` event timing** — The `debit_image_credit` RPC runs fire-and-forget after generation. If the RPC is slow, the `{ creditBalance: number }` SSE event may arrive after the stream closes. The topbar would show stale balance until the next generation. In practice the RPC is a single SQL transaction and is fast.
+- **Migrations 029–032 required** — Must be run in Supabase SQL Editor in order (029 → 030 → 031 → 032) before the billing system is functional. Without them, billing API routes return defaults and debit calls fail silently.
 
 ---
 

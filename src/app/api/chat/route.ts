@@ -28,6 +28,7 @@ import { streamModelResponse, collectModelResponse } from "@/lib/stream-utils";
 import { saveGeneratedImage } from "@/lib/image-save-utils";
 import type { ImageToolName } from "@/lib/types";
 import { getStyleGalleryResponse } from "@/lib/style-gallery-data";
+import { calculateImageCost, countInputImages } from "@/lib/billing-utils";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -109,10 +110,8 @@ export async function POST(req: Request) {
   if (imageToolsEnabled) {
     imageCredentials = await getOrgImageCredentials(profile.org_id);
   }
-  const useImageTools =
-    imageToolsEnabled &&
-    imageCredentials !== null &&
-    imageCredentials.creditsUsed < imageCredentials.creditsAllocated;
+  // Old integer credit gate removed — billing now handled by debit_image_credit RPC after generation.
+  const useImageTools = imageToolsEnabled && imageCredentials !== null;
 
   // Get system prompt (DB-first, falls back to hardcoded) — scoped to user's org
   const systemPrompt = await getSystemPrompt(botId, profile.org_id);
@@ -415,19 +414,8 @@ async function executeToolAndContinue(
     toolArgs.image_url = uploadedImageUrl;
   }
 
-  // Atomically check and consume one credit before generating
-  const { data: creditOk } = await supabase.rpc("check_and_increment_image_credits", {
-    p_org_id: orgId,
-  });
-  if (!creditOk) {
-    const noCreditsMsg = "Image generation is currently unavailable. Your organisation has reached its image credit limit. Please contact your administrator.";
-    controller.enqueue(
-      encoder.encode(
-        `data: ${JSON.stringify({ content: noCreditsMsg })}\n\n`
-      )
-    );
-    return noCreditsMsg;
-  }
+  // check_and_increment_image_credits removed — replaced by debit_image_credit RPC (billing-utils).
+  // Old columns retained for now, marked for deprecation.
 
   // Notify client that image generation is starting
   controller.enqueue(
@@ -458,6 +446,47 @@ async function executeToolAndContinue(
       groupId
     );
     const displayUrl = saved.displayUrl;
+
+    // Fire-and-forget: debit group credits and log generation
+    if (groupId) {
+      const inputCount = countInputImages(toolArgs);
+      const cost = calculateImageCost(
+        imageResult.width,
+        imageResult.height,
+        inputCount,
+      );
+      // fal_request_id not yet captured — wire in a future session by extending ImageResult.
+      supabase
+        .rpc("debit_image_credit", {
+          p_group_id: groupId,
+          p_org_id: orgId,
+          p_user_id: userId,
+          p_fal_request_id: null,
+          p_endpoint: imageCredentials.endpoint,
+          p_output_width: imageResult.width || 1024,
+          p_output_height: imageResult.height || 1024,
+          p_input_image_count: inputCount,
+          p_mp_total: cost.outputMp + cost.inputMp,
+          p_cost_usd: cost.totalCost,
+        })
+        .then(({ data: newBalance, error: debitErr }) => {
+          if (debitErr) {
+            console.error("debit_image_credit failed:", debitErr.message);
+          } else {
+            // Send updated balance to client so topbar can refresh
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({ creditBalance: newBalance })}\n\n`
+              )
+            );
+          }
+        })
+        .catch((err: unknown) => {
+          console.error("debit_image_credit error:", err);
+        });
+    } else {
+      console.warn("debit_image_credit skipped: groupId is null for user " + userId);
+    }
 
     // Send image result to client (include energy data + tool info for retry)
     controller.enqueue(

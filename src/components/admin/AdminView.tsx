@@ -11,6 +11,7 @@ import PeopleTab from "./PeopleTab";
 import BotsTab from "./BotsTab";
 import IntegrationsTab from "./IntegrationsTab";
 import GoalsTab from "./GoalsTab";
+import BillingTab from "./BillingTab";
 
 const TAB_PARAM_MAP: Record<string, string> = {
   organization: "Organization",
@@ -18,6 +19,7 @@ const TAB_PARAM_MAP: Record<string, string> = {
   goals: "Goals",
   bots: "Bots",
   integrations: "Integrations",
+  billing: "Billing",
 };
 
 interface AdminViewProps {
@@ -31,7 +33,7 @@ export default function AdminView({ role, orgId, groupId }: AdminViewProps) {
   const isSuperAdmin = role === ROLES.SUPER_ADMIN;
 
   const tabs = isSuperAdmin
-    ? (["Organization", "People", "Goals", "Bots", "Integrations"] as const)
+    ? (["Organization", "People", "Goals", "Bots", "Integrations", "Billing"] as const)
     : (["People", "Goals"] as const);
 
   const tabParam = searchParams.get("tab")?.toLowerCase() || "";
@@ -85,6 +87,11 @@ export default function AdminView({ role, orgId, groupId }: AdminViewProps) {
           {isSuperAdmin && (
             <TabsContent value="Integrations">
               <IntegrationsTab />
+            </TabsContent>
+          )}
+          {isSuperAdmin && (
+            <TabsContent value="Billing">
+              <BillingTab groupId={groupId} />
             </TabsContent>
           )}
         </div>

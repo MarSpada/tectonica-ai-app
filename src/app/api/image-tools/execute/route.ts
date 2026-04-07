@@ -6,6 +6,7 @@ import {
   ImageToolError,
 } from "@/lib/image-tools";
 import { saveGeneratedImage } from "@/lib/image-save-utils";
+import { calculateImageCost, countInputImages } from "@/lib/billing-utils";
 import type { ImageToolName } from "@/lib/types";
 
 const VALID_TOOLS: ImageToolName[] = [
@@ -57,31 +58,22 @@ export async function POST(req: Request) {
     );
   }
 
-  // Atomically check and consume one credit (prevents TOCTOU race condition)
-  const { data: creditOk } = await supabase.rpc("check_and_increment_image_credits", {
-    p_org_id: profile.org_id,
-  });
-  if (!creditOk) {
-    return NextResponse.json(
-      { error: "no_credits" },
-      { status: 402 }
-    );
-  }
+  // check_and_increment_image_credits removed — replaced by debit_image_credit RPC (billing-utils).
+  // Old columns retained for now, marked for deprecation.
 
   try {
+    const toolArgs = params ?? {};
     const imageResult = await executeImageTool(
       tool as ImageToolName,
-      params ?? {},
+      toolArgs,
       credentials
     );
-
-    // Credit already consumed atomically above via check_and_increment_image_credits
 
     const saved = await saveGeneratedImage(
       {
         externalUrl: imageResult.url,
         toolName: tool as ImageToolName,
-        toolArgs: params ?? {},
+        toolArgs,
         responseWidth: imageResult.width,
         responseHeight: imageResult.height,
       },
@@ -89,6 +81,40 @@ export async function POST(req: Request) {
       user.id,
       profile.group_id
     );
+
+    // Fire-and-forget: debit group credits and log generation
+    if (profile.group_id) {
+      const inputCount = countInputImages(toolArgs);
+      const cost = calculateImageCost(
+        imageResult.width,
+        imageResult.height,
+        inputCount,
+      );
+      // fal_request_id not yet captured — wire in a future session by extending ImageResult.
+      supabase
+        .rpc("debit_image_credit", {
+          p_group_id: profile.group_id,
+          p_org_id: profile.org_id,
+          p_user_id: user.id,
+          p_fal_request_id: null,
+          p_endpoint: credentials.endpoint,
+          p_output_width: imageResult.width || 1024,
+          p_output_height: imageResult.height || 1024,
+          p_input_image_count: inputCount,
+          p_mp_total: cost.outputMp + cost.inputMp,
+          p_cost_usd: cost.totalCost,
+        })
+        .then(({ error: debitErr }) => {
+          if (debitErr) {
+            console.error("debit_image_credit failed:", debitErr.message);
+          }
+        })
+        .catch((err: unknown) => {
+          console.error("debit_image_credit error:", err);
+        });
+    } else {
+      console.warn("debit_image_credit skipped: groupId is null for user " + user.id);
+    }
 
     return NextResponse.json({
       url: saved.displayUrl,

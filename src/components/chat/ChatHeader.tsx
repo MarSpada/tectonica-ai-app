@@ -4,6 +4,8 @@ import Link from "next/link";
 import { type Bot, categoryMeta } from "@/lib/bots";
 import { Icon } from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
+import { formatCredits } from "@/lib/billing-utils";
+import { isSuperAdmin } from "@/lib/constants/roles";
 import type { IconName } from "@/lib/icon-map";
 
 interface ChatHeaderProps {
@@ -11,6 +13,8 @@ interface ChatHeaderProps {
   isImageBot?: boolean;
   mostRecentImageUrl?: string | null;
   onOpenStudio?: () => void;
+  creditBalance?: number | null;
+  userRole?: string;
 }
 
 export default function ChatHeader({
@@ -18,6 +22,8 @@ export default function ChatHeader({
   isImageBot,
   mostRecentImageUrl,
   onOpenStudio,
+  creditBalance,
+  userRole,
 }: ChatHeaderProps) {
   const meta = categoryMeta[bot.category];
 
@@ -47,6 +53,36 @@ export default function ChatHeader({
           <span className="text-xs text-text-muted">Online</span>
         </div>
       </div>
+
+      {/* Credit balance — only for image-capable bots */}
+      {isImageBot && (
+        <div className="flex items-center gap-2">
+          <span
+            className={`text-sm font-medium ${
+              creditBalance == null
+                ? "text-text-muted"
+                : creditBalance < 0
+                  ? "text-red-600"
+                  : creditBalance < 1
+                    ? "text-amber-600"
+                    : "text-text-primary"
+            }`}
+          >
+            Credits: {creditBalance == null ? "\u2014" : formatCredits(creditBalance)}
+          </span>
+          {isSuperAdmin(userRole) ? (
+            <Link href="/admin?tab=billing">
+              <Button variant="outline" size="sm" className="text-xs">
+                Buy More Credits
+              </Button>
+            </Link>
+          ) : (
+            <Button variant="outline" size="sm" className="text-xs" disabled>
+              Buy More Credits
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Open in Studio button — only for image-capable bots */}
       {isImageBot && (

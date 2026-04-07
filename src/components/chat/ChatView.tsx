@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { type Bot } from "@/lib/bots";
 import { type Message } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
@@ -12,6 +12,7 @@ import StudioOverlay from "./StudioOverlay";
 import { Icon } from "@/components/ui/icon";
 import { parseRequirements } from "./CreativeBrief";
 import CreateApprovalModal from "@/components/approvals/CreateApprovalModal";
+import { useUserProfile } from "@/lib/UserProfileContext";
 
 interface ChatViewProps {
   bot: Bot;
@@ -45,6 +46,25 @@ export default function ChatView({
   const [approvedImages, setApprovedImages] = useState<Map<string, string>>(new Map()); // imageUrl → approvalId
   const [imageEnergyData, setImageEnergyData] = useState<Map<string, { energyWh: number; width: number; height: number }>>(new Map());
   const [imageToolData, setImageToolData] = useState<Map<string, { toolName: string; toolArgs: Record<string, unknown> }>>(new Map());
+
+  // Credit balance state (image bots only)
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const { profile: userProfile } = useUserProfile();
+
+  // Fetch initial credit balance on mount for image bots
+  useEffect(() => {
+    if (!isImageBot) return;
+    fetch("/api/billing/balance")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.credit_balance_usd !== undefined) {
+          setCreditBalance(json.credit_balance_usd);
+        }
+      })
+      .catch(() => {
+        // Balance unavailable — leave as null
+      });
+  }, [isImageBot]);
 
   const sendMessage = useCallback(async (messageContent?: string) => {
     const content = messageContent || input.trim();
@@ -197,6 +217,12 @@ export default function ChatView({
                 };
                 return updated;
               });
+              continue;
+            }
+
+            // Credit balance update from debit_image_credit RPC
+            if (parsed.creditBalance !== undefined) {
+              setCreditBalance(parsed.creditBalance);
               continue;
             }
 
@@ -360,6 +386,8 @@ export default function ChatView({
           isImageBot={isImageBot}
           mostRecentImageUrl={mostRecentImageUrl}
           onOpenStudio={() => setShowStudio(true)}
+          creditBalance={creditBalance}
+          userRole={userProfile?.role}
         />
         {notConfigured ? (
           <div className="flex-1 flex items-center justify-center px-8">
@@ -419,6 +447,13 @@ export default function ChatView({
                         next.set(data.url, toolData);
                         return next;
                       });
+                      // Re-fetch credit balance after execute route (no SSE for REST)
+                      fetch("/api/billing/balance")
+                        .then((r) => r.json())
+                        .then((j) => {
+                          if (j.credit_balance_usd !== undefined) setCreditBalance(j.credit_balance_usd);
+                        })
+                        .catch(() => {});
                       setMessages((prev) => {
                         const updated = [...prev];
                         updated[updated.length - 1] = {
