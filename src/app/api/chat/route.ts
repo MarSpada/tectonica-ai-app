@@ -116,6 +116,9 @@ export async function POST(req: Request) {
 
   // Get system prompt (DB-first, falls back to hardcoded) — scoped to user's org
   const systemPrompt = await getSystemPrompt(botId, profile.org_id);
+  if (!systemPrompt) {
+    return NextResponse.json({ error: 'System prompt unavailable' }, { status: 500 });
+  }
 
   // Pre-process messages: upload base64 images to Railway before sending to model
   const { messages: processedMessages, uploadedImageUrl } = await preprocessMessages(

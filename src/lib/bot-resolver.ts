@@ -66,7 +66,11 @@ export async function getBots(orgId?: string): Promise<Bot[]> {
  *
  * @param orgId — if provided, scopes the lookup to this org's bots (plus global).
  */
-export async function getSystemPrompt(botId: string, orgId?: string): Promise<string> {
+export async function getSystemPrompt(botId: string, orgId?: string): Promise<string | null> {
+  if (!orgId) {
+    console.warn('getSystemPrompt() called with no orgId — returning null');
+    return null;
+  }
   try {
     const supabase = await createClient();
     let query = supabase
