@@ -1,5 +1,6 @@
-// Template is intentionally self-contained — no external CSS or JS dependencies.
+// Template is intentionally self-contained — no external JS dependencies.
 // Pages must render correctly when served as static HTML files.
+// Google Fonts is the only external CSS dependency (loaded when a custom font is selected).
 
 export interface LandingPageBrief {
   headline: string;
@@ -17,6 +18,8 @@ export interface LandingPageBrief {
     social_instagram?: string | null;
     social_twitter?: string | null;
     social_bluesky?: string | null;
+    font_family?: string | null;
+    form_embed_html?: string | null;
   };
 }
 
@@ -50,6 +53,8 @@ export function renderLandingPage(brief: LandingPageBrief): string {
   const secondary = brief.branding.secondary_color || DEFAULT_SECONDARY;
   const logoUrl = brief.branding.logo_url || null;
   const heroUrl = brief.branding.hero_image_url || null;
+  const fontFamily = brief.branding.font_family?.trim() || null;
+  const formEmbedHtml = brief.branding.form_embed_html?.trim() || null;
   const messages = brief.key_messages.filter((m) => m && m.trim().length > 0);
 
   // Build social links array — only include non-empty URLs
@@ -91,13 +96,26 @@ export function renderLandingPage(brief: LandingPageBrief): string {
     ? `<footer>${socialHtml}</footer>`
     : "";
 
+  // Google Fonts import — only when a custom font is selected
+  const fontImportHtml = fontFamily
+    ? `<link href="https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, "+")}:wght@400;600;700&display=swap" rel="stylesheet">`
+    : "";
+  const fontCss = fontFamily
+    ? `'${escapeHtml(fontFamily)}', `
+    : "";
+
+  // Form embed replaces CTA button when configured
+  const ctaOrFormHtml = formEmbedHtml
+    ? `<div class="form-embed">${formEmbedHtml}</div>`
+    : `<a href="${escapeHtml(brief.cta_url)}" class="cta-button">${escapeHtml(brief.cta_label)}</a>`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${escapeHtml(brief.headline)}</title>
-<style>
+${fontImportHtml}<style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --primary: ${primary};
@@ -108,7 +126,7 @@ export function renderLandingPage(brief: LandingPageBrief): string {
     --surface: #f8f7ff;
   }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: ${fontCss}-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     color: var(--text);
     background: var(--bg);
     line-height: 1.6;
@@ -209,6 +227,11 @@ export function renderLandingPage(brief: LandingPageBrief): string {
     transition: color 0.2s;
   }
   .social a:hover { color: var(--primary); }
+  .form-embed {
+    margin: 0 auto;
+    max-width: 520px;
+    text-align: left;
+  }
   @media (max-width: 480px) {
     .content { padding: 28px 16px; }
     .messages li { font-size: 0.95rem; }
@@ -220,7 +243,7 @@ export function renderLandingPage(brief: LandingPageBrief): string {
 <div class="page">
 ${logoHtml}${heroHtml}<div class="content">
 <h1>${escapeHtml(brief.headline)}</h1>
-${messagesHtml}${urgencyHtml}<a href="${escapeHtml(brief.cta_url)}" class="cta-button">${escapeHtml(brief.cta_label)}</a>
+${messagesHtml}${urgencyHtml}${ctaOrFormHtml}
 </div>
 ${footerHtml}</div>
 </body>

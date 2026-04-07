@@ -706,6 +706,8 @@ async function executeLandingPageTool(
         social_instagram: branding?.social_instagram ?? null,
         social_twitter: branding?.social_twitter ?? null,
         social_bluesky: branding?.social_bluesky ?? null,
+        font_family: branding?.font_family ?? null,
+        form_embed_html: branding?.form_embed_html ?? null,
       },
     };
 

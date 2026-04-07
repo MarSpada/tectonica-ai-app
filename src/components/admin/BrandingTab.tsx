@@ -30,6 +30,11 @@ export default function BrandingTab({ role, groupId, orgId }: BrandingTabProps) 
   const [ctaInput, setCtaInput] = useState("");
   const [savingCta, setSavingCta] = useState(false);
 
+  // Font edit state
+  const [editingFont, setEditingFont] = useState(false);
+  const [fontInput, setFontInput] = useState("");
+  const [savingFont, setSavingFont] = useState(false);
+
   // Social media edit state
   const [editingSocial, setEditingSocial] = useState(false);
   const [facebookInput, setFacebookInput] = useState("");
@@ -37,6 +42,11 @@ export default function BrandingTab({ role, groupId, orgId }: BrandingTabProps) 
   const [twitterInput, setTwitterInput] = useState("");
   const [blueskyInput, setBlueskyInput] = useState("");
   const [savingSocial, setSavingSocial] = useState(false);
+
+  // Form embed edit state
+  const [editingFormEmbed, setEditingFormEmbed] = useState(false);
+  const [formEmbedInput, setFormEmbedInput] = useState("");
+  const [savingFormEmbed, setSavingFormEmbed] = useState(false);
 
   // Upload state
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -133,6 +143,31 @@ export default function BrandingTab({ role, groupId, orgId }: BrandingTabProps) 
     }
   }
 
+  async function handleSaveFont() {
+    setSavingFont(true);
+    try {
+      const res = await fetch("/api/admin/branding", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          font_family: fontInput || null,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok && json.branding) {
+        setBranding(json.branding);
+        setEditingFont(false);
+        toast.success("Font saved");
+      } else {
+        toast.error(json.error || "Failed to save");
+      }
+    } catch {
+      toast.error("Failed to save");
+    } finally {
+      setSavingFont(false);
+    }
+  }
+
   async function handleSaveCta() {
     setSavingCta(true);
     try {
@@ -183,6 +218,54 @@ export default function BrandingTab({ role, groupId, orgId }: BrandingTabProps) 
       toast.error("Failed to save");
     } finally {
       setSavingSocial(false);
+    }
+  }
+
+  async function handleSaveFormEmbed() {
+    setSavingFormEmbed(true);
+    try {
+      const res = await fetch("/api/admin/branding", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          form_embed_html: formEmbedInput || null,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok && json.branding) {
+        setBranding(json.branding);
+        setEditingFormEmbed(false);
+        toast.success("Form embed saved");
+      } else {
+        toast.error(json.error || "Failed to save");
+      }
+    } catch {
+      toast.error("Failed to save");
+    } finally {
+      setSavingFormEmbed(false);
+    }
+  }
+
+  async function handleClearFormEmbed() {
+    if (!confirm("Remove the form embed? The CTA button will be used instead.")) return;
+    setSavingFormEmbed(true);
+    try {
+      const res = await fetch("/api/admin/branding", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ form_embed_html: null }),
+      });
+      const json = await res.json();
+      if (res.ok && json.branding) {
+        setBranding(json.branding);
+        toast.success("Form embed removed");
+      } else {
+        toast.error(json.error || "Failed to remove");
+      }
+    } catch {
+      toast.error("Failed to remove");
+    } finally {
+      setSavingFormEmbed(false);
     }
   }
 
@@ -393,6 +476,72 @@ export default function BrandingTab({ role, groupId, orgId }: BrandingTabProps) 
         )}
       </section>
 
+      {/* Font */}
+      <section className="bg-card-bg rounded-xl border border-card-stroke p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-text-primary">Font</h2>
+          {canEdit && !editingFont && (
+            <Button
+              variant="link"
+              onClick={() => {
+                setFontInput(branding?.font_family || "");
+                setEditingFont(true);
+              }}
+            >
+              Edit
+            </Button>
+          )}
+        </div>
+
+        {editingFont ? (
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-medium text-text-muted mb-1 block">
+                Font Family
+              </label>
+              <select
+                value={fontInput}
+                onChange={(e) => setFontInput(e.target.value)}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Default (system font)</option>
+                <option value="Inter">Inter</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Lato">Lato</option>
+                <option value="Montserrat">Montserrat</option>
+                <option value="Oswald">Oswald</option>
+                <option value="Raleway">Raleway</option>
+                <option value="Source Sans Pro">Source Sans Pro</option>
+                <option value="Playfair Display">Playfair Display</option>
+              </select>
+              <p className="text-xs text-text-muted mt-1">
+                This font will be applied to all generated landing pages.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button onClick={handleSaveFont} disabled={savingFont}>
+                {savingFont ? "Saving..." : "Save"}
+              </Button>
+              <Button variant="ghost" onClick={() => setEditingFont(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-black/[0.02] border border-black/5">
+              <span className="text-xs text-text-muted">Font Family</span>
+              <span
+                className="text-sm font-medium text-text-primary"
+                style={branding?.font_family ? { fontFamily: branding.font_family } : undefined}
+              >
+                {branding?.font_family || "Default font"}
+              </span>
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* Default CTA URL */}
       <section className="bg-card-bg rounded-xl border border-card-stroke p-5">
         <div className="flex items-center justify-between mb-4">
@@ -555,6 +704,88 @@ export default function BrandingTab({ role, groupId, orgId }: BrandingTabProps) 
                 </span>
               </div>
             ))}
+          </div>
+        )}
+      </section>
+
+      {/* Form Embed */}
+      <section className="bg-card-bg rounded-xl border border-card-stroke p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-text-primary">Form Embed</h2>
+          {canEdit && !editingFormEmbed && (
+            <div className="flex items-center gap-2">
+              {branding?.form_embed_html && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-text-muted hover:text-red-600"
+                  disabled={savingFormEmbed}
+                  onClick={handleClearFormEmbed}
+                >
+                  Clear
+                </Button>
+              )}
+              <Button
+                variant="link"
+                onClick={() => {
+                  setFormEmbedInput(branding?.form_embed_html || "");
+                  setEditingFormEmbed(true);
+                }}
+              >
+                Edit
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {editingFormEmbed ? (
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-medium text-text-muted mb-1 block">
+                Embed Code
+              </label>
+              <textarea
+                value={formEmbedInput}
+                onChange={(e) => setFormEmbedInput(e.target.value)}
+                rows={6}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs"
+                placeholder='<script charset="utf-8" type="text/javascript" src="//js.hsforms.net/forms/embed/v2.js"></script>...'
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setEditingFormEmbed(false);
+                }}
+              />
+              <p className="text-xs text-text-muted mt-1">
+                Paste your HubSpot, Typeform, or other form embed code here. When set, this replaces the CTA button on generated landing pages.
+              </p>
+              <p className="text-xs text-amber-600 mt-1">
+                Only paste embed code from trusted sources. This HTML will be injected directly into your landing pages.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button onClick={handleSaveFormEmbed} disabled={savingFormEmbed}>
+                {savingFormEmbed ? "Saving..." : "Save"}
+              </Button>
+              <Button variant="ghost" onClick={() => setEditingFormEmbed(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-black/[0.02] border border-black/5">
+              <span className="text-xs text-text-muted">Embed Code</span>
+              <span className="text-sm font-medium text-text-primary truncate max-w-[60%] text-right font-mono">
+                {branding?.form_embed_html
+                  ? branding.form_embed_html.length > 80
+                    ? branding.form_embed_html.slice(0, 80) + "..."
+                    : branding.form_embed_html
+                  : "No form embed configured"}
+              </span>
+            </div>
+            <p className="text-xs text-text-muted">
+              Paste your HubSpot, Typeform, or other form embed code here. When set, this replaces the CTA button on generated landing pages.
+            </p>
           </div>
         )}
       </section>

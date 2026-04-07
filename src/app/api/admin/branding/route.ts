@@ -44,6 +44,8 @@ export async function GET() {
           social_instagram: null,
           social_twitter: null,
           social_bluesky: null,
+          font_family: null,
+          form_embed_html: null,
           created_at: null,
           updated_at: null,
         },
@@ -92,6 +94,8 @@ export async function PATCH(request: Request) {
       "social_instagram",
       "social_twitter",
       "social_bluesky",
+      "font_family",
+      "form_embed_html",
     ] as const;
 
     const updateFields: Record<string, unknown> = {

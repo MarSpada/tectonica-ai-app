@@ -469,6 +469,8 @@ export interface GroupBranding {
   social_instagram: string | null;
   social_twitter: string | null;
   social_bluesky: string | null;
+  font_family: string | null;
+  form_embed_html: string | null;
   created_at: string;
   updated_at: string;
 }
