@@ -92,9 +92,7 @@ export function renderLandingPage(brief: LandingPageBrief): string {
     ? `<div class="social">${socialLinks.map((s) => `<a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(s.platform)}">${s.icon}</a>`).join("")}</div>`
     : "";
 
-  const footerHtml = socialLinks.length > 0
-    ? `<footer>${socialHtml}</footer>`
-    : "";
+  const footerHtml = `<footer>${socialHtml}<p class="built-with">Built with <a href="https://www.tectonica.co" target="_blank" rel="noopener noreferrer">Tectonica.AI</a></p></footer>`;
 
   // Google Fonts import — only when a custom font is selected
   const fontImportHtml = fontFamily
@@ -227,6 +225,17 @@ ${fontImportHtml}<style>
     transition: color 0.2s;
   }
   .social a:hover { color: var(--primary); }
+  .built-with {
+    margin-top: 16px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+  .built-with a {
+    color: var(--text-muted);
+    text-decoration: underline;
+    transition: color 0.2s;
+  }
+  .built-with a:hover { color: var(--primary); }
   .form-embed {
     margin: 0 auto;
     max-width: 520px;
