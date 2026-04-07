@@ -167,47 +167,50 @@ export default function ChatInput({
       )}
 
       <div className="flex items-end gap-3 max-w-3xl mx-auto">
-        {/* Image upload button — image bots only */}
-        {isImageBot && onImageUpload && (
-          <>
-            <button
-              onClick={() => imageInputRef.current?.click()}
-              disabled={isStreaming}
-              className="w-10 h-10 rounded-full flex items-center justify-center text-text-muted hover:bg-white/30 transition-colors disabled:opacity-40"
-              title="Attach image"
-            >
-              <Icon name="file-image" size={20} className="opacity-60" />
-            </button>
-            <input
-              ref={imageInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageSelect}
-              className="hidden"
-            />
-          </>
-        )}
+        {/* Attachment buttons — grouped tight */}
+        <div className="flex items-center gap-0.5">
+          {/* Image upload button — image bots only */}
+          {isImageBot && onImageUpload && (
+            <>
+              <button
+                onClick={() => imageInputRef.current?.click()}
+                disabled={isStreaming}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-text-muted hover:bg-white/30 transition-colors disabled:opacity-40"
+                title="Attach image"
+              >
+                <Icon name="file-image" size={20} className="opacity-60" />
+              </button>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+            </>
+          )}
 
-        {/* File attachment button — image bots get both buttons, other bots get just this */}
-        {(onFileAttach || (!isImageBot && onImageUpload)) && (
-          <>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isStreaming}
-              className="w-10 h-10 rounded-full flex items-center justify-center text-text-muted hover:bg-white/30 transition-colors disabled:opacity-40"
-              title="Attach file"
-            >
-              <Icon name="file-attachment" size={20} className="opacity-60" />
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".txt,.md,.csv,.json,.xml,.html,.yml,.yaml,.toml,.log,.js,.ts,.jsx,.tsx,.py,.rb,.java,.go,.rs,.css,.scss,.sql"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-          </>
-        )}
+          {/* File attachment button — image bots get both buttons, other bots get just this */}
+          {(onFileAttach || (!isImageBot && onImageUpload)) && (
+            <>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isStreaming}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-text-muted hover:bg-white/30 transition-colors disabled:opacity-40"
+                title="Attach file"
+              >
+                <Icon name="file-attachment" size={20} className="opacity-60" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".txt,.md,.csv,.json,.xml,.html,.yml,.yaml,.toml,.log,.js,.ts,.jsx,.tsx,.py,.rb,.java,.go,.rs,.css,.scss,.sql"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+            </>
+          )}
+        </div>
 
         <textarea
           ref={textareaRef}
