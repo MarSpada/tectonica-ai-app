@@ -31,7 +31,7 @@ The path to full launch involves connecting external action source adapters (Nat
 - Volunteer hours tracking with dashboard widget (spark chart + progress bar when goal set), detail overlay (role-gated: admins see all, non-admins see own hours)
 - Fundraising, recruitment, and volunteer hours goals (admin-editable, DB-driven, displayed in dashboard widgets)
 - Reimbursement requests with approval workflow and in-app notifications
-- Super Admin Panel (Organization, People, Goals, Bots, Integrations tabs)
+- Super Admin Panel (Organization, People, Goals, Bots, Integrations, Billing tabs)
 - Configurable dashboard grid (React Grid Layout, role-aware save, per-widget size constraints)
 - Calendar integration (group-scoped iCal/ICS feeds from Google Calendar, Outlook, Apple Calendar, Mobilize, any iCal source) with event detail sheet
 - Actions system (internal actions with types, points, deadlines, assignment scoping, self-reported completion tracking, points ledger)
@@ -41,6 +41,7 @@ The path to full launch involves connecting external action source adapters (Nat
 - Activity log (unified timeline of hours, approvals, signups, reimbursements)
 - Group profile page with description, member count, quick links
 - Graphics Creation bot with image generation (Railway/fal.ai), style gallery, Studio visual editor, creative briefs, image-to-image editing
+- Image credit billing system: per-group credit pools, cost calculation based on megapixels, generation logging, admin Billing tab (balance, top-ups, rates, platform fee), real-time credit display in chat topbar
 - Energy consumption indicator per AI-generated image (Stanford/AXA 2025 research, collapsible display in chat and Media Library)
 - GSAP entrance animations throughout
 - Deployed on Railway with auto-deploy from `v2` branch
@@ -127,7 +128,7 @@ The following must be configured manually in the Supabase dashboard:
    - `media` — for Media Library files. Setup instructions are in the header comment of `src/lib/media-storage.ts`
    - `reimbursements` — for reimbursement request attachments
 2. **Storage RLS policies** — Storage bucket policies are separate from table-level RLS and must be configured in the Supabase dashboard
-3. **All SQL migrations** (in `supabase/migrations/`, numbered 001–027) must be run in order in the Supabase SQL Editor
+3. **All SQL migrations** (in `supabase/migrations/`, numbered 001–032) must be run in order in the Supabase SQL Editor. Migrations 029–032 add the image credit billing system (group_billing, group_billing_topups, image_generation_log tables + debit_image_credit RPC).
 4. **Manual schema addition**: `ALTER TABLE group_goals ADD COLUMN hours_goal integer NOT NULL DEFAULT 0;` (no migration file — run directly in SQL Editor)
 
 ### Test accounts
@@ -227,6 +228,7 @@ src/
     │   └── roles.ts        # Role constants (ROLES, VALID_ROLES), helpers (isAdminRole, isSuperAdmin)
     ├── action-adapters/    # Action source adapter scaffold (future: NB, Action Network, ActBlue, Sosha)
     ├── api-utils.ts        # Shared API route utilities: requireAuth(), fetchProfileMap()
+    ├── billing-utils.ts    # Image generation cost calculation, input image counting, credit formatting
     ├── media-storage.ts    # Storage abstraction (only file that imports Supabase Storage for media)
     ├── signup-utils.ts     # NationBuilder API utilities
     ├── dashboard-widgets.ts # Widget IDs, permissions, constraints, layouts
@@ -237,7 +239,7 @@ src/
     ├── UserProfileContext.tsx # React Context for user profile data (role, orgName, groupName, name, avatar)
     └── utils.ts            # General utilities
 supabase/
-└── migrations/             # 25 SQL migration files (001–025), run manually in Supabase SQL Editor
+└── migrations/             # SQL migration files (001–032), run manually in Supabase SQL Editor
 ```
 
 ### Key architectural patterns
@@ -268,6 +270,7 @@ supabase/
 - `increment_storage_used()` — atomic counter increment
 - `create_signup_assignment()` — atomic assignment with notification creation
 - `complete_action()` — atomic action completion + points ledger entry with group boundary validation. Uses custom errcodes (P0002–P0005) mapped to HTTP statuses in the API route.
+- `debit_image_credit()` — atomic generation log insert + group billing balance decrement. Creates billing row with negative balance if none exists. Returns updated balance for real-time topbar refresh.
 
 **Context providers**
 - `UserProfileContext` provides user role, org, group (name + ID), name, and avatar data across the component tree
@@ -493,13 +496,14 @@ Group hours target stored as `hours_goal` in `group_goals` table. Hours Voluntee
 
 ### Admin panel
 
-Role-guarded panel at `/admin` with 5 tabs for super_admin, 2 tabs (People, Goals) for group_admin.
+Role-guarded panel at `/admin` with 6 tabs for super_admin, 2 tabs (People, Goals) for group_admin.
 
 - **Organization tab** (super_admin): edit org name, manage groups (rename), edit group descriptions
 - **People tab**: list members, change roles (with hierarchy enforcement), reassign groups (super_admin only), remove members, inline name editing
 - **Goals tab** (group_admin + super_admin): fundraising goals (monthly target, print budget, offline offset), recruitment goals (member/supporter targets), and volunteer hours goal. Inline edit pattern.
 - **Bots tab** (super_admin): DB-driven bot CRUD — create, edit name/description/system prompt/category/icon, delete
 - **Integrations tab** (super_admin): calendar source management (add/remove iCal feeds, toggle enable/disable, color coding), Action Sources section (NationBuilder Actions, Action Network, ActBlue, Sosha — all scaffolded as "Not Connected"), NationBuilder connection status, Action Network/Mobilize status
+- **Billing tab** (super_admin): credit balance + this month's spend, add credits form with optional note, top-up history (20 most recent), generation rates (base cost per MP, extra cost per input MP) with inline edit, platform fee percentage with inline edit. Per-group credit pools — each group has its own isolated balance. Credits are manually topped up by super_admin (Stripe integration planned). Every image generation is logged with cost breakdown and debited atomically.
 
 ### Configurable dashboard grid
 
@@ -558,6 +562,18 @@ Page at `/group` showing group name, description, member count, organization nam
 - **All group members** can view their group profile
 - Group description is editable by admins in the Organization tab
 
+### Image credit billing
+
+Per-group credit system for AI image generation. Each group has its own isolated credit pool with a USD balance. Every image generation calculates cost based on output megapixels (fal.ai pricing: $0.03/MP base output + $0.015/MP per input image) and debits the group's balance atomically. Balances can go negative — generation is never blocked by insufficient credits.
+
+- **super_admin** can add credits (manual top-ups), view top-up history, configure generation rates, and set platform fee percentage via the Billing tab in the Admin Panel
+- **All authenticated users** can see their group's credit balance in the chat topbar when using image-capable bots (e.g. Graphics Creation)
+- Credit balance updates in real time via SSE during chat and re-fetches after "Try Again" regeneration
+- "Buy More Credits" button in chat topbar links to Billing tab for super_admin, disabled for other roles
+- Color-coded balance: red when negative, amber when below $1.00, default otherwise
+- Generation log records every image generation with dimensions, input image count, MP breakdown, and cost
+- **Limitation**: Platform fee percentage is stored and editable but not yet applied to cost calculation — reserved for future Stripe integration. `fal_request_id` is not yet captured from the API response. Manual top-ups only (no self-service payments).
+
 ---
 
 ## 7. Known Issues and Roadmap
@@ -570,7 +586,7 @@ Page at `/group` showing group name, description, member count, organization nam
 - **Group goals first-run** — Widgets show zeros until an admin visits the Goals tab and saves once to create the `group_goals` row.
 - **Bot icon field mismatch** — DB bot records store old Material Icons strings. `getBots()` merges DB names with hardcoded Streamline icons as fallback.
 - **Image uploads not saved to Media Library** — User-uploaded reference images in chat are not saved to `media_items`. Only AI-generated outputs are saved. This prevents cluttering the Media Library with reference photos.
-- **Admin tab deep-linking** — AdminView reads `?tab=` URL param (e.g. `/admin?tab=integrations`). Values: `organization`, `people`, `goals`, `bots`, `integrations` (case-insensitive). Falls back to first available tab if invalid or unauthorized.
+- **Admin tab deep-linking** — AdminView reads `?tab=` URL param (e.g. `/admin?tab=integrations`). Values: `organization`, `people`, `goals`, `bots`, `integrations`, `billing` (case-insensitive). Falls back to first available tab if invalid or unauthorized.
 - **Connected Systems role-aware height** — Widget height adjusts by role via `ROLE_HEIGHT_OVERRIDES` in `dashboard-widgets.ts` (super_admin: h:8, others: h:4).
 - **`--accent-purple` still neutral** — Set to `#18181B`, awaiting brand color decision.
 - **`SparkAreaChart` default color** — Uses Tremor `"emerald"` default, needs custom color pass.
@@ -579,6 +595,11 @@ Page at `/group` showing group name, description, member count, organization nam
 - **LEGACY `fundraising_goals` columns** — `fundraising_goal` and `print_budget` columns are superseded by `group_goals` equivalents. Not dropped, just no longer the display source.
 - **LeadersChat and CampaignStats** — These components have empty arrays for contacts/messages and goals/notes/events respectively. They need real data sources.
 - **Supabase auth rate limiting** — Heavy HMR reloads during development can trigger rate limits.
+- **Old image credit system dormant** — `check_and_increment_image_credits` RPC and `org_integrations.image_api_credits_allocated` / `image_api_credits_used` columns are retained but no longer called. The new billing system uses `group_billing` + `debit_image_credit` RPC. Old artifacts can be dropped in a future cleanup.
+- **`fal_request_id` not captured** — `image_generation_log.fal_request_id` column exists but is always null. Requires extending `ImageResult` in `lib/image-tools.ts` to return request ID from the Railway response.
+- **`platform_fee_percentage` not applied** — Stored in `group_billing` and editable in admin Billing tab, but not factored into `calculateImageCost()`. Reserved for future Stripe integration.
+- **SSE `creditBalance` event timing** — The debit RPC is fire-and-forget. If slow, the balance update SSE event may arrive after the stream closes. Balance shows stale until next generation.
+- **Migrations 029–032 required** — Must be run in Supabase SQL Editor in order before the billing system is functional.
 
 ### Roadmap — next priorities
 
@@ -593,6 +614,12 @@ Page at `/group` showing group name, description, member count, organization nam
 - Action Network API connection (action source adapter + signup ingestion)
 - Mobilize API connection
 - Resend domain verification (partner action required)
+
+**Billing:**
+- Stripe integration for self-service credit purchases (group_billing schema is forward-compatible)
+- Apply platform_fee_percentage to cost calculation
+- Capture fal_request_id from Railway API response for billing reconciliation
+- Clean up dormant old credit system (org_integrations columns + check_and_increment_image_credits RPC)
 
 **Platform:**
 - Multi-tenancy (multiple orgs/groups — database schema supports it, UI is currently single-group)
