@@ -735,17 +735,15 @@ async function executeLandingPageTool(
       throw new Error(`Upload failed: ${uploadErr.message}`);
     }
 
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from("landing-pages")
-      .getPublicUrl(storagePath);
+    // Build proxy URL — Supabase Storage forces text/plain on .html files,
+    // so we serve landing pages through a Next.js route that sets correct headers.
+    const publicUrl = `/api/landing-pages/${pageId}/view`;
 
-    const publicUrl = urlData.publicUrl;
-
-    // Insert record into group_landing_pages
-    const { data: landingPage, error: dbError } = await supabase
+    // Insert record into group_landing_pages with explicit ID matching storage path
+    const { error: dbError } = await supabase
       .from("group_landing_pages")
       .insert({
+        id: pageId,
         group_id: groupId,
         org_id: orgId,
         created_by: userId,
@@ -753,9 +751,7 @@ async function executeLandingPageTool(
         type,
         public_url: publicUrl,
         status: "live",
-      })
-      .select("id")
-      .single();
+      });
 
     if (dbError) {
       throw new Error(`DB insert failed: ${dbError.message}`);
@@ -767,7 +763,7 @@ async function executeLandingPageTool(
         `data: ${JSON.stringify({
           landingPage: {
             url: publicUrl,
-            landing_page_id: landingPage.id,
+            landing_page_id: pageId,
             headline,
             type,
           },
