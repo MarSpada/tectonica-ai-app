@@ -7,6 +7,7 @@ const ICON_BASE = '/streamline-vectors-main/ultimate/bold';
 
 export const ICON_MAP = {
   // ── Navigation ──
+  'home': `${ICON_BASE}/interface-essential/house-chimney.svg`,
   'group-coach': `${ICON_BASE}/users/single-neutral-monitor.svg`,
   'group-media': `${ICON_BASE}/images-photography/picture-stack-landscape.svg`,
   'members': `${ICON_BASE}/users/multiple-users-1.svg`,

@@ -58,7 +58,21 @@ export default function LeftSidebar({
       >
         {/* Navigation */}
         <nav className="flex-1 px-3 pt-4 space-y-1">
-          {/* Group Coach Bot */}
+          {/* Home */}
+          {(() => {
+            const active = pathname === "/";
+            return (
+              <Link
+                href="/"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg font-semibold transition-colors hover:bg-black/5"
+              >
+                <Icon name="home" size={22} color={iconColor(active)} />
+                <span className="sidebar-label" style={navTextStyle(active)}>Home</span>
+              </Link>
+            );
+          })()}
+
+          {/* Main nav */}
           {([
             { href: "/coach", icon: "group-coach" as IconName, label: "Group Coach" },
             { href: "/media", icon: "group-media" as IconName, label: "Group Media" },

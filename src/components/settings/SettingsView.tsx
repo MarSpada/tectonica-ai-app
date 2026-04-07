@@ -65,7 +65,7 @@ export default function SettingsView({
         className="flex-1 flex flex-col overflow-hidden"
       >
         <div className="px-6">
-          <TabsList variant="line" className="gap-6">
+          <TabsList variant="line" className="w-full justify-start border-b border-border">
             {visibleTabs.map((tab) => (
               <TabsTrigger key={tab.value} value={tab.value}>
                 {tab.label}

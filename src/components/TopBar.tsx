@@ -111,8 +111,14 @@ export default function TopBar({ onToggleSidebar }: TopBarProps) {
         </Link>
       </div>
 
-      {/* Right section — logo */}
+      {/* Right section — logo + about link */}
       <div className="flex items-center gap-4">
+        <Link
+          href="/about"
+          className="text-xs text-text-muted hover:text-text-secondary transition-colors"
+        >
+          About Tectonica.AI
+        </Link>
         <img
           src="/logo-color.png"
           alt="Tectonica.AI"
