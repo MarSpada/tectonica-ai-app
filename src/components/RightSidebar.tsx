@@ -266,7 +266,8 @@ export default function RightSidebar({
     fetchImageApiStatus();
   }, []);
 
-  // Auto-save on unmount if in edit mode
+  // Auto-save on unmount if in edit mode — uses keepalive so the
+  // request survives page navigation and logout
   const isEditModeRef = useRef(false);
   useEffect(() => {
     isEditModeRef.current = isEditMode;
@@ -279,7 +280,10 @@ export default function RightSidebar({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ layout: layoutRef.current }),
-        }).catch(() => {});
+          keepalive: true, // survives page unload / navigation
+        }).catch((err) => {
+          console.warn("Auto-save layout failed on unmount:", err);
+        });
       }
     };
   }, []);
@@ -335,11 +339,11 @@ export default function RightSidebar({
   }
 
   // Handle save button click
-  function handleSave() {
+  async function handleSave() {
     if (isSuperAdmin) {
       setShowSaveDialog(true);
     } else {
-      saveUserLayout();
+      await saveUserLayout();
       setIsEditMode(false);
     }
   }
@@ -487,19 +491,19 @@ export default function RightSidebar({
           <DialogFooter className="flex gap-2 sm:justify-between">
             <Button
               variant="outline"
-              onClick={() => {
-                saveUserLayout();
-                setIsEditMode(false);
+              onClick={async () => {
                 setShowSaveDialog(false);
+                await saveUserLayout();
+                setIsEditMode(false);
               }}
             >
               Save for me only
             </Button>
             <Button
-              onClick={() => {
-                saveOrgDefault();
-                setIsEditMode(false);
+              onClick={async () => {
                 setShowSaveDialog(false);
+                await saveOrgDefault();
+                setIsEditMode(false);
               }}
             >
               Save as org default
