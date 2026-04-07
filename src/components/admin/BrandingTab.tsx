@@ -99,6 +99,8 @@ export default function BrandingTab({ role, groupId, orgId }: BrandingTabProps) 
     try {
       const formData = new FormData();
       formData.append("hero", file);
+      const heroCount = branding?.hero_images?.length ?? 0;
+      formData.append("label", `Hero ${heroCount + 1}`);
       const res = await fetch("/api/admin/branding/hero", {
         method: "POST",
         body: formData,
@@ -114,6 +116,26 @@ export default function BrandingTab({ role, groupId, orgId }: BrandingTabProps) 
       toast.error("Failed to upload hero image");
     } finally {
       setUploadingHero(false);
+    }
+  }
+
+  async function handleDeleteHero(url: string) {
+    if (!confirm("Remove this hero image?")) return;
+    try {
+      const res = await fetch("/api/admin/branding/hero", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const json = await res.json();
+      if (res.ok && json.branding) {
+        setBranding(json.branding);
+        toast.success("Hero image removed");
+      } else {
+        toast.error(json.error || "Failed to remove");
+      }
+    } catch {
+      toast.error("Failed to remove hero image");
     }
   }
 
@@ -328,22 +350,50 @@ export default function BrandingTab({ role, groupId, orgId }: BrandingTabProps) 
         )}
       </section>
 
-      {/* Hero Image */}
+      {/* Hero Images */}
       <section className="bg-card-bg rounded-xl border border-card-stroke p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-text-primary">Hero Image</h2>
+          <h2 className="text-sm font-semibold text-text-primary">
+            Hero Images
+            <span className="text-xs font-normal text-text-muted ml-2">
+              {branding?.hero_images?.length || 0} / 5
+            </span>
+          </h2>
         </div>
-        {branding?.hero_image_url ? (
-          <div className="mb-3">
-            <img
-              src={branding.hero_image_url}
-              alt="Hero image"
-              className="max-h-30 w-full rounded object-cover"
-            />
+
+        {branding?.hero_images && branding.hero_images.length > 0 ? (
+          <div className="grid grid-cols-3 gap-3 mb-3">
+            {branding.hero_images.map((img, i) => (
+              <div key={img.url} className="relative group rounded-lg overflow-hidden">
+                <img
+                  src={img.url}
+                  alt={img.label}
+                  className="w-full aspect-[16/9] object-cover"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-1.5 pt-6">
+                  <p className="text-[11px] font-medium text-white truncate">{img.label}</p>
+                </div>
+                {canEdit && (
+                  <button
+                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                    onClick={() => handleDeleteHero(img.url)}
+                    title="Remove"
+                  >
+                    &times;
+                  </button>
+                )}
+                {i === 0 && (
+                  <span className="absolute top-1.5 left-1.5 bg-accent-purple/90 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded">
+                    Default
+                  </span>
+                )}
+              </div>
+            ))}
           </div>
         ) : (
-          <p className="text-xs text-text-muted mb-3">No hero image uploaded</p>
+          <p className="text-xs text-text-muted mb-3">No hero images uploaded</p>
         )}
+
         {canEdit && (
           <>
             <input
@@ -360,13 +410,17 @@ export default function BrandingTab({ role, groupId, orgId }: BrandingTabProps) 
             <Button
               variant="outline"
               size="sm"
-              disabled={uploadingHero}
+              disabled={uploadingHero || (branding?.hero_images?.length ?? 0) >= 5}
               onClick={() => heroInputRef.current?.click()}
             >
-              {uploadingHero ? "Uploading..." : branding?.hero_image_url ? "Replace Hero Image" : "Upload Hero Image"}
+              {uploadingHero ? "Uploading..." : "Add Hero Image"}
             </Button>
           </>
         )}
+
+        <p className="text-xs text-text-muted mt-2">
+          Upload up to 5 hero images. During landing page creation, users will choose from these images.
+        </p>
       </section>
 
       {/* Colors */}

@@ -46,6 +46,7 @@ export async function GET() {
           social_bluesky: null,
           font_family: null,
           form_embed_html: null,
+          hero_images: [],
           created_at: null,
           updated_at: null,
         },
@@ -113,6 +114,31 @@ export async function PATCH(request: Request) {
         }
         updateFields[field] = body[field];
       }
+    }
+
+    // hero_images: validate as array of { url, label } objects, max 5
+    if (body.hero_images !== undefined) {
+      if (!Array.isArray(body.hero_images)) {
+        return NextResponse.json(
+          { error: "hero_images must be an array" },
+          { status: 400 },
+        );
+      }
+      if (body.hero_images.length > 5) {
+        return NextResponse.json(
+          { error: "Maximum 5 hero images allowed" },
+          { status: 400 },
+        );
+      }
+      for (const item of body.hero_images) {
+        if (typeof item?.url !== "string" || typeof item?.label !== "string") {
+          return NextResponse.json(
+            { error: "Each hero image must have url and label (strings)" },
+            { status: 400 },
+          );
+        }
+      }
+      updateFields.hero_images = body.hero_images;
     }
 
     const { data: branding, error } = await supabase

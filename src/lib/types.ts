@@ -471,6 +471,7 @@ export interface GroupBranding {
   social_bluesky: string | null;
   font_family: string | null;
   form_embed_html: string | null;
+  hero_images: Array<{ url: string; label: string }>;
   created_at: string;
   updated_at: string;
 }

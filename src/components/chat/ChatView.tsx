@@ -14,10 +14,12 @@ import { parseRequirements } from "./CreativeBrief";
 import CreateApprovalModal from "@/components/approvals/CreateApprovalModal";
 import { useUserProfile } from "@/lib/UserProfileContext";
 
-// Strip landing page trigger block from rendered content
+// Strip landing page trigger blocks from rendered content
 const stripLandingPageTrigger = (content: string): string => {
-  const triggerIndex = content.indexOf("GENERATE_LANDING_PAGE");
-  if (triggerIndex === -1) return content;
+  // Strip SHOW_HERO_GALLERY keyword
+  let cleaned = content.replace(/SHOW_HERO_GALLERY/g, "");
+  const triggerIndex = cleaned.indexOf("GENERATE_LANDING_PAGE");
+  if (triggerIndex === -1) return cleaned.trimEnd();
   const jsonStart = content.indexOf("{", triggerIndex);
   if (jsonStart === -1) return content.slice(0, triggerIndex).trimEnd();
   // Find matching closing brace via brace counting
@@ -469,9 +471,13 @@ export default function ChatView({
                 setMostRecentImageUrl(imageUrl);
                 setShowStudio(true);
               } : undefined}
-              onStyleSelect={isImageBot ? (styleName) => {
-                sendMessage(`I'd like the ${styleName} style`);
-              } : undefined}
+              onStyleSelect={
+                isImageBot
+                  ? (styleName) => sendMessage(`I'd like the ${styleName} style`)
+                  : isLandingPageBot
+                    ? (label) => sendMessage(`I'd like the '${label}' hero image`)
+                    : undefined
+              }
               onTryAgain={isImageBot ? (imageUrl?: string) => {
                 // If we have stored tool data for this image, re-execute directly
                 const toolData = imageUrl ? imageToolData.get(imageUrl) : undefined;

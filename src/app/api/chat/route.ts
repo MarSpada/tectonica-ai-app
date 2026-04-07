@@ -234,6 +234,38 @@ export async function POST(req: Request) {
           }
         }
 
+        // Hero image gallery: text pattern detection for SHOW_HERO_GALLERY.
+        // When detected, send available hero images to the client as a gallery SSE event.
+        // The user picks one, and the model includes the selection in the next GENERATE_LANDING_PAGE trigger.
+        const HERO_GALLERY_TRIGGER = "SHOW_HERO_GALLERY";
+        if (landingPageToolsEnabled && streamResult.content?.includes(HERO_GALLERY_TRIGGER)) {
+          try {
+            const { data: brandingForGallery } = await supabase
+              .from("group_branding")
+              .select("hero_images")
+              .eq("group_id", profile.group_id)
+              .maybeSingle();
+
+            const heroImages: Array<{ url: string; label: string }> =
+              Array.isArray(brandingForGallery?.hero_images) ? brandingForGallery.hero_images : [];
+
+            if (heroImages.length > 0) {
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({
+                    gallery: {
+                      images: heroImages.map((img) => ({ alt: img.label, url: img.url })),
+                      title: "Choose a hero image for your landing page:",
+                    },
+                  })}\n\n`
+                )
+              );
+            }
+          } catch (e) {
+            console.error("Failed to fetch hero images for gallery:", e);
+          }
+        }
+
         // Handle tool calls if the model requested one
         const KNOWN_IMAGE_TOOLS = ["generate_image", "edit_image", "fuse_images", "apply_branding"];
         const imageToolCall = streamResult.toolCalls.find(
@@ -690,6 +722,16 @@ async function executeLandingPageTool(
     // cta_url falls back to '#' if default not configured — admin should set default_cta_url in Branding tab
     const resolvedCtaUrl = branding?.default_cta_url || "#";
 
+    // Resolve hero image: match hero_label against hero_images array, fall back to default
+    const heroImages: Array<{ url: string; label: string }> =
+      Array.isArray(branding?.hero_images) ? branding.hero_images : [];
+    const heroLabel = typeof toolArgs.hero_label === "string" ? toolArgs.hero_label : null;
+    let resolvedHeroUrl = branding?.hero_image_url ?? null;
+    if (heroLabel && heroImages.length > 0) {
+      const match = heroImages.find((img) => img.label === heroLabel);
+      if (match) resolvedHeroUrl = match.url;
+    }
+
     const brief: LandingPageBrief = {
       headline,
       type,
@@ -699,7 +741,7 @@ async function executeLandingPageTool(
       urgency,
       branding: {
         logo_url: branding?.logo_url ?? null,
-        hero_image_url: branding?.hero_image_url ?? null,
+        hero_image_url: resolvedHeroUrl,
         primary_color: branding?.primary_color ?? null,
         secondary_color: branding?.secondary_color ?? null,
         social_facebook: branding?.social_facebook ?? null,
