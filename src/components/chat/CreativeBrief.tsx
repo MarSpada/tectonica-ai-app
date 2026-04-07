@@ -242,7 +242,6 @@ export function SavedBriefs({ isImageBot, onUseBrief }: SavedBriefsProps) {
       <div className="pb-2">
         {SAVED_BRIEFS.map((brief) => {
           const isExpanded = expandedId === brief.id;
-          const styleField = brief.fields.find((f) => f.key === "STYLE")?.value || "";
           return (
             <div key={brief.id} className="mx-3 mb-1.5">
               <div
@@ -256,9 +255,6 @@ export function SavedBriefs({ isImageBot, onUseBrief }: SavedBriefsProps) {
                 <div className="px-3 py-2">
                   <p className="text-[11px] font-semibold text-text-primary leading-tight">
                     {brief.title}
-                  </p>
-                  <p className="text-[10px] text-text-muted mt-0.5">
-                    {styleField}
                   </p>
                   {/* Action buttons */}
                   <div className="flex items-center gap-2 mt-1.5">

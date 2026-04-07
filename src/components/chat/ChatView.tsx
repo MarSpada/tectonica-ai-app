@@ -17,6 +17,7 @@ interface ChatViewProps {
   bot: Bot;
   userName: string;
   recentConversations: Array<{ id: string; title: string; updated_at: string }>;
+  totalConversationCount?: number;
   isImageBot?: boolean;
   orgSlug?: string;
 }
@@ -25,6 +26,7 @@ export default function ChatView({
   bot,
   userName,
   recentConversations: initialConversations,
+  totalConversationCount: initialTotalCount,
   isImageBot = false,
   orgSlug = "",
 }: ChatViewProps) {
@@ -473,6 +475,7 @@ export default function ChatView({
       {/* Recent conversations sidebar */}
       <RecentConversations
         conversations={conversations}
+        totalCount={initialTotalCount ?? conversations.length}
         currentConversationId={conversationId}
         onSelect={loadConversation}
         onNewChat={startNewChat}

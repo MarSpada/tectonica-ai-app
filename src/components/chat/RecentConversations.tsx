@@ -22,6 +22,7 @@ const MAX_VISIBLE = 10;
 
 interface RecentConversationsProps {
   conversations: Array<{ id: string; title: string; updated_at: string }>;
+  totalCount?: number;
   currentConversationId: string | null;
   onSelect: (conversationId: string) => void;
   onNewChat: () => void;
@@ -33,6 +34,7 @@ interface RecentConversationsProps {
 
 export default function RecentConversations({
   conversations,
+  totalCount,
   currentConversationId,
   onSelect,
   onNewChat,
@@ -96,7 +98,7 @@ export default function RecentConversations({
             >
               <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
                 Past Chats
-                <span className="font-normal ml-1">({conversations.length})</span>
+                <span className="font-normal ml-1">({totalCount ?? conversations.length})</span>
               </h3>
               <Chevron open={chatsExpanded} />
             </button>
@@ -142,7 +144,7 @@ export default function RecentConversations({
                 onClick={() => setShowAll(!showAll)}
                 className="w-full px-4 py-2 text-[10px] font-medium text-accent-purple hover:underline text-center"
               >
-                {showAll ? "Show less" : `Show all ${conversations.length}`}
+                {showAll ? "Show less" : `Show all ${totalCount ?? conversations.length}`}
               </button>
             )}
           </div>

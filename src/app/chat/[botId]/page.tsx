@@ -22,20 +22,22 @@ export default async function ChatPage({
     user?.user_metadata?.full_name || user?.email || "Organizer";
 
   // Fetch recent conversations — graceful fallback
+  let totalConversationCount = 0;
   let recentConversations: Array<{
     id: string;
     title: string;
     updated_at: string;
   }> = [];
   try {
-    const { data } = await supabase
+    const { data, count } = await supabase
       .from("conversations")
-      .select("id, title, updated_at")
+      .select("id, title, updated_at", { count: "exact" })
       .eq("bot_id", botId)
       .eq("user_id", user?.id)
       .order("updated_at", { ascending: false })
       .limit(20);
     if (data) recentConversations = data;
+    totalConversationCount = count ?? data?.length ?? 0;
   } catch {
     // Tables don't exist yet — that's fine
   }
@@ -77,6 +79,7 @@ export default async function ChatPage({
         bot={bot}
         userName={displayName.split(" ")[0]}
         recentConversations={recentConversations}
+        totalConversationCount={totalConversationCount}
         isImageBot={isImageBot}
         orgSlug={orgSlug}
       />
