@@ -11,6 +11,16 @@ const AVATAR_COLORS = [
   "bg-cyan-500",
 ];
 
+/**
+ * Hex values matching the Tailwind classes above and --avatar-color-* CSS vars
+ * in globals.css. Used by SVG rendering (OrgChartView) where Tailwind classes
+ * don't apply. Order must stay in sync with AVATAR_COLORS above.
+ */
+export const AVATAR_HEX_COLORS = [
+  "#3b82f6", "#ec4899", "#22c55e", "#f59e0b", "#a855f7",
+  "#14b8a6", "#ef4444", "#6366f1", "#f97316", "#06b6d4",
+];
+
 export function getAvatarColor(userId: string): string {
   let hash = 0;
   for (let i = 0; i < userId.length; i++) {

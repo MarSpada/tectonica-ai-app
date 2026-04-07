@@ -52,6 +52,18 @@
   --cat-tools-accent: #FFFFFF;
   --cat-analyze: #D7F5E6;
   --cat-analyze-accent: #FFFFFF;
+  /* Avatar palette — single source of truth for initials-circle colors */
+  --avatar-color-0: #3b82f6;
+  --avatar-color-1: #ec4899;
+  --avatar-color-2: #22c55e;
+  --avatar-color-3: #f59e0b;
+  --avatar-color-4: #a855f7;
+  --avatar-color-5: #14b8a6;
+  --avatar-color-6: #ef4444;
+  --avatar-color-7: #6366f1;
+  --avatar-color-8: #f97316;
+  --avatar-color-9: #06b6d4;
+
   --cat-advisors-badge: #D6D0F0;
   --cat-create-badge: #F0D4B8;
   --cat-tools-badge: #F0B8BC;

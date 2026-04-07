@@ -76,6 +76,7 @@ export const ICON_MAP = {
   'drag-handle': `${ICON_BASE}/interface-essential/hand-drag.svg`,
   'view-grid': `${ICON_BASE}/interface-essential/layout-dashboard.svg`,
   'view-list': `${ICON_BASE}/interface-essential/layout-content.svg`,
+  'view-org-chart': `${ICON_BASE}/interface-essential/hierarchy-5-organize.svg`,
   'expand': `${ICON_BASE}/interface-essential/expand-2.svg`,
   'refresh': `${ICON_BASE}/interface-essential/synchronize-refresh-arrow.svg`,
 

@@ -24,7 +24,7 @@ The path to full launch involves connecting external action source adapters (Nat
 - Bot chat with self-hosted model streaming responses (via Open WebUI + RunPod) and conversation persistence
 - Group Coach Bot page (UI complete, campaign stats sidebar uses mock data)
 - Media Library with file upload, link bookmarks, category filters, full-text search, grid/list views, signed URL downloads, soft delete, storage quota tracking
-- Member directory with search and member detail pages
+- Member directory with search, role filters, interactive D3 org chart, and member detail pages
 - Real-time group messaging via Supabase Realtime
 - NationBuilder integration (read-only signup ingestion, interactive assignment workflow)
 - Approval workflow (submit, review, approve/request changes, resubmit, comment threads)
@@ -40,6 +40,7 @@ The path to full launch involves connecting external action source adapters (Nat
 - Profile and account settings with avatar upload
 - Activity log (unified timeline of hours, approvals, signups, reimbursements)
 - Group profile page with description, member count, quick links
+- Graphics Creation bot with image generation (Railway/fal.ai), style gallery, Studio visual editor, creative briefs, image-to-image editing
 - Energy consumption indicator per AI-generated image (Stanford/AXA 2025 research, collapsible display in chat and Media Library)
 - GSAP entrance animations throughout
 - Deployed on Railway with auto-deploy from `v2` branch
@@ -126,7 +127,7 @@ The following must be configured manually in the Supabase dashboard:
    - `media` — for Media Library files. Setup instructions are in the header comment of `src/lib/media-storage.ts`
    - `reimbursements` — for reimbursement request attachments
 2. **Storage RLS policies** — Storage bucket policies are separate from table-level RLS and must be configured in the Supabase dashboard
-3. **All SQL migrations** (in `supabase/migrations/`, numbered 001–025) must be run in order in the Supabase SQL Editor
+3. **All SQL migrations** (in `supabase/migrations/`, numbered 001–027) must be run in order in the Supabase SQL Editor
 4. **Manual schema addition**: `ALTER TABLE group_goals ADD COLUMN hours_goal integer NOT NULL DEFAULT 0;` (no migration file — run directly in SQL Editor)
 
 ### Test accounts
@@ -165,6 +166,7 @@ The following must be configured manually in the Supabase dashboard:
 | Animations | GSAP (entrance transitions, stagger animations) |
 | Dashboard grid | React Grid Layout |
 | Drag-and-drop | SortableJS (featured bot reordering) |
+| Data visualization | D3.js (org chart radial tree in Members page) |
 | Integrations | NationBuilder v2 API, iCal/ICS calendar feeds |
 | Deployment | Railway (two services, same repo, same Supabase DB) |
 
@@ -405,10 +407,12 @@ Functional file management: upload files (5MB limit, MIME validation), bookmark 
 
 ### Member directory
 
-Group member list with search, role display, and avatars. Member detail pages at `/members/[id]`.
+Two-tab view: **Directory** (list with search + role filters) and **Org Chart** (interactive D3 radial/snowflake visualization showing role hierarchy). Member detail pages at `/members/[id]`.
 
-- **All group members** can view the directory and member profiles
+- **All group members** can view the directory, org chart, and member profiles
 - Uses `get_group_members()` RPC for group-scoped fetching
+- Org chart: center node = group, rings expand outward by role (admins → members → supporters). Pill labels on center/admin nodes always visible, member/supporter pills on hover. Click node → detail modal. Zoom/pan supported.
+- Org chart hierarchy logic isolated in `lib/org-chart-utils.ts` — future `recruited_by` FK only changes this one file
 
 ### Real-time group messaging
 
@@ -582,14 +586,12 @@ Page at `/group` showing group name, description, member count, organization nam
 - Actions: external source adapters (NationBuilder actions, Action Network, ActBlue, Sosha), targeted assignment member picker, API-verified completions, leaderboards/points display
 - Media Library: per-file visibility UI, thumbnail generation, virus scanning
 - Group Coach Bot with real campaign data (currently mock stats)
-- Graphics Creation bot with image generation (Railway/fal.ai), style gallery, Studio visual editor, creative briefs — DONE
 - Leaders & Organizers real-time chat (UI exists, needs real-time backend)
 - Group Admin features (invitations, recruiter IDs, /join flow)
 
 **Integrations:**
 - Action Network API connection (action source adapter + signup ingestion)
 - Mobilize API connection
-- Image generation for Graphics Creation bot — DONE (Railway/fal.ai integration live)
 - Resend domain verification (partner action required)
 
 **Platform:**

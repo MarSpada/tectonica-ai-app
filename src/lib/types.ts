@@ -440,3 +440,18 @@ export interface MemberPointsLedger {
   points: number;
   earned_at: string;
 }
+
+// ── Org Chart ──
+
+export interface OrgChartNode {
+  id: string;
+  name: string;
+  role: UserRole | "group";
+  avatarUrl: string | null;
+  parentId: string | null;
+}
+
+export interface OrgChartLink {
+  source: string;
+  target: string;
+}

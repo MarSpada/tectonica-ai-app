@@ -326,8 +326,9 @@ Main bot grid + right sidebar dashboard. Body has no special class.
 - In-app notification bar for approval-related updates
 
 ### 9. Members Page (`/members`)
-- Group member directory with search
-- Shows roles and avatars
+- Two tabs: **Directory** (list view with search + role filters) and **Org Chart** (D3 radial/snowflake visualization)
+- Directory tab: search by name/email, role filter pills (All/Leaders/Members/Supporters), member count badge
+- Org Chart tab: interactive D3 radial tree showing role hierarchy (center=group → admins → members → supporters). Pill labels on center/admin nodes always visible, member/supporter pills on hover. Click node → MemberDetailModal. Zoom/pan supported.
 - Member detail view (`/members/[id]`)
 
 ### 10. Actions Page (`/actions`)
@@ -397,6 +398,7 @@ Desktop-first design. Mobile is out of scope for now.
 
 - **Star/add to favorites**: Bot cards have star button to add/remove from "Your Bots" featured section
 - **Drag-and-drop**: SortableJS for reordering featured bots
+- **D3.js org chart**: Radial/snowflake tree in Members page — zoom, pan, pill labels, avatar rendering
 - **GSAP animations**: Entrance animations on load, view transitions, card stagger animations
 - **BEM-inspired CSS**: `.rs-widget`, `.rs-widget__title`, `.rs-widget--money`, `.bot-card`, `.bot-card__circle`
 - **John Doe urgent styling**: New sign-up with pulsing red text animation on time indicator
@@ -559,8 +561,9 @@ Desktop-first design. Mobile is out of scope for now.
 | `actions/ActionCard.tsx` | Action card: type badge, source badge, points, deadline, scope, admin controls |
 | `actions/CreateEditActionSheet.tsx` | Sheet form: title, description, type, CTA, URL, points, scope, bot suggestion, dates, visibility |
 | `actions/ActionDetailSheet.tsx` | Sheet detail: CTA button (opens new tab if external), completion gating, notes, self-assign, admin completion list |
-| `members/MemberDirectory.tsx` | Group member list with roles and search |
-| `members/MemberDetailModal.tsx` | Member detail popup |
+| `members/MemberDirectory.tsx` | Two-tab member page: Directory (list + search + role filters) and Org Chart (D3 radial tree). Shadcn Tabs with `variant="line"`. |
+| `members/OrgChartView.tsx` | D3 radial/snowflake org chart. Role-based hierarchy, pill labels, avatar rendering, zoom/pan, click → MemberDetailModal. |
+| `members/MemberDetailModal.tsx` | Member detail popup (used by both list click navigation and org chart node click) |
 | `members/MemberProfile.tsx` | Member profile card |
 | `admin/AdminView.tsx` | Main admin tab container with role guard (5 tabs for super_admin, 2 for group_admin) |
 | `admin/OrgTab.tsx` | Organization settings (name, details) |
@@ -605,7 +608,8 @@ Desktop-first design. Mobile is out of scope for now.
 | `lib/image-tool-definitions.ts` | OpenAI-compatible tool definitions array for ChangeAgent. Passed via `tools` parameter — never injected into system prompt. 4 tools: generate_image, edit_image, fuse_images, apply_branding. |
 | `lib/style-gallery-data.ts` | Style gallery data for Graphics Creation bot. Main gallery (10 styles) + 10 substyle galleries with fal.ai CDN image URLs. Used by chat route to respond to model's `style_galery` tool calls. |
 | `lib/ical-parser.ts` | Lightweight ICS parser (no native deps) — handles DTSTART/DTEND with TZID, line unfolding, escaped chars |
-| `lib/avatar.ts` | Avatar utilities (upload, delete, generate URL) for Supabase Storage |
+| `lib/avatar.ts` | Avatar utilities (getAvatarColor, getInitials, getRoleBadgeStyle, getRoleLabel) + `AVATAR_HEX_COLORS` export for SVG rendering. Hex values must stay in sync with `--avatar-color-*` CSS vars in globals.css. |
+| `lib/org-chart-utils.ts` | `buildOrgChartData()` — **only file that knows hierarchy logic.** Role-based (Option A). When `recruited_by` FK is added, only this file changes. |
 | `lib/signup-utils.ts` | NationBuilder signup utilities (fetch, parse, enrich). Returns connection status (connected/error/not_configured) |
 | `lib/media-storage.ts` | **Only file that imports Supabase Storage for media.** Upload, signed URLs (1hr TTL), delete, quota check/increment. Swap storage providers by changing this file only. Includes bucket setup instructions in header comment. |
 | `lib/action-adapters/index.ts` | **Action source adapter scaffold.** Defines `ActionSourceAdapter` interface, `CanonicalAction` type, adapter registry. Future external sources (NB, Action Network, ActBlue, Sosha) each get a file here. No concrete adapters yet. |
@@ -613,6 +617,8 @@ Desktop-first design. Mobile is out of scope for now.
 | `lib/constants/roles.ts` | Role constants (`ROLES`), validation array (`VALID_ROLES`), and helper functions (`isAdminRole`, `isSuperAdmin`). Single source of truth for role strings. |
 | `lib/api-utils.ts` | Shared API route utilities: `requireAuth()` (auth + profile lookup), `fetchProfileMap()` (batch profile enrichment). New routes should use these. |
 | `lib/dashboard-widgets.ts` | Widget IDs, role-based visibility permissions, labels, size constraints, system default layout, and layout utility functions (getVisibleWidgets, filterLayoutToRole, mergeLayoutWithDefaults) |
+| `lib/chat-utils.ts` | Chat route utilities: `preprocessMessages()` (base64 image upload, URL extraction) and `persistConversation()` (save messages to Supabase). Extracted from `app/api/chat/route.ts`. |
+| `lib/stream-utils.ts` | OpenAI-compatible SSE streaming: `streamModelResponse()` (stream to client, accumulate tool call deltas, strip reasoning field) and `collectModelResponse()` (collect without streaming, used for gallery follow-ups). |
 | `lib/supabase/server.ts` | Server-side Supabase client factory using cookies |
 | `lib/supabase/client.ts` | Client-side Supabase client factory |
 
@@ -628,7 +634,7 @@ Desktop-first design. Mobile is out of scope for now.
 - Bot chat with RunPod-hosted model streaming responses + conversation persistence
 - Group Coach Bot page with campaign stats sidebar
 - **Media Library** — functional file upload (5MB limit, MIME validation), link bookmarks, category filters, full-text search, grid/list views, signed URL downloads (1hr TTL), soft delete, download counter, group storage quota (250MB) with progress bar. Storage abstracted behind `lib/media-storage.ts` for provider portability. Soft delete and storage counter use SECURITY DEFINER RPCs for atomicity.
-- Member directory with RPC-based group member fetching + member detail pages
+- **Member directory** with two tabs: Directory (list view, search, role filters) and Org Chart (D3 radial/snowflake visualization with role hierarchy, pill labels, avatar rendering, zoom/pan, click-to-detail modal). RPC-based group member fetching + member detail pages.
 - Profile settings (name, bio, avatar upload)
 - Real-time group messaging (Supabase Realtime)
 - NationBuilder integration (read-only signup ingestion with NB icon badges)
@@ -777,19 +783,30 @@ Desktop-first design. Mobile is out of scope for now.
 - **UserProfileContext includes groupId** — `groupId` now available in UserProfileContext, populated from `layout.tsx`. Used by NotificationBar for session-scoped dismiss. Other components can use it if needed.
 - **Hours detail overlay role-gated** — Non-admin users only see their own hour entries in the detail overlay. Admins (super_admin + group_admin) see all group member entries. Group totals visible to everyone.
 - **Directory widget "View All Members" button** — Links to `/members`, visible to all roles.
-- **temp-repo/** — Untracked directory containing a downloaded copy of the Railway Studio Next.js app. Causes build failures because Next.js picks up its `.tsx` files. Safe to delete.
+- **temp-repo/** — Deleted in code health session (2026-04-07). No longer present.
 - **Calendar sources group-scoped (migration 025)** — `calendar_sources` now has `group_id` column. `org_id` column kept but no longer used as primary scope. All calendar API routes filter by `group_id`.
 - **Calendar RLS vs API role mismatch (intentional)** — RLS policies use `is_admin()` (super_admin + group_admin). API routes use `isSuperAdmin()` only. This is by design for future flexibility — documented in Conventions section. Do not "fix" by aligning them.
 - **Connected Systems widget "Google Calendar" label** — Hardcodes "Google Calendar" even though multiple calendar sources are supported. Should be renamed to "Calendar". One-line fix deferred to next session.
 - **EventDetailSheet has no "Open Event" button** — iCal parser (`lib/ical-parser.ts`) does not extract event URLs. If URL support is needed, the parser would need to handle the `URL` VEVENT property.
-- **`uploadImageToRailway()` is dead code** — `lib/image-tools.ts` still exports this function but it is no longer imported anywhere. Remove in next cleanup session.
-- **`preprocessMessages` URL regex broadened** — `src/app/api/chat/route.ts` `preprocessMessages` was changed from hardcoded `fal.media` pattern to a generic image URL pattern (`https://....(jpg|jpeg|png|webp)...`). Review in next fresh-eyes audit for edge cases.
-- **`tsx` and `dotenv` dev dependencies** — Added for the one-time migration script (`scripts/migrate-generated-images.ts`). Can be removed in next cleanup session if no other scripts need them.
+- **`uploadImageToRailway()` dead code removed** — Deleted in code health session (2026-04-07) along with `RAILWAY_ENDPOINTS.upload`.
+- **`preprocessMessages` URL regex tightened** — Scoped to Supabase Storage signed URLs and FAL CDN URLs only (2026-04-07 code health session). Previously matched any image URL which risked injecting conversationally-mentioned URLs as image references for tool calls.
+- **`tsx` and `dotenv` dev dependencies removed** — Removed in code health session (2026-04-07). Only `scripts/migrate-generated-images.ts` used them. Re-add if running the migration script again.
 - **FAL URLs kept as fallback** — Migrated generated images have both `url` (FAL) and `storage_path` (Supabase) set. A future cleanup pass can null out `url` on rows with confirmed `storage_path`.
 - **Generated images not counted in group storage quota** — `incrementStorageUsed()` is not called during generation (private images by design). The migration backfilled `storage_used_bytes` manually. Future: decide if private generated images should count against quota.
 - **Chat file attachments text-only** — PDF and Word (.docx) files require server-side text extraction and are not currently supported. Only plain text formats accepted.
 - **Dashboard layout auto-save uses keepalive** — `keepalive: true` on unmount fetch. Has a 64KB body size limit per browser spec. Dashboard layouts are well under this. If layouts grow very large, consider switching to `navigator.sendBeacon`.
 - **Past Chats shows max 20 items** — The fetch limit is 20 (`.limit(20)` in page.tsx). The count is real via `count: "exact"`. "Show all" text shows real count but can only display the 20 fetched items. Future: paginated loading.
+- **`hours_goal` column has no migration file** — Was added via manual `ALTER TABLE group_goals ADD COLUMN hours_goal integer NOT NULL DEFAULT 0`. A new developer running migrations 001–027 would not get this column. It is documented in README manual setup section but easy to miss. Create migration 028 to formally add this column in a future session.
+- **`chat/route.ts` refactor complete** — Streaming utilities extracted to `lib/stream-utils.ts`, message preprocessing and conversation persistence to `lib/chat-utils.ts`, image tool execution to `executeToolAndContinue()` within the route. Main handler reads as a clean sequence of named steps.
+- **Migration 027 (atomic credit check)** — `check_and_increment_image_credits` SECURITY DEFINER RPC. Must be run in Supabase SQL Editor. Replaces the separate check-then-increment pattern in image generation routes.
+- **Shared image save utility** — `lib/image-save-utils.ts` consolidates the download-store-dimension-energy-save pipeline used by both `chat/route.ts` and `image-tools/execute/route.ts`. Any changes to the image save flow should be made in this single file.
+- **Bot queries now org-scoped** — `getBots()` and `getSystemPrompt()` in `lib/bot-resolver.ts` accept optional `orgId` parameter. Chat route, dashboard page, and admin bot CRUD all pass org_id for cross-org isolation. Bot list uses `.or(org_id.eq.X,org_id.is.null)` to include global bots.
+- **Approval requests now group-scoped** — GET `/api/approvals` filters by `group_id` from authenticated user's profile. Previously returned all approval requests across all orgs/groups.
+- **D3.js added as dependency** — `d3` v7.9.0 + `@types/d3` v7.4.3. Installs cleanly with `--legacy-peer-deps`. Used only by `OrgChartView.tsx`.
+- **Org chart hierarchy is role-based (Option A)** — `buildOrgChartData()` in `lib/org-chart-utils.ts` is the only file that knows hierarchy logic. When `recruited_by` FK is added to profiles, only this function changes. Comment marks the insertion point.
+- **Avatar hex colors shared source of truth** — `--avatar-color-*` CSS vars in `globals.css`, `AVATAR_HEX_COLORS` in `lib/avatar.ts`, and Tailwind classes in `AVATAR_COLORS` must stay in sync. If the palette changes, update all three.
+- **Org chart MemberDetailModal** — Node clicks open `MemberDetailModal` (Dialog). If a richer slide-in detail panel is wanted, consider converting to a Sheet in a future session.
+- **Org chart pill overlap detection not implemented** — The spec mentions hiding pills on overlap. Current implementation relies on D3 tree layout separation + dynamic ring radius to prevent overlap. If overlap occurs at scale (100+ members), add SVG bounding box collision checks.
 
 ---
 
