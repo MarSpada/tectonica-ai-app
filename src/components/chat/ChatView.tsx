@@ -171,16 +171,18 @@ export default function ChatView({
               continue;
             }
 
-            // Style gallery — render directly without streaming
+            // Style / hero gallery — render directly without streaming
             if (parsed.gallery) {
               setMessages((prev) => {
                 const updated = [...prev];
                 const last = updated[updated.length - 1];
-                // Store gallery data as a special JSON marker in the content
                 const galleryMarker = `__GALLERY__${JSON.stringify(parsed.gallery)}__END_GALLERY__`;
+                // For landing page bots, replace all streamed text with just the gallery
+                // (strips the model's preamble text before SHOW_HERO_GALLERY)
+                const content = isLandingPageBot ? galleryMarker : last.content + galleryMarker;
                 updated[updated.length - 1] = {
                   ...last,
-                  content: last.content + galleryMarker,
+                  content,
                 };
                 return updated;
               });
