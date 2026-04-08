@@ -27,7 +27,7 @@ export default function SignupsWidget({ signups, nbStatus, nbEnabled, assignment
       <div className="h-full overflow-auto p-5 flex flex-col">
         <h3 className="font-bold mb-3" style={{ fontSize: "var(--widget-title-size)", color: "var(--widget-text-color)" }}>New Sign-Ups</h3>
         <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
-          <Icon name="bot-recruitment" size={32} className="opacity-30 mb-2" />
+          <Icon name="bot-recruitment-planning" size={32} className="opacity-30 mb-2" />
           <p className="text-sm text-text-muted">No signup source enabled</p>
           <Link
             href="/admin?tab=integrations"
