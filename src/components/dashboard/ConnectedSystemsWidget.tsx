@@ -68,7 +68,6 @@ export default function ConnectedSystemsWidget({
             </span>
           </div>
         )}
-        <SystemBadge name="Action Network" icon="/systems-icon-action-network.png" status="not_connected" />
         {nbEnabled && (
           <SystemBadge
             name="NationBuilder"
@@ -86,7 +85,6 @@ export default function ConnectedSystemsWidget({
                 : undefined
           }
         />
-        <SystemBadge name="Mobilize" icon="/systems-icon-mobilize.png" status="not_connected" />
       </div>
       {showAdminRows && (
         <Link
