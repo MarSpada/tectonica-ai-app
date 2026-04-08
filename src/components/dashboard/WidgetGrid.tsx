@@ -91,6 +91,7 @@ interface WidgetGridProps {
   onLogHours: () => void;
   onShowHoursDetail: () => void;
   onRequestReimbursement: () => void;
+  nbEnabled?: boolean;
   runpodStatus?: "connected" | "error" | "not_configured" | "loading";
   imageApiStatus?: "connected" | "error" | "not_configured" | "loading";
 }
@@ -128,6 +129,7 @@ export default function WidgetGrid({
   onLogHours,
   onShowHoursDetail,
   onRequestReimbursement,
+  nbEnabled,
   runpodStatus,
   imageApiStatus,
 }: WidgetGridProps) {
@@ -172,6 +174,7 @@ export default function WidgetGrid({
           <SignupsWidget
             signups={signups}
             nbStatus={nbStatus}
+            nbEnabled={nbEnabled}
             assignments={assignments}
             onSignupClick={onSignupClick}
           />
@@ -212,6 +215,7 @@ export default function WidgetGrid({
         return (
           <ConnectedSystemsWidget
             nbStatus={nbStatus}
+            nbEnabled={nbEnabled}
             calendarSourceCount={calendarSourceCount}
             eventsCount={events.length}
             runpodStatus={runpodStatus}

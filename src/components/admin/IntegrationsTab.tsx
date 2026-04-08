@@ -7,7 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Icon } from "@/components/ui/icon";
-import type { RunPodStatus, CalendarSource } from "@/lib/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import type { RunPodStatus, NbStatus, CalendarSource } from "@/lib/types";
 
 interface RunPodModel {
   id: string;
@@ -53,10 +61,22 @@ export default function IntegrationsTab() {
   const [imgLoading, setImgLoading] = useState(true);
   const [imgWarningDismissed, setImgWarningDismissed] = useState(false);
 
+  // NationBuilder state
+  const [nbSlug, setNbSlug] = useState("");
+  const [nbApiToken, setNbApiToken] = useState("");
+  const [nbEnabled, setNbEnabled] = useState(false);
+  const [nbHasToken, setNbHasToken] = useState(false);
+  const [nbStatus, setNbStatus] = useState<NbStatus>("not_configured");
+  const [nbSaving, setNbSaving] = useState(false);
+  const [nbError, setNbError] = useState("");
+  const [nbLoading, setNbLoading] = useState(true);
+  const [nbDialogOpen, setNbDialogOpen] = useState(false);
+
   useEffect(() => {
     fetchSources();
     fetchRunPodConfig();
     fetchImageApiConfig();
+    fetchNbConfig();
   }, []);
 
   async function fetchSources() {
@@ -243,6 +263,80 @@ export default function IntegrationsTab() {
       setImgError("Something went wrong");
     } finally {
       setImgSaving(false);
+    }
+  }
+
+  // NationBuilder functions
+  async function fetchNbConfig() {
+    try {
+      const res = await fetch("/api/admin/integrations/nationbuilder");
+      if (!res.ok) return;
+      const json = await res.json();
+      setNbEnabled(json.enabled ?? false);
+      if (json.slug) setNbSlug(json.slug);
+      setNbHasToken(json.hasToken ?? false);
+      setNbStatus(json.status || "not_configured");
+    } catch {
+      // Failed to load
+    } finally {
+      setNbLoading(false);
+    }
+  }
+
+  async function handleToggleNb(enabled: boolean) {
+    // Optimistic update
+    setNbEnabled(enabled);
+    try {
+      const res = await fetch("/api/admin/integrations/nationbuilder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      });
+      if (!res.ok) {
+        // Revert on failure
+        setNbEnabled(!enabled);
+      }
+    } catch {
+      setNbEnabled(!enabled);
+    }
+  }
+
+  async function handleSaveNb() {
+    if (!nbSlug.trim()) {
+      setNbError("NationBuilder slug is required");
+      return;
+    }
+    if (!nbHasToken && !nbApiToken.trim()) {
+      setNbError("API token is required");
+      return;
+    }
+    setNbSaving(true);
+    setNbError("");
+    try {
+      const body: Record<string, string | boolean> = { slug: nbSlug.trim() };
+      if (nbApiToken.trim()) {
+        body.apiToken = nbApiToken.trim();
+      }
+      body.enabled = nbEnabled;
+      const res = await fetch("/api/admin/integrations/nationbuilder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setNbStatus(json.status || "error");
+        setNbEnabled(json.enabled ?? true);
+        setNbApiToken("");
+        setNbHasToken(true);
+        setNbDialogOpen(false);
+      } else {
+        setNbError(json.error || "Failed to save");
+      }
+    } catch {
+      setNbError("Something went wrong");
+    } finally {
+      setNbSaving(false);
     }
   }
 
@@ -671,22 +765,81 @@ export default function IntegrationsTab() {
         </div>
       </div>
 
-      {/* Info about other integrations */}
+      {/* Other Integrations */}
       <div className="border-t border-black/5 pt-6">
-        <h3 className="text-sm font-bold text-text-primary mb-2">Other Integrations</h3>
+        <div className="mb-4">
+          <h3 className="text-sm font-bold text-text-primary">Other Integrations</h3>
+          <p className="text-xs text-text-muted mt-0.5">
+            Manage connections to external platforms for signup ingestion and data sync.
+          </p>
+        </div>
         <div className="space-y-2">
-          <div className="flex items-center justify-between bg-white border border-black/5 rounded-xl px-4 py-3">
-            <div className="flex items-center gap-3">
-              <img src="/nb-icon.png" alt="" className="w-5 h-5" />
-              <div>
-                <span className="text-sm font-medium text-text-primary">NationBuilder</span>
-                <p className="text-[10px] text-text-muted">Signup ingestion</p>
+          {/* NationBuilder — dynamic with toggle + settings */}
+          {nbLoading ? (
+            <Skeleton className="h-14 w-full rounded-xl" />
+          ) : (
+            <div className="bg-white border border-black/5 rounded-xl px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img src="/nb-icon.png" alt="" className="w-5 h-5" />
+                  <div>
+                    <span className="text-sm font-medium text-text-primary">NationBuilder</span>
+                    <p className="text-[10px] text-text-muted">Signup ingestion</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  {/* Status badge */}
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] ${
+                      nbStatus === "connected"
+                        ? "bg-green-100 text-green-700 border-green-200"
+                        : nbStatus === "error"
+                          ? "bg-red-100 text-red-700 border-red-200"
+                          : "bg-gray-100 text-gray-500 border-gray-200"
+                    }`}
+                  >
+                    {nbStatus === "connected"
+                      ? "Connected"
+                      : nbStatus === "error"
+                        ? "Error"
+                        : "Not configured"}
+                  </Badge>
+
+                  {/* Settings button — visible when enabled */}
+                  {nbEnabled && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => {
+                        setNbError("");
+                        setNbDialogOpen(true);
+                      }}
+                    >
+                      Settings
+                    </Button>
+                  )}
+
+                  {/* Enable/disable toggle — same pattern as calendar source toggles */}
+                  <button
+                    onClick={() => handleToggleNb(!nbEnabled)}
+                    className={`relative w-9 h-5 rounded-full transition-colors ${
+                      nbEnabled ? "bg-green-500" : "bg-gray-300"
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                        nbEnabled ? "translate-x-4" : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
             </div>
-            <Badge variant="outline" className="text-[10px] bg-green-100 text-green-700 border-green-200">
-              Connected
-            </Badge>
-          </div>
+          )}
+
+          {/* Action Network — static placeholder */}
           <div className="flex items-center justify-between bg-white border border-black/5 rounded-xl px-4 py-3">
             <div className="flex items-center gap-2.5">
               <Icon name="bot-networks" size={20} className="opacity-60" />
@@ -699,6 +852,8 @@ export default function IntegrationsTab() {
               Not Connected
             </Badge>
           </div>
+
+          {/* Mobilize — static placeholder */}
           <div className="flex items-center justify-between bg-white border border-black/5 rounded-xl px-4 py-3">
             <div className="flex items-center gap-2.5">
               <Icon name="bot-targeted-advocacy" size={20} className="opacity-60" />
@@ -713,6 +868,86 @@ export default function IntegrationsTab() {
           </div>
         </div>
       </div>
+
+      {/* NationBuilder Settings Dialog */}
+      <Dialog open={nbDialogOpen} onOpenChange={setNbDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>NationBuilder Settings</DialogTitle>
+            <DialogDescription>
+              Enter your NationBuilder API credentials. The connection will be tested when you save.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {nbError && (
+              <div className="px-3 py-2 text-xs text-red-700 bg-red-50 rounded-lg">{nbError}</div>
+            )}
+
+            {/* Status indicator */}
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-2.5 h-2.5 rounded-full ${
+                  nbStatus === "connected"
+                    ? "bg-green-500"
+                    : nbStatus === "error"
+                      ? "bg-red-500"
+                      : "bg-gray-300"
+                }`}
+              />
+              <span className="text-sm font-medium text-text-primary">
+                {nbStatus === "connected"
+                  ? "Connected"
+                  : nbStatus === "error"
+                    ? "Connection failed — check your slug and token"
+                    : "Not configured"}
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-text-primary mb-1">
+                NationBuilder Slug
+              </label>
+              <Input
+                type="text"
+                value={nbSlug}
+                onChange={(e) => setNbSlug(e.target.value)}
+                placeholder="your-org"
+                className="font-mono text-xs"
+              />
+              <p className="text-[10px] text-text-muted mt-0.5">
+                The subdomain from your-org.nationbuilder.com
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-text-primary mb-1">
+                API Token
+              </label>
+              <Input
+                type="password"
+                value={nbApiToken}
+                onChange={(e) => setNbApiToken(e.target.value)}
+                placeholder={nbHasToken ? "••••••••" : "Enter your NationBuilder API token"}
+              />
+              {nbHasToken && (
+                <p className="text-[10px] text-text-muted mt-0.5">
+                  Token is stored encrypted. Leave blank to keep the existing token.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNbDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveNb} disabled={nbSaving}>
+              {nbSaving ? "Testing connection..." : "Save & Test Connection"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

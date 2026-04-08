@@ -94,6 +94,7 @@ export default function RightSidebar({
   const [hoursHistory, setHoursHistory] = useState<HoursWeekBucket[]>([]);
   const [actions, setActions] = useState<Action[]>([]);
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
+  const [nbEnabled, setNbEnabled] = useState(false);
   const [runpodStatus, setRunpodStatus] = useState<"connected" | "error" | "not_configured" | "loading">("loading");
   const [imageApiStatus, setImageApiStatus] = useState<"connected" | "error" | "not_configured" | "loading">("loading");
 
@@ -138,6 +139,7 @@ export default function RightSidebar({
         if (json.assignments) setAssignments(json.assignments);
         if (json.status) setNbStatus(json.status);
         else setNbStatus("connected");
+        if (json.enabled !== undefined) setNbEnabled(json.enabled);
       } catch {
         setNbStatus("error");
       }
@@ -456,6 +458,7 @@ export default function RightSidebar({
         onLogHours={() => setShowLogHoursModal(true)}
         onShowHoursDetail={() => setShowHoursDetail(true)}
         onRequestReimbursement={() => setShowReimbursementModal(true)}
+        nbEnabled={nbEnabled}
         runpodStatus={runpodStatus}
         imageApiStatus={imageApiStatus}
       />

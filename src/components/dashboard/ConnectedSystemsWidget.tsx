@@ -7,6 +7,7 @@ import type { UserRole } from "@/lib/types";
 
 interface ConnectedSystemsWidgetProps {
   nbStatus: "connected" | "error" | "not_configured" | "loading";
+  nbEnabled?: boolean;
   calendarSourceCount: number;
   eventsCount: number;
   runpodStatus?: "connected" | "error" | "not_configured" | "loading";
@@ -16,6 +17,7 @@ interface ConnectedSystemsWidgetProps {
 
 export default function ConnectedSystemsWidget({
   nbStatus,
+  nbEnabled,
   calendarSourceCount,
   eventsCount,
   runpodStatus,
@@ -67,12 +69,14 @@ export default function ConnectedSystemsWidget({
           </div>
         )}
         <SystemBadge name="Action Network" icon="/systems-icon-action-network.png" status="not_connected" />
-        <SystemBadge
-          name="NationBuilder"
-          icon="/systems-icon-nation-builder.png"
-          status={nbStatus === "connected" ? "functional" : nbStatus === "error" ? "error" : "not_connected"}
-        />
-        <SystemBadge name="Google Calendar" icon="/systems-icon-google-calendar.png"
+        {nbEnabled && (
+          <SystemBadge
+            name="NationBuilder"
+            icon="/systems-icon-nation-builder.png"
+            status={nbStatus === "connected" ? "functional" : nbStatus === "error" ? "error" : "not_connected"}
+          />
+        )}
+        <SystemBadge name="Calendar" icon="/systems-icon-google-calendar.png"
           status={calendarSourceCount > 0 || eventsCount > 0 ? "functional" : "not_connected"}
           detail={
             calendarSourceCount > 0

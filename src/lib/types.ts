@@ -123,6 +123,7 @@ export interface AdminBot {
 /* ── Org Integrations ── */
 
 export type RunPodStatus = "connected" | "error" | "not_configured";
+export type NbStatus = "connected" | "error" | "not_configured";
 
 export interface OrgIntegration {
   id: string;
@@ -130,6 +131,10 @@ export interface OrgIntegration {
   runpod_endpoint_url: string | null;
   runpod_status: RunPodStatus;
   runpod_last_checked_at: string | null;
+  nb_enabled: boolean;
+  nb_slug: string | null;
+  nb_status: NbStatus;
+  nb_last_checked_at: string | null;
   updated_at: string;
 }
 

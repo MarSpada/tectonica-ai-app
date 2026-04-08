@@ -9,15 +9,36 @@ import type { NbSignup, SignupAssignment } from "@/lib/types";
 interface SignupsWidgetProps {
   signups: NbSignup[];
   nbStatus: "connected" | "error" | "not_configured" | "loading";
+  nbEnabled?: boolean;
   assignments: SignupAssignment[];
   onSignupClick: (signup: NbSignup) => void;
 }
 
 const MAX_VISIBLE = 2;
 
-export default function SignupsWidget({ signups, nbStatus, assignments, onSignupClick }: SignupsWidgetProps) {
+export default function SignupsWidget({ signups, nbStatus, nbEnabled, assignments, onSignupClick }: SignupsWidgetProps) {
   function getAssignment(signupId: string): SignupAssignment | null {
     return assignments.find((a) => a.nb_signup_id === signupId) || null;
+  }
+
+  // NB integration disabled — show empty state with link to admin
+  if (nbEnabled === false) {
+    return (
+      <div className="h-full overflow-auto p-5 flex flex-col">
+        <h3 className="font-bold mb-3" style={{ fontSize: "var(--widget-title-size)", color: "var(--widget-text-color)" }}>New Sign-Ups</h3>
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
+          <Icon name="bot-recruitment" size={32} className="opacity-30 mb-2" />
+          <p className="text-sm text-text-muted">No signup source enabled</p>
+          <Link
+            href="/admin?tab=integrations"
+            className="text-xs font-medium mt-2 hover:underline"
+            style={{ color: "var(--widget-btn-signups, var(--accent-purple))" }}
+          >
+            Manage signup sources
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -1,26 +1,70 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/api-utils";
 import { fetchRecentSignups } from "@/lib/signup-utils";
+import { decrypt } from "@/lib/encryption";
 import { ROLES } from "@/lib/constants/roles";
+import type { NbCredentials } from "@/lib/signup-utils";
 
 export async function GET() {
   try {
-    // Auth check
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, profile, supabase } = auth;
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!profile.org_id) {
+      return NextResponse.json({ signups: [], assignments: [], status: "not_configured", enabled: false });
     }
 
-    const result = await fetchRecentSignups(50);
+    // Fetch NB config from DB via SECURITY DEFINER RPC
+    const { data: nbConfig } = await supabase.rpc("get_nb_config", {
+      p_org_id: profile.org_id,
+    });
+
+    const config = Array.isArray(nbConfig) ? nbConfig[0] : nbConfig;
+    const nbEnabled = config?.nb_enabled ?? false;
+
+    // If NB is disabled, return immediately
+    if (!nbEnabled) {
+      return NextResponse.json({ signups: [], assignments: [], status: "not_configured", enabled: false });
+    }
+
+    // Resolve credentials: DB first, then env var fallback
+    let credentials: NbCredentials | null = null;
+
+    if (config?.nb_api_token && config?.nb_slug) {
+      // DB credentials exist — decrypt token
+      try {
+        const apiToken = decrypt(config.nb_api_token);
+        credentials = { apiToken, slug: config.nb_slug };
+      } catch {
+        console.error("NB credentials: failed to decrypt stored token");
+      }
+    }
+
+    if (!credentials) {
+      // Fallback to env vars
+      const envToken = process.env.NATIONBUILDER_API_TOKEN;
+      const envSlug = process.env.NATIONBUILDER_SLUG;
+
+      if (envToken && envSlug) {
+        console.warn(
+          "NB credentials: using env var fallback — configure via admin panel to remove this warning"
+        );
+        credentials = { apiToken: envToken, slug: envSlug };
+      }
+    }
+
+    // No credentials from either source
+    if (!credentials) {
+      return NextResponse.json({ signups: [], assignments: [], status: "not_configured", enabled: true });
+    }
+
+    const result = await fetchRecentSignups(credentials, 50);
     const { signups, status: nbStatus } = result;
 
-    // If NB is not configured or erroring, return early with status
+    // If NB API returned an error, return early with status
     if (nbStatus !== "connected") {
-      return NextResponse.json({ signups: [], assignments: [], status: nbStatus });
+      return NextResponse.json({ signups: [], assignments: [], status: nbStatus, enabled: true });
     }
 
     // Fetch existing assignments for these signups
@@ -53,14 +97,7 @@ export async function GET() {
     const unassigned = signups.filter((s: { id: string }) => !assignedIds.has(s.id));
 
     if (unassigned.length > 0) {
-      // Get caller's group_id
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("group_id")
-        .eq("id", user.id)
-        .single();
-
-      if (profile?.group_id) {
+      if (profile.group_id) {
         const { data: admins } = await supabase
           .from("profiles")
           .select("id, full_name")
@@ -94,9 +131,9 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({ signups, assignments, status: "connected" });
+    return NextResponse.json({ signups, assignments, status: "connected", enabled: true });
   } catch (err) {
     console.error("NationBuilder fetch failed:", err);
-    return NextResponse.json({ signups: [], assignments: [], status: "error" }, { status: 200 });
+    return NextResponse.json({ signups: [], assignments: [], status: "error", enabled: false }, { status: 200 });
   }
 }

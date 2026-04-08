@@ -1,9 +1,11 @@
 import type { NbSignup } from "./types";
 
-const NB_TOKEN = process.env.NATIONBUILDER_API_TOKEN;
-const NB_SLUG = process.env.NATIONBUILDER_SLUG;
-
 export type NbConnectionStatus = "connected" | "error" | "not_configured";
+
+export interface NbCredentials {
+  apiToken: string;
+  slug: string;
+}
 
 interface FetchSignupsResult {
   signups: NbSignup[];
@@ -12,16 +14,20 @@ interface FetchSignupsResult {
 
 /**
  * Fetch the most recent signups from the NationBuilder v2 API (read-only).
+ * Caller provides credentials (from DB or env var fallback).
  * Returns signups and connection status.
  */
-export async function fetchRecentSignups(limit = 3): Promise<FetchSignupsResult> {
-  if (!NB_TOKEN || !NB_SLUG) return { signups: [], status: "not_configured" };
+export async function fetchRecentSignups(
+  credentials: NbCredentials,
+  limit = 3,
+): Promise<FetchSignupsResult> {
+  const { apiToken, slug } = credentials;
 
-  const url = `https://${NB_SLUG}.nationbuilder.com/api/v2/signups?sort=-created_at&page[size]=${limit}`;
+  const url = `https://${slug}.nationbuilder.com/api/v2/signups?sort=-created_at&page[size]=${limit}`;
 
   const res = await fetch(url, {
     headers: {
-      Authorization: `Bearer ${NB_TOKEN}`,
+      Authorization: `Bearer ${apiToken}`,
       Accept: "application/json",
     },
     next: { revalidate: 300 },
