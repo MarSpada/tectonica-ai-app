@@ -40,7 +40,7 @@ The path to full launch involves connecting external action source adapters (Nat
 - Profile and account settings with avatar upload
 - Activity log (unified timeline of hours, approvals, signups, reimbursements)
 - Group profile page with description, member count, quick links
-- Graphics Creation bot with image generation (Railway/fal.ai), style gallery, Studio visual editor, creative briefs, image-to-image editing
+- Graphics Creation bot with image generation (Railway/fal.ai), style gallery, Studio visual editor, DB-driven creative briefs (admin-managed per bot), image-to-image editing
 - Image credit billing system: per-group credit pools, cost calculation based on megapixels, generation logging, admin Billing tab (balance, top-ups, rates, platform fee), real-time credit display in chat topbar
 - Energy consumption indicator per AI-generated image (Stanford/AXA 2025 research, collapsible display in chat and Media Library)
 - GSAP entrance animations throughout

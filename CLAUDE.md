@@ -489,6 +489,8 @@ Desktop-first design. Mobile is out of scope for now.
 | `038_landing_pages_public_rls.sql` | Public anon SELECT policy on `group_landing_pages` for live pages. Allows generated landing page URLs to be viewable without authentication. |
 | `039_storage_rls_policies.sql` | Creates `branding` and `landing-pages` storage buckets as public (upsert, safe to re-run). Storage object policies (INSERT for authenticated, SELECT for public) must still be configured in Supabase dashboard. |
 | `040_nb_integration.sql` | Adds NB integration columns to `org_integrations`: `nb_enabled` (boolean, default false), `nb_api_token` (encrypted text), `nb_slug` (text), `nb_status` (CHECK connected/error/not_configured), `nb_last_checked_at` (timestamptz). Creates `get_nb_config(p_org_id)` SECURITY DEFINER RPC for non-admin credential access in signups route. |
+| `041_bot_briefs.sql` | `bot_briefs` table: DB-driven creative briefs per bot. `bot_id` text (slug), `org_id` FK, `title`, `thumbnail_url`, `content` text (markdown), `enabled` boolean, `created_by` FK → profiles. Index on `(bot_id, org_id)`. RLS: members SELECT enabled briefs for their org, super admins full CRUD. |
+| `042_bot_briefs_simplify.sql` | Simplifies `bot_briefs`: replaces `fields` jsonb column with `content` text. Briefs are markdown documents (output of bot's creative discovery process), not structured key-value pairs. |
 
 ---
 
@@ -558,6 +560,9 @@ Desktop-first design. Mobile is out of scope for now.
 | `/api/admin/landing-pages` | GET | List all landing pages for user's group. Admin only (super_admin + group_admin). Enriched with created_by_name. |
 | `/api/admin/landing-pages/[id]` | PATCH | Archive a landing page (super admin only). Body: `{ status: "archived" }`. |
 | `/api/landing-pages/[id]/view` | GET | Public — no auth. Proxy route that downloads HTML from Storage and serves with `Content-Type: text/html`. Returns 404/410 for missing/archived pages. |
+| `/api/bots/[botSlug]/briefs` | GET | Fetch enabled creative briefs for a bot by slug. Org-scoped via `requireAuth()`. Returns `{ briefs: BotBrief[] }`. |
+| `/api/admin/bots/[botId]/briefs` | GET/POST | GET: all briefs (enabled + disabled) for a bot by UUID. POST: create brief with `{ title, content, thumbnail_url?, enabled? }`. Super admin only. Resolves bot UUID → slug. |
+| `/api/admin/bots/[botId]/briefs/[briefId]` | PATCH/DELETE | PATCH: partial update of brief fields. DELETE: hard delete. Super admin only. |
 | `/api/tools/generate-landing-page` | POST | External endpoint for ChangeAgent. Bearer token auth via `CHANGE_AGENT_API_KEY`. Fetches branding, renders HTML, uploads to Storage, inserts DB row. Currently dormant — landing pages generated natively via chat route instead. |
 
 ---
@@ -718,6 +723,8 @@ Desktop-first design. Mobile is out of scope for now.
 - **Dashboard layout save reliability** — unmount auto-save uses `keepalive: true` so requests survive page navigation/logout. Save buttons await completion before exiting edit mode.
 - **Group Branding** — admin tab for managing group brand assets: logo upload, hero image upload, primary/secondary colors with color pickers, default CTA URL, social media links (Facebook, Instagram, Twitter/X, Bluesky), font selection (8 Google Fonts + system default), form embed HTML (replaces CTA button on landing pages). Super admin can edit all fields, group admin sees read-only. Stored in `group_branding` table (one row per group). Storage bucket `branding` (public) for logo/hero images.
 - **Landing Page Creator bot** — native tool in the chat route using text pattern detection (not OpenAI function calling). The model outputs `GENERATE_LANDING_PAGE` followed by a JSON block, which the chat route detects, renders as HTML via `renderLandingPage()`, uploads to Supabase Storage, and returns via SSE event. The generated page uses the group's branding (colors, logo, hero, social links, font, form embed) automatically. Pages served via proxy route (`/api/landing-pages/[id]/view`) since Supabase Storage forces `text/plain` on HTML files. Admin Landing Pages tab shows all generated pages with archive capability.
+- **DB-driven creative briefs per bot** — admin manages briefs via Bot Editor (Creative Briefs section with add/edit Sheet, enable/disable toggle, two-click delete). Briefs are markdown documents (the output of the bot's creative discovery process). Any bot can have briefs — they show in the chat sidebar "Saved Briefs" section when enabled briefs exist. "Use in chat" injects the brief content directly. Replaces the hardcoded SAVED_BRIEFS array.
+- **Landing page button in conversation history** — "See your landing page" button now renders correctly when loading past conversations. Fallback URL pattern detection in MessageList catches the raw `/api/landing-pages/{uuid}/view` URL stored in persisted messages.
 - Deployed on Railway with auto-deploy from `v2` branch
 
 ## What Still Needs Work (Prioritized)
@@ -873,6 +880,13 @@ Desktop-first design. Mobile is out of scope for now.
 - **Integration toggle pattern established** — To add the same enable/disable pattern for Mobilize or Action Network: (1) add columns to `org_integrations`, (2) create admin API route mirroring `/api/admin/integrations/nationbuilder`, (3) add toggle + dialog to IntegrationsTab, (4) update widget visibility. Follow the NB pattern exactly.
 - **"Google Calendar" → "Calendar"** — Fixed in ConnectedSystemsWidget. Was a known issue from prior sessions.
 - **Migrations 040 required** — Must be run in Supabase SQL Editor for the NB integration toggle to work. Without it, the `nb_enabled` column doesn't exist and the NB admin route will fail.
+- **Migrations 041 + 042 applied** — `bot_briefs` table created (041) then simplified from `fields jsonb` to `content text` (042). Both migrations are applied in production.
+- **`BriefRequirement` canonical location is `lib/types.ts`** — moved from `CreativeBrief.tsx`. `CreativeBrief.tsx` re-exports it for backward compatibility. Any new code should import from `lib/types.ts`.
+- **Creative briefs are markdown text** — Not structured key-value pairs. The content field stores the full markdown document output from the bot's creative discovery process (system prompt → [REQ:] tag accumulation → saved as note). Admin pastes the full text in the Bot Editor textarea.
+- **Any bot can have creative briefs** — Not just image bots. The `SavedBriefs` component fetches by `botSlug` and renders only if >0 briefs exist. To add briefs to a bot, edit it in admin → Creative Briefs section → Add Brief.
+- **Landing page button history fix** — The `__LANDING_PAGE__` marker only exists in client-side React state during live streaming. Persisted messages contain raw text with the URL. `MessageList.tsx` has a fallback regex that detects `/api/landing-pages/{uuid}/view` URLs and renders the styled button. Same issue exists for `SHOW_HERO_GALLERY` text appearing in loaded conversations — gallery re-rendering from history is deferred.
+- **`--accent-purple` CSS variable still neutral** — Landing page button uses hardcoded `#422D8F` instead of `var(--accent-purple)` because the CSS variable resolves to `#18181B`. When `--accent-purple` is updated to the brand purple, the hardcoded value in MessageList should be replaced.
+- **Gallery rendering in history not implemented** — Style galleries (Graphics Creation) and hero image galleries (Landing Page Creator) don't render when loading past conversations. The `__GALLERY__` markers are set in client state during streaming but not persisted. Fix requires either server-side persistence of processed content or client-side post-processing on load. Deferred.
 
 ---
 
