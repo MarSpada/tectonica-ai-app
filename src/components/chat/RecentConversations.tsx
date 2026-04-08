@@ -16,7 +16,8 @@ function Chevron({ open }: { open: boolean }) {
     </svg>
   );
 }
-import CreativeBrief, { SavedBriefs, type BriefRequirement } from "./CreativeBrief";
+import type { BriefRequirement } from "@/lib/types";
+import CreativeBrief, { SavedBriefs } from "./CreativeBrief";
 
 const MAX_VISIBLE = 10;
 
@@ -29,7 +30,7 @@ interface RecentConversationsProps {
   onDeleteConversation?: (conversationId: string) => void;
   onUseBrief?: (briefContent: string) => void;
   briefRequirements?: BriefRequirement[];
-  isImageBot?: boolean;
+  botSlug?: string;
 }
 
 export default function RecentConversations({
@@ -41,7 +42,7 @@ export default function RecentConversations({
   onDeleteConversation,
   onUseBrief,
   briefRequirements = [],
-  isImageBot = false,
+  botSlug,
 }: RecentConversationsProps) {
   const [showAll, setShowAll] = useState(false);
   const [chatsExpanded, setChatsExpanded] = useState(false);
@@ -80,8 +81,8 @@ export default function RecentConversations({
       {/* Creative Brief — live from [REQ:] tags */}
       <CreativeBrief requirements={briefRequirements} />
 
-      {/* Saved Briefs — only for image-capable bots */}
-      <SavedBriefs isImageBot={isImageBot} onUseBrief={onUseBrief} />
+      {/* Saved Briefs — shown for bots that have briefs configured */}
+      {botSlug && <SavedBriefs botSlug={botSlug} onUseBrief={onUseBrief} />}
 
       {/* Conversation list */}
       <div className="flex-1 overflow-y-auto">

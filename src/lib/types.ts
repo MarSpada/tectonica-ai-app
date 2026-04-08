@@ -107,6 +107,26 @@ export interface HourEntry {
   user_avatar?: string | null;
 }
 
+/* ── Briefs ── */
+
+export interface BriefRequirement {
+  key: string;
+  value: string;
+}
+
+export interface BotBrief {
+  id: string;
+  bot_id: string;
+  org_id: string;
+  title: string;
+  thumbnail_url?: string;
+  content: string;
+  enabled: boolean;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 /* ── Admin / Bots ── */
 
 export interface AdminBot {

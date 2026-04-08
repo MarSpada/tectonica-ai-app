@@ -268,20 +268,41 @@ function renderTextContent(text: string): React.ReactNode {
   if (text.includes("__LANDING_PAGE__")) {
     const match = text.match(/__LANDING_PAGE__([^_]+(?:__[^_]*)*)__([^_]+(?:__[^_]*)*)__$/);
     if (match) {
-      const [, url, headline] = match;
+      const [, url] = match;
       return (
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm text-white no-underline transition-opacity hover:opacity-90"
-          style={{ backgroundColor: "var(--accent-purple, #422D8F)" }}
-        >
-          <Icon name="external-link" size={16} />
-          See your landing page
-        </a>
+        <div className="flex justify-center py-2">
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-xs text-white no-underline transition-opacity hover:opacity-90"
+            style={{ backgroundColor: "#422D8F" }}
+          >
+            <Icon name="external-link" size={12} />
+            See your landing page
+          </a>
+        </div>
       );
     }
+  }
+  // Fallback: detect raw landing page URLs in persisted messages loaded from history
+  // (the __LANDING_PAGE__ marker only exists in live streaming state, not in stored messages)
+  const landingPageUrlMatch = text.match(/\/api\/landing-pages\/([a-f0-9-]+)\/view/);
+  if (landingPageUrlMatch) {
+    return (
+      <div className="flex justify-center py-2">
+        <a
+          href={landingPageUrlMatch[0]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-xs text-white no-underline transition-opacity hover:opacity-90"
+          style={{ backgroundColor: "#422D8F" }}
+        >
+          <Icon name="external-link" size={12} color="#ffffff" />
+          See your landing page
+        </a>
+      </div>
+    );
   }
   if (text.includes("✓ Saved to your Media Library")) {
     const [before, after] = text.split("✓ Saved to your Media Library");

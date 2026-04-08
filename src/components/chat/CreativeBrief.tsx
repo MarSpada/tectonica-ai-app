@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icon } from "@/components/ui/icon";
+import type { BriefRequirement, BotBrief } from "@/lib/types";
 
 /** Friendly labels for REQ tag keys */
 const FIELD_LABELS: Record<string, string> = {
@@ -36,10 +37,7 @@ const FIELD_ICONS: Record<string, string> = {
   CTA: "send",
 };
 
-export interface BriefRequirement {
-  key: string;
-  value: string;
-}
+export type { BriefRequirement };
 
 interface CreativeBriefProps {
   requirements: BriefRequirement[];
@@ -127,109 +125,44 @@ export default function CreativeBrief({ requirements }: CreativeBriefProps) {
 }
 
 // ────────────────────────────────────────────────────────────
-// Saved Briefs — hardcoded example briefs for Graphics Creation bot
+// Saved Briefs — DB-driven briefs fetched per bot
 // ────────────────────────────────────────────────────────────
 
-interface SavedBrief {
-  id: string;
-  title: string;
-  date: string;
-  thumbnail?: string;
-  fields: BriefRequirement[];
-}
-
-const SAVED_BRIEFS: SavedBrief[] = [
-  {
-    id: "sitges-dog-beach",
-    title: "Sitges Dog Beach Rally Poster",
-    date: "2026-03-20",
-    thumbnail: "https://v3b.fal.media/files/b/0a92c84e/lBYcY4zDkIqRR3JwI7l4W_jKf35Py2.jpg",
-    fields: [
-      { key: "PLATFORM", value: "Instagram" },
-      { key: "SIZE", value: "Post (portrait)" },
-      { key: "STYLE", value: "Photorealistic" },
-      { key: "BRANDING", value: "Yes" },
-      { key: "FOCUS", value: "Rally poster for dog beach access in Sitges" },
-      { key: "AUDIENCE", value: "General public" },
-      { key: "CTA", value: "Attend the rally" },
-      { key: "MESSAGING", value: "Sitges Beaches for All Paws" },
-      { key: "TEXT", value: "Headline in-world; event details as studio overlay" },
-      { key: "CONSTRAINTS", value: "None" },
-      { key: "RIGHTS", value: "Confirmed — photo of person with dog on Sitges beachfront" },
-    ],
-  },
-  {
-    id: "irezumi-tattoo",
-    title: "Japanese Irezumi Tattoo Design",
-    date: "2026-03-20",
-    fields: [
-      { key: "SIZE", value: "3×3 inches (~900×900px)" },
-      { key: "PLATFORM", value: "Temporary tattoo for event distribution" },
-      { key: "STYLE", value: "Mural — Japanese Irezumi" },
-      { key: "SUBSTYLE", value: "Traditional Japanese tattoo (waves, clouds, patterns)" },
-      { key: "FOCUS", value: "Person and dog portrait with Irezumi decorative elements" },
-      { key: "MESSAGING", value: "THING! WOW! — on decorative banner/scroll" },
-      { key: "TEXT", value: "In-world on decorative banner element" },
-      { key: "BRANDING", value: "No" },
-      { key: "CONSTRAINTS", value: "Keep natural features intact; Irezumi for framing only" },
-      { key: "RIGHTS", value: "Consent confirmed — photo shows identifiable person" },
-    ],
-  },
-  {
-    id: "daily-mindset-ritual",
-    title: "Daily Mindset Ritual — Founder Cards",
-    date: "2026-04-01",
-    fields: [
-      { key: "SIZE", value: "Letter/A4 quarters (~4.25×5.5\" per card)" },
-      { key: "PLATFORM", value: "Print — daily ritual cards" },
-      { key: "STYLE", value: "Minimal/clean with photographic elements" },
-      { key: "FOCUS", value: "7 visual cards for founder daily grounding and motivation" },
-      { key: "BRANDING", value: "No" },
-      { key: "TEXT", value: "Section titles in-world (≤8 words); body as studio overlay" },
-      { key: "CONSTRAINTS", value: "No corporate imagery; each card distinct, not templated" },
-      { key: "SUCCESS", value: "Visuals that ground and motivate daily; print-ready" },
-      { key: "CONTEXT", value: "Founder building distributed organizing infrastructure with AI" },
-    ],
-  },
-  {
-    id: "founder-infrastructure",
-    title: "Founder as Infrastructure",
-    date: "2026-04-01",
-    fields: [
-      { key: "SIZE", value: "Half Letter portrait (512×1280px)" },
-      { key: "PLATFORM", value: "Print — daily morning ritual" },
-      { key: "STYLE", value: "ILLUS_HAND (Hand-Drawn Illustration)" },
-      { key: "SUBSTYLE", value: "Ink / Blue Ballpoint Pen" },
-      { key: "FOCUS", value: "Founder integrated into blueprint — part of the design, not separate" },
-      { key: "BRANDING", value: "No" },
-      { key: "TEXT", value: "\"I am\" header + affirmation body — studio overlay" },
-      { key: "CONSTRAINTS", value: "Open composition, lines fade organically, no hard edges" },
-      { key: "IMAGE_BASE", value: "Yes — IMG_1864.jpeg (facial features reference)" },
-      { key: "RIGHTS", value: "Confirmed" },
-      { key: "SUCCESS", value: "Recognizable likeness in sketch; blueprint integration feels natural; gives energy in the morning" },
-    ],
-  },
-];
-
 interface SavedBriefsProps {
-  isImageBot: boolean;
+  botSlug: string;
   onUseBrief?: (briefContent: string) => void;
 }
 
-/** Format a brief's fields into a readable text block for injection into chat */
-function formatBriefForInjection(brief: SavedBrief): string {
-  const lines = [`Creative Brief: ${brief.title}\n`];
-  for (const field of brief.fields) {
-    const label = FIELD_LABELS[field.key] || field.key;
-    lines.push(`${label}: ${field.value}`);
-  }
-  return lines.join("\n");
+/** Format a brief for injection into chat — just the content prefixed with the title */
+function formatBriefForInjection(brief: BotBrief): string {
+  return `Creative Brief: ${brief.title}\n\n${brief.content}`;
 }
 
-export function SavedBriefs({ isImageBot, onUseBrief }: SavedBriefsProps) {
+export function SavedBriefs({ botSlug, onUseBrief }: SavedBriefsProps) {
+  const [briefs, setBriefs] = useState<BotBrief[]>([]);
+  const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  if (!isImageBot) return null;
+  useEffect(() => {
+    if (!botSlug) return;
+    let cancelled = false;
+    async function fetchBriefs() {
+      try {
+        const res = await fetch(`/api/bots/${encodeURIComponent(botSlug)}/briefs`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setBriefs(data.briefs || []);
+      } catch {
+        // Silently fail — briefs are non-critical
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetchBriefs();
+    return () => { cancelled = true; };
+  }, [botSlug]);
+
+  if (loading || briefs.length === 0) return null;
 
   return (
     <div className="border-t border-card-stroke">
@@ -240,7 +173,7 @@ export function SavedBriefs({ isImageBot, onUseBrief }: SavedBriefsProps) {
         </h2>
       </div>
       <div className="pb-2">
-        {SAVED_BRIEFS.map((brief) => {
+        {briefs.map((brief) => {
           const isExpanded = expandedId === brief.id;
           return (
             <div key={brief.id} className="mx-3 mb-1.5">
@@ -275,17 +208,10 @@ export function SavedBriefs({ isImageBot, onUseBrief }: SavedBriefsProps) {
                 </div>
                 {/* Expanded details */}
                 {isExpanded && (
-                  <div className="px-3 pb-2.5 pt-1 border-t border-black/5 space-y-1.5">
-                    {brief.fields.map((req) => (
-                      <div key={req.key} className="flex items-start gap-2">
-                        <span className="text-[9px] font-semibold text-accent-purple uppercase shrink-0 w-14 pt-0.5">
-                          {FIELD_LABELS[req.key] || req.key}
-                        </span>
-                        <span className="text-[10px] text-text-secondary leading-tight">
-                          {req.value}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="px-3 pb-2.5 pt-1 border-t border-black/5">
+                    <pre className="text-[10px] text-text-secondary leading-relaxed whitespace-pre-wrap font-sans">
+                      {brief.content}
+                    </pre>
                   </div>
                 )}
               </div>

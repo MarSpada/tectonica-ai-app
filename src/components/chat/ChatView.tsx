@@ -579,7 +579,7 @@ export default function ChatView({
         onDeleteConversation={handleDeleteConversation}
         onUseBrief={(briefContent) => sendMessage(briefContent)}
         briefRequirements={parseRequirements(messages)}
-        isImageBot={isImageBot}
+        botSlug={bot.id}
       />
 
       {/* Approval modal — pre-filled with image */}
