@@ -26,10 +26,10 @@ import type {
 // ────────────────────────────────────────────────────────────
 
 export const RAILWAY_ENDPOINTS = {
-  generate: "/api/external/flux-2-pro-edit-create",
-  edit: "/api/external/flux-2-pro-edit-edit",
-  fuse: "/api/external/flux-2-pro-edit-combine",
-  brand: "/api/external/flux-2-pro-edit-apply",
+  generate: "/api/external/bfl/flux-2-pro-edit-create",
+  edit: "/api/external/bfl/flux-2-pro-edit-edit",
+  fuse: "/api/external/bfl/flux-2-pro-edit-combine",
+  brand: "/api/external/bfl/flux-2-pro-edit-apply",
 } as const;
 
 /** Platform + publication type → { width, height } */

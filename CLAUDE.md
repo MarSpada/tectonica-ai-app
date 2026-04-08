@@ -111,6 +111,10 @@ codebase and follow it — don't invent a new approach.
 
 ### NationBuilder
 - All NationBuilder API calls go through `lib/signup-utils.ts` — never call the NB API directly from a component or route
+- NB credentials (API token + slug) are stored encrypted in `org_integrations` table, managed by super admins via admin Integrations tab
+- `fetchRecentSignups()` accepts a `NbCredentials` param — credentials resolved in the signups API route (DB first, env var fallback with warning)
+- NB has an enable/disable toggle in admin Integrations tab. When disabled, NB is hidden from the Connected Systems widget and SignupsWidget shows an empty state
+- `NATIONBUILDER_API_TOKEN` and `NATIONBUILDER_SLUG` env vars are kept as fallback during transition — can be removed once admin configures credentials via UI
 
 ### Dashboard widgets
 - All dashboard widget visibility uses WIDGET_PERMISSIONS from `lib/dashboard-widgets.ts` — never hardcode role checks for widgets inline
@@ -377,7 +381,7 @@ Clicking org name "People's Movement" in top bar → `returnToDashboard()`
 ## Connected Systems (integrations)
 
 - **Open WebUI / RunPod** — AI model provider. Open WebUI proxies to RunPod-hosted models. Configured per-org in Integrations tab (endpoint URL + encrypted bearer token). Model "ChangeAgent" available.
-- **NationBuilder** — Connected (read-only signup ingestion, v2 API)
+- **NationBuilder** — Enable/disable toggle in admin Integrations tab. Credentials (API token + slug) stored encrypted in DB via `org_integrations`. Read-only signup ingestion, v2 API. Env var fallback during transition.
 - **Calendar Sources** — System-agnostic iCal/ICS feeds (Google Calendar, Outlook, Mobilize, etc.), managed by super_admin in Integrations tab
 - **Action Network** — Not Connected (coming soon)
 - **Mobilize** — Not Connected (coming soon)
@@ -433,9 +437,9 @@ Desktop-first design. Mobile is out of scope for now.
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public anon key |
-| `ENCRYPTION_KEY` | 32-byte hex string for AES-256-GCM encryption of RunPod bearer token (generate: `openssl rand -hex 32`) |
-| `NATIONBUILDER_API_TOKEN` | NationBuilder v2 API Bearer token |
-| `NATIONBUILDER_SLUG` | NationBuilder subdomain slug |
+| `ENCRYPTION_KEY` | 32-byte hex string for AES-256-GCM encryption of RunPod + NB bearer tokens (generate: `openssl rand -hex 32`) |
+| `NATIONBUILDER_API_TOKEN` | **DEPRECATED — transition fallback only.** NB v2 API Bearer token. Superseded by DB-stored encrypted credentials in `org_integrations`. Remove once admin configures via UI. |
+| `NATIONBUILDER_SLUG` | **DEPRECATED — transition fallback only.** NB subdomain slug. Superseded by DB-stored value in `org_integrations`. Remove once admin configures via UI. |
 | `RESEND_API_KEY` | Resend email API key |
 | `RESEND_FROM_EMAIL` | Sender email address for Resend transactional emails |
 | `SUPABASE_SERVICE_ROLE_KEY` | Required for migration scripts and `lib/supabase/service.ts` (external API endpoints with no user session). Bypasses RLS — use only where documented. |
@@ -484,6 +488,7 @@ Desktop-first design. Mobile is out of scope for now.
 | `037_group_branding_hero_images.sql` | Adds `hero_images` (jsonb, default `[]`) to `group_branding`. Stores up to 5 hero images as `{url, label}` objects for the landing page bot gallery. Existing `hero_image_url` kept as default/fallback. |
 | `038_landing_pages_public_rls.sql` | Public anon SELECT policy on `group_landing_pages` for live pages. Allows generated landing page URLs to be viewable without authentication. |
 | `039_storage_rls_policies.sql` | Creates `branding` and `landing-pages` storage buckets as public (upsert, safe to re-run). Storage object policies (INSERT for authenticated, SELECT for public) must still be configured in Supabase dashboard. |
+| `040_nb_integration.sql` | Adds NB integration columns to `org_integrations`: `nb_enabled` (boolean, default false), `nb_api_token` (encrypted text), `nb_slug` (text), `nb_status` (CHECK connected/error/not_configured), `nb_last_checked_at` (timestamptz). Creates `get_nb_config(p_org_id)` SECURITY DEFINER RPC for non-admin credential access in signups route. |
 
 ---
 
@@ -493,7 +498,8 @@ Desktop-first design. Mobile is out of scope for now.
 |---|---|---|
 | `/api/chat` | POST | Streams responses from RunPod-hosted model (per-bot model_id + org RunPod credentials), persists conversations + messages to Supabase. Returns 503 `not_configured` if bot has no model or RunPod not configured. |
 | `/api/favorites` | GET/POST | Fetch, add, remove user's favorite/starred bots |
-| `/api/nationbuilder/signups` | GET | Fetches last 3 NB signups, auto-assigns unassigned to admin, returns with assignments |
+| `/api/nationbuilder/signups` | GET | Fetches NB signups (50 limit) using DB-stored encrypted credentials (env var fallback). Returns signups, assignments, status, and `enabled` boolean. Skips entirely if `nb_enabled === false`. Uses `requireAuth()` + `get_nb_config` RPC. |
+| `/api/admin/integrations/nationbuilder` | GET/POST | GET: NB config (enabled, slug, hasToken, status — never the token). POST: toggle-only `{ enabled }` or settings save `{ slug, apiToken }` with connection test. Super admin only. Token encrypted with AES-256-GCM. |
 | `/api/signups/assign` | POST | Assigns NB signup to team member (RPC + Resend email notification) |
 | `/api/notifications` | GET | Unread notifications for current user (max 10) |
 | `/api/notifications/read` | POST | Mark notifications as read (by IDs or "all") |
@@ -636,14 +642,14 @@ Desktop-first design. Mobile is out of scope for now.
 | `lib/bots-prompts.ts` | Bot system prompts mapped by bot ID, falls back to generic prompt |
 | `lib/bot-resolver.ts` | getBots() (DB-first, fallback to hardcoded), getSystemPrompt() (DB-first, fallback to bots-prompts.ts) |
 | `lib/encryption.ts` | AES-256-GCM encrypt/decrypt utility for RunPod bearer token. Uses `ENCRYPTION_KEY` env var (32-byte hex). Node.js `crypto` module, no dependencies. |
-| `lib/image-tools.ts` | **Only file that calls the Railway image API.** Generate, edit, fuse, brand images. Credential fetch + decryption, credit tracking, platform size lookup, dimension capture. Also contains `downloadAndStoreImage()` (FAL → Supabase Storage) and `uploadBase64ToStorage()` (base64 → Supabase Storage). |
+| `lib/image-tools.ts` | **Only file that calls the Railway image API.** Generate, edit, fuse, brand images via Black Forest Labs (BFL) endpoints. Credential fetch + decryption, credit tracking, platform size lookup, dimension capture. Also contains `downloadAndStoreImage()` (external URL → Supabase Storage) and `uploadBase64ToStorage()` (base64 → Supabase Storage). Railway endpoints use `/api/external/bfl/` path prefix. |
 | `lib/energy.ts` | Energy consumption estimation for AI-generated images. Pure calculation library based on Stanford/AXA 2025 research. Named constants, linear interpolation formula, 3 human-readable comparison formatters (Google searches, phone charge, LED bulb), disclaimer text. |
 | `lib/image-tool-definitions.ts` | OpenAI-compatible tool definitions array for ChangeAgent. Passed via `tools` parameter — never injected into system prompt. 4 tools: generate_image, edit_image, fuse_images, apply_branding. |
 | `lib/style-gallery-data.ts` | Style gallery data for Graphics Creation bot. Main gallery (10 styles) + 10 substyle galleries with fal.ai CDN image URLs. Used by chat route to respond to model's `style_galery` tool calls. |
 | `lib/ical-parser.ts` | Lightweight ICS parser (no native deps) — handles DTSTART/DTEND with TZID, line unfolding, escaped chars |
 | `lib/avatar.ts` | Avatar utilities (getAvatarColor, getInitials, getRoleBadgeStyle, getRoleLabel) + `AVATAR_HEX_COLORS` export for SVG rendering. Hex values must stay in sync with `--avatar-color-*` CSS vars in globals.css. |
 | `lib/org-chart-utils.ts` | `buildOrgChartData()` — **only file that knows hierarchy logic.** Role-based (Option A). When `recruited_by` FK is added, only this file changes. |
-| `lib/signup-utils.ts` | NationBuilder signup utilities (fetch, parse, enrich). Returns connection status (connected/error/not_configured) |
+| `lib/signup-utils.ts` | NationBuilder signup utilities (fetch, parse, enrich). `fetchRecentSignups()` accepts `NbCredentials` param (API token + slug) — credentials resolved by caller (DB first, env var fallback). Exports `NbCredentials` interface and `NbConnectionStatus` type. |
 | `lib/media-storage.ts` | **Only file that imports Supabase Storage for media.** Upload, signed URLs (1hr TTL), delete, quota check/increment. Swap storage providers by changing this file only. Includes bucket setup instructions in header comment. |
 | `lib/action-adapters/index.ts` | **Action source adapter scaffold.** Defines `ActionSourceAdapter` interface, `CanonicalAction` type, adapter registry. Future external sources (NB, Action Network, ActBlue, Sosha) each get a file here. No concrete adapters yet. |
 | `lib/UserProfileContext.tsx` | React Context for user profile data (role, orgName, groupName, name, avatar) — consumed by TopBar, LeftSidebar, RightSidebar, etc. |
@@ -683,7 +689,7 @@ Desktop-first design. Mobile is out of scope for now.
 - **Upcoming Events widget** — pulls from connected calendar feeds, shows next 30 days. "Manage Calendars" button (super_admin only). Click event opens EventDetailSheet with title, date/time, location, source, description.
 - **Volunteer hours tracking** — log hours, view detail overlay with entries by date, dashboard widget with real totals. Widget shows unique member count, progress bar when hours_goal > 0, spark line chart. Detail overlay role-gated: admins see all member entries, non-admins see only their own.
 - **Dynamic top bar** — org name and group name fetched from DB, update when admin changes them
-- **Connected Systems widget** — dynamic: NB shows real status (Functional/Error/Not Connected), Calendar reflects live feed state, Action Network/Mobilize: Not Connected. AI Models and Image API rows visible to super_admin only. "Manage Integrations" button (super_admin only) links to admin Integrations tab.
+- **Connected Systems widget** — only shows enabled/connected integrations. NB row visible only when `nb_enabled === true` (with real status). Calendar reflects live feed state. Action Network/Mobilize hidden until they get enable/disable toggles. AI Models and Image API rows visible to super_admin only. "Manage Integrations" button (super_admin only) links to admin Integrations tab.
 - **Fundraising goals** — targets (money_goal, money_budget) stored in `group_goals` table, admin-editable via Goals tab in Admin Panel. Monthly amount_raised tracked in `fundraising_goals`. Offline fundraising offset (`money_raised_offline`) added to displayed totals. FundraisingWidget reads targets from `group_goals`, no longer has inline edit.
 - **Recruitment goals** — members_goal and supporters_goal in `group_goals` table, admin-editable via Goals tab. RecruitmentGoalWidget uses dynamic DB values instead of hardcoded targets. Handles goal=0 gracefully (shows raw count, hides percentage).
 - **Admin Goals tab** — visible to both super_admin and group_admin. Three sections: Fundraising Goals (monthly target, print budget, offline offset), Recruitment Goals (member/supporter targets), and Volunteer Hours Goals (group hours target). Inline edit pattern matching OrgTab.
@@ -699,7 +705,7 @@ Desktop-first design. Mobile is out of scope for now.
 - **Signups page** — `/signups` full table view of NationBuilder signups with search, status badges, assignment info. Entry point: "See all (##)" button in SignupsWidget. SignupsWidget now shows max 2 items with count-based CTA button (#c66a0c).
 - **Integrations tab — Action Sources** — scaffold section in admin Integrations showing NationBuilder Actions, Action Network, ActBlue, Sosha with "Not Connected" status and disabled Configure buttons.
 - GSAP entrance animations throughout (except right sidebar — uses CSS fade-in)
-- **Graphics Creation bot — image tools**: Full image generation via Railway/fal.ai with OpenAI tool calling. Style gallery (10 styles × substyles, clickable grid with preloading). Image-to-image with uploaded reference photos. Inline image rendering with action buttons (Studio, Try again, Request approval, Share to group). Studio iframe overlay. Creative brief sidebar (live [REQ:] tag parsing + 4 saved example briefs). Image upload shows thumbnail preview. Chat sidebar: collapsible past chats (10-limit, deletable), saved briefs section.
+- **Graphics Creation bot — image tools**: Full image generation via Railway/Black Forest Labs (BFL) with OpenAI tool calling. Style gallery (10 styles × substyles, clickable grid with preloading). Image-to-image with uploaded reference photos. Inline image rendering with action buttons (Studio, Try again, Request approval, Share to group). Studio iframe overlay. Creative brief sidebar (live [REQ:] tag parsing + 4 saved example briefs). Image upload shows thumbnail preview. Chat sidebar: collapsible past chats (10-limit, deletable), saved briefs section.
 - **Media Library thumbnails**: Image and generated items show actual image thumbnails. Select mode with bulk delete.
 - **Energy consumption indicator** — estimated energy cost per AI-generated image based on Stanford/AXA "Energy Scaling Laws for Diffusion Models" (2025). Captures image dimensions from Railway API response (with fallback to request params). Displays collapsible "Energy estimate" below each generated image in bot chat and Media Library detail view. Shows Wh value, toggleable human-readable comparisons (Google searches, smartphone charging, LED bulb time), and research disclaimer. Pre-computed `energy_wh` stored in `media_items` for efficient aggregation. Migration 024.
 - **Notification bar follow-up guidance** — signup notification now reads "Follow up with them or reassign to another member in the next 48 hours" instead of just listing the count.
@@ -802,7 +808,7 @@ Desktop-first design. Mobile is out of scope for now.
 - **Unconfigured bots** — Bots without a `model_id` return 503 `not_configured`. ChatView hides input and shows "This bot is not yet configured" message. No fallback.
 - **Connected Systems widget — AI Models** — Row added at top using Streamline `server-star-1` icon. Shows "Connected" / "Error" / "Not connected" based on `runpod_status` from `org_integrations`. Non-admin users see "Not connected" (403 from API handled gracefully).
 - **RightSidebar decomposition** — split into `RightSidebar.tsx` (529 lines: state, data fetching, layout management, modals) and `dashboard/WidgetGrid.tsx` (286 lines: grid rendering). All behavior preserved.
-- **requireAuth() migration complete** — All API routes now use `requireAuth()` except 2 deferred routes: `chat/route.ts` (auth tightly coupled to bot resolution + credential decryption, high blast radius) and `nationbuilder/signups/route.ts` (conditional profile fetch inside business logic, needs dedicated session). The custom `getSuperAdminProfile()` and `getAdminProfile()` helpers that duplicated requireAuth logic have been removed — they no longer exist anywhere in the codebase.
+- **requireAuth() migration complete** — All API routes now use `requireAuth()` except 1 deferred route: `chat/route.ts` (auth tightly coupled to bot resolution + credential decryption, high blast radius). `nationbuilder/signups/route.ts` was converted to `requireAuth()` in the NB integration toggle session. The custom `getSuperAdminProfile()` and `getAdminProfile()` helpers that duplicated requireAuth logic have been removed — they no longer exist anywhere in the codebase.
 - **WelcomeHelper exhaustive-deps** — `src/components/WelcomeHelper.tsx:161` has eslint-disable for `react-hooks/exhaustive-deps`. Should be audited for stale closure bugs in a future session.
 - **⚠️ Image API token rotation required** — Token `sk-j6gKait8TE8ZkV3LrNPPYDHEAvM8zqVN` was exposed during testing. Must be rotated in Railway and the new token saved in org_integrations before production or demos. See `lib/image-tools.ts` header comment.
 - **Studio overlay one-way** — Members can edit images in the Railway Studio but results are not automatically saved back to the chat or Media Library. Requires a backend change on the Railway Studio side to support arbitrary callback URLs. When implemented, wire to a new POST `/api/image-tools/studio-callback` endpoint.
@@ -862,6 +868,11 @@ Desktop-first design. Mobile is out of scope for now.
 - **Hours tab in Admin Panel** — Team volunteer hours view. KPI summary cards (total hours, this month, active volunteers), member table sorted by this_month_hours DESC, detail sheet per member with full log entries. Uses existing `volunteer_hours` table — no new migrations. Null guard: if `groupId` is null, renders "No group assigned" and skips API call.
 - **Recruitment Goals widget "Set Goals" button** — visible to admins only (`isAdminRole`), navigates to `/admin?tab=goals`. Uses `--widget-btn-recruitment` CSS variable (#422D8F). `RecruitmentGoalWidget` now requires `role` prop, passed from `WidgetGrid`.
 - **`requireApiKey()` in `lib/api-utils.ts`** — Validates Bearer token against `CHANGE_AGENT_API_KEY` for external endpoints. Currently only used by the dormant `/api/tools/generate-landing-page` route.
+- **Image generation switched to Black Forest Labs (BFL)** — Railway image editor service (`qwen-image-editor`) now proxies to BFL instead of fal.ai. Endpoint paths changed from `/api/external/flux-2-pro-edit-*` to `/api/external/bfl/flux-2-pro-edit-*`. `RAILWAY_ENDPOINTS` in `lib/image-tools.ts` updated. Generated image URLs may still come from fal CDN (`fal-cdn.fal.ai`) as the BFL endpoints may cache through fal infrastructure. The Open WebUI Python tool (Fernando's "Unified Image Tools Suite" v4.0.0) has the same endpoint paths configured in its Valves.
+- **NB integration toggle system** — Migration 040 adds `nb_enabled`, `nb_api_token` (encrypted), `nb_slug`, `nb_status`, `nb_last_checked_at` to `org_integrations`. Admin Integrations tab has enable/disable toggle + Settings dialog (Shadcn Dialog) for NB slug + API token. `get_nb_config` SECURITY DEFINER RPC allows the signups route (non-admin) to read encrypted credentials. Signups route resolves credentials: DB first → env var fallback (with `console.warn`) → not_configured. Dashboard widgets respect `nbEnabled`: SignupsWidget shows "No signup source enabled" + "Manage signup sources" link when off; ConnectedSystemsWidget hides NB row when off. Action Network and Mobilize rows also hidden from widget until they get their own toggles.
+- **Integration toggle pattern established** — To add the same enable/disable pattern for Mobilize or Action Network: (1) add columns to `org_integrations`, (2) create admin API route mirroring `/api/admin/integrations/nationbuilder`, (3) add toggle + dialog to IntegrationsTab, (4) update widget visibility. Follow the NB pattern exactly.
+- **"Google Calendar" → "Calendar"** — Fixed in ConnectedSystemsWidget. Was a known issue from prior sessions.
+- **Migrations 040 required** — Must be run in Supabase SQL Editor for the NB integration toggle to work. Without it, the `nb_enabled` column doesn't exist and the NB admin route will fail.
 
 ---
 
